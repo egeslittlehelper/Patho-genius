@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathogenius</title>
+    <link rel="stylesheet" href="assets/css/variables.css">
+    <link rel="stylesheet" href="assets/css/main.css">
+</head>
+<body>
+
+    <div id="page-login" class="login-view">
+        <div style="margin: auto; text-align: center;">
+            <div class="logo-icon" style="width: 64px; height: 64px; font-size: 2rem; margin: 0 auto 20px auto;">P</div>
+            <h1 style="margin-bottom: 10px;">Pathogenius</h1>
+            <p style="color: var(--text-muted); margin-bottom: 30px;">Portable Metagenomics Platform</p>
+            <button class="btn btn-outline" style="width: 100%;" onclick="App.navigateTo('dashboard')">
+                Login (Guest Mode)
+            </button>
+        </div>
+    </div>
+
+    <div class="app-layout hidden">
+        <aside class="sidebar">
+            <div class="brand">
+                <div class="logo-icon">P</div>
+                <span>Pathogenius</span>
+            </div>
+            
+            <nav class="nav-menu">
+                <button class="nav-item active" data-target="dashboard">
+                    <span style="margin-right: 10px;"></span> Dashboard
+                </button>
+                <button class="nav-item" data-target="analysis">
+                    <span style="margin-right: 10px;"></span> New Analysis
+                </button>
+                <button class="nav-item" data-target="results">
+                    <span style="margin-right: 10px;"></span> Results
+                </button>
+                <button class="nav-item" data-target="database">
+                    <span style="margin-right: 10px;"></span> Database
+                </button>
+            </nav>
+            
+            <div class="system-status-widget">
+                <strong>System Status</strong><br>
+                <span class="text-success">● Online</span>
+                <div style="margin-top: 5px; font-size: 0.8rem; color: #6B7280;">GPU: Available</div>
+            </div>
+        </aside>
+
+        <main class="content-area">
+            <div id="page-dashboard" class="page-view">
+                <div style="margin-bottom: 30px;">
+                    <h1>Welcome, Dr. Field Worker</h1>
+                    <p style="color: var(--text-muted);">Manage your metagenomic analyses</p>
+                </div>
+                
+                <div class="card" style="background-color: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center;">
+                    <div>
+                        <h2 style="margin-bottom: 5px;">Start New Analysis</h2>
+                        <p style="opacity: 0.9;">Upload FASTQ files and detect pathogens</p>
+                    </div>
+                    <button class="btn" style="background: white; color: var(--primary);" onclick="App.navigateTo('analysis')">+ New Sequencing Analysis</button>
+                </div>
+
+                <div class="grid-3">
+                    <div class="card">
+                        <h3 class="mb-4">System Resources</h3>
+                        <div class="progress-label"><span>CPU Usage</span> <span>34%</span></div>
+                        <div class="progress-track"><div class="progress-fill" style="width: 34%;"></div></div>
+                        <div class="progress-label"><span>RAM Usage</span> <span>8.2 GB</span></div>
+                        <div class="progress-track"><div class="progress-fill" style="width: 50%;"></div></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="mb-4">Storage</h3>
+                        <div class="progress-label"><span>Database</span> <span>12.4 GB</span></div>
+                        <div class="progress-track"><div class="progress-fill" style="width: 60%;"></div></div>
+                    </div>
+                    <div class="card">
+                        <h3 class="mb-4">Summary</h3>
+                        <div style="font-size: 2rem; font-weight: bold;">127</div>
+                        <p style="color: var(--text-muted);">Total Analyses</p>
+                    </div>
+                </div>
+
+                <h3 class="mb-4">Recent Analyses</h3>
+                <div class="card" style="padding: 0;">
+                    <table class="data-table">
+                        <thead>
+                            <tr>
+                                <th>Analysis Name</th>
+                                <th>Date</th>
+                                <th>Status</th>
+                                <th>Top Species</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Patient_001_Sample</td>
+                                <td>2025-12-10</td>
+                                <td class="text-success">Completed</td>
+                                <td>E. coli</td>
+                                <td><button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="App.navigateTo('results')">View</button></td>
+                            </tr>
+                             <tr>
+                                <td>Water_Source_A</td>
+                                <td>2025-12-09</td>
+                                <td class="text-success">Completed</td>
+                                <td>P. aeruginosa</td>
+                                <td><button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;">View</button></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            
+            <div id="page-analysis" class="page-view hidden">
+                <h1>New Analysis Wizard</h1>
+                </div>
+            
+            <div id="page-results" class="page-view hidden">
+                <h1>Results View</h1>
+                </div>
+            
+             <div id="page-database" class="page-view hidden">
+                <h1>Database Management</h1>
+                </div>
+        </main>
+    </div>
+
+    <script src="js/app.js"></script>
+    <script src="pages/dashboard.js"></script>
+    </body>
+</html>

@@ -1,0 +1,27 @@
+:root {
+    /* Brand Colors (TODO?) */
+    --primary: #008080;
+    --primary-hover: #006666;
+    --secondary: #1F2937;
+    
+    /* Functional Colors */
+    --success: #10B981;
+    --warning: #F59E0B;
+    --danger: #EF4444;
+    
+    /* Layout */
+    --sidebar-width: 260px;
+    --header-height: 60px;
+    
+    /* Backgrounds */
+    --bg-body: #F5F7FA;
+    --bg-card: #FFFFFF;
+    
+    /* Text */
+    --text-main: #111827;
+    --text-muted: #6B7280;
+    
+    /* Borders */
+    --radius-md: 8px;
+    --border-light: #E5E7EB;
+}
