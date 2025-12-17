@@ -1,22 +1,35 @@
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-    // --- File System ---
-    selectFile: () => ipcRenderer.invoke('app:select-file'),
     
-    // --- Analysis Workflow ---
-    // TODO: Frontend calls this to start Snakemake
-    startAnalysis: (config) => ipcRenderer.send('app:start-analysis', config),
-    
-    // TODO: Frontend listens to this for Progress Bars
-    onProgress: (callback) => ipcRenderer.on('analysis:progress', (_event, value) => callback(value)),
-    
-    // TODO: Frontend listens to this for Final JSON Results
-    onResult: (callback) => ipcRenderer.on('analysis:complete', (_event, data) => callback(data)),
+    auth: {
+        login: (username, password) => 
+            ipcRenderer.invoke('auth:login', username, password),
+        
+        loginAsGuest: () => 
+            ipcRenderer.invoke('auth:login-guest'),
+        
+        logout: () => 
+            ipcRenderer.invoke('auth:logout'),
+        
+        getSession: () => 
+            ipcRenderer.invoke('auth:get-session')
+    },
 
-    // --- System Info ---
-    // TODO: Used by Dashboard to show CPU/RAM
-    getSystemStats: () => ipcRenderer.invoke('app:get-system-stats'),
+    files: {
+        selectFile: () => 
+            ipcRenderer.invoke('app:select-file'),
+        
+        selectFiles: () => 
+            ipcRenderer.invoke('app:select-files'),
+        
+        selectFolder: () => 
+            ipcRenderer.invoke('app:select-folder')
+    },
+    
+    // analysis
+    // database
+    // system
     
     getVersion: () => process.versions.electron
 });

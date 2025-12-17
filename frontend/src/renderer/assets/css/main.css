@@ -1,60 +1,281 @@
-/* === RESET & BASE === */
-* {
+/* 1. RESET & BASE STYLES */
+*, *::before, *::after {
     box-sizing: border-box;
     margin: 0;
     padding: 0;
 }
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-body);
-    color: var(--text-main);
-    height: 100vh;
-    overflow: hidden; /* Prevent full page scroll */
+html {
+    font-size: 16px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* === LAYOUT STRUCTURE === */
+body {
+    font-family: var(--font-sans);
+    background-color: var(--bg-body);
+    color: var(--text-secondary);
+    line-height: 1.5;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* 2. UTILITY CLASSES */
+.hidden { display: none !important; }
+.text-primary { color: var(--primary) !important; }
+.text-success { color: var(--success) !important; }
+.text-warning { color: var(--warning) !important; }
+.text-danger { color: var(--danger) !important; }
+.text-muted { color: var(--text-muted) !important; }
+
+/* ============================================
+   3. LOGIN PAGE
+   ============================================ */
+.login-view {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background-color: white;
+}
+
+/* Left Panel - Brand Section */
+.login-left-panel {
+    width: 50%;
+    background-color: var(--primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.brand-container {
+    text-align: center;
+    max-width: 400px;
+    padding: 40px;
+}
+
+.logo-box {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.brand-container h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+}
+
+.brand-container p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* Right Panel - Login Form */
+.login-right-panel {
+    width: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-content {
+    width: 100%;
+    max-width: 360px;
+    padding: 0 24px;
+}
+
+.login-header {
+    margin-bottom: 32px;
+}
+
+.login-header h2 {
+    font-size: 1.75rem;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.login-header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.login-footer {
+    margin-top: 32px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--gray-400);
+    border-radius: 50%;
+}
+
+.login-error {
+    background-color: var(--danger-bg);
+    border: 1px solid var(--danger-light);
+    color: var(--danger);
+    padding: 12px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 28px 0;
+    color: var(--text-light);
+    font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+    padding: 0 16px;
+}
+
+/* ============================================
+   4. APP LAYOUT
+   ============================================ */
 .app-layout {
     display: flex;
     height: 100vh;
     width: 100vw;
 }
 
-/* === SIDEBAR === */
-.sidebar {
-    width: var(--sidebar-width);
-    background-color: #FFFFFF;
-    border-right: 1px solid var(--border-light);
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    flex-shrink: 0;
-    z-index: 10;
+.content-area {
+    flex: 1;
+    overflow-y: auto;
+    padding: 32px 40px;
+    background-color: var(--bg-body);
 }
 
-.brand {
+/* ============================================
+   5. SIDEBAR
+   ============================================ */
+.sidebar {
+    width: var(--sidebar-width);
+    background-color: var(--bg-sidebar);
+    border-right: 1px solid var(--border-color);
+    display: flex;
+    flex-direction: column;
+    padding: 24px 16px;
+    flex-shrink: 0;
+}
+
+/* Sidebar Brand */
+.sidebar-brand {
     display: flex;
     align-items: center;
     gap: 12px;
-    margin-bottom: 40px;
-    font-weight: 700;
-    font-size: 1.2rem;
-    color: var(--text-main);
+    padding: 0 8px;
+    margin-bottom: 24px;
 }
 
-.logo-icon {
-    width: 36px;
-    height: 36px;
+.brand-logo {
+    width: 40px;
+    height: 40px;
     background-color: var(--primary);
-    color: white;
-    border-radius: 8px;
+    border-radius: var(--radius-md);
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 1.2rem;
 }
 
-/* Navigation Buttons */
+.brand-logo svg {
+    width: 24px;
+    height: 24px;
+    stroke: white;
+}
+
+.brand-text {
+    display: flex;
+    flex-direction: column;
+}
+
+.brand-name {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.brand-version {
+    font-size: 0.75rem;
+    color: var(--text-muted);
+}
+
+/* User Profile Card */
+.user-card {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 24px;
+}
+
+.user-avatar {
+    width: 40px;
+    height: 40px;
+    background-color: var(--primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.user-avatar svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--primary);
+}
+
+.user-info {
+    display: flex;
+    flex-direction: column;
+}
+
+.user-name {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+.user-role {
+    font-size: 0.75rem;
+    color: var(--primary);
+}
+
+/* Navigation Menu */
 .nav-menu {
     display: flex;
     flex-direction: column;
@@ -65,20 +286,28 @@ body {
 .nav-item {
     display: flex;
     align-items: center;
+    gap: 12px;
     padding: 12px 16px;
     border: none;
     background: none;
     cursor: pointer;
-    font-size: 0.95rem;
-    color: var(--text-muted);
+    font-size: 0.9375rem;
+    color: var(--text-secondary);
     border-radius: var(--radius-md);
     text-align: left;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     font-weight: 500;
+    font-family: inherit;
+}
+
+.nav-item svg {
+    width: 20px;
+    height: 20px;
+    flex-shrink: 0;
 }
 
 .nav-item:hover {
-    background-color: #F3F4F6;
+    background-color: var(--gray-100);
     color: var(--primary);
 }
 
@@ -87,137 +316,639 @@ body {
     color: white;
 }
 
-/* System Status Widget (Bottom of Sidebar) */
+.nav-item.active svg {
+    stroke: white;
+}
+
+/* Nav Badge */
+.nav-badge {
+    background: var(--danger);
+    color: white;
+    font-size: 0.65rem;
+    font-weight: 600;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: auto;
+    min-width: 18px;
+    text-align: center;
+}
+
+.nav-item.active .nav-badge {
+    background: white;
+    color: var(--danger);
+}
+
+/* System Status Widget */
 .system-status-widget {
-    margin-top: auto;
     padding: 16px;
-    background-color: #F9FAFB;
+    background-color: var(--gray-50);
     border-radius: var(--radius-md);
-    border: 1px solid var(--border-light);
-    font-size: 0.85rem;
+    margin-bottom: 16px;
 }
 
-/* === MAIN CONTENT AREA === */
-.content-area {
-    flex: 1;
-    overflow-y: auto;
-    padding: 32px;
-    background-color: var(--bg-body);
+.system-status-widget h4 {
+    font-size: 0.8125rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 12px;
 }
 
-/* === LOGIN SCREEN === */
-.login-view {
+.status-row {
     display: flex;
-    height: 100vh;
-    width: 100vw;
-    background-color: #FFFFFF;
-    position: absolute;
-    top: 0;
-    left: 0;
-    z-index: 100; /* Sit on top of everything */
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 0;
+    font-size: 0.8125rem;
 }
-/* will add .login-left and .login-right later for the image split */
 
-/* === COMPONENTS === */
+.status-label {
+    color: var(--text-muted);
+}
 
-/* Cards */
+.status-value {
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.status-value svg {
+    width: 14px;
+    height: 14px;
+}
+
+.status-success {
+    color: var(--success);
+}
+
+/* Logout Button */
+.logout-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid var(--border-color);
+    background: none;
+    cursor: pointer;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+    font-family: inherit;
+}
+
+.logout-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.logout-btn:hover {
+    background-color: var(--gray-50);
+    color: var(--text-secondary);
+    border-color: var(--gray-300);
+}
+
+/* ============================================
+   6. CARDS & CONTAINERS
+   ============================================ */
 .card {
     background: var(--bg-card);
-    border-radius: 12px;
+    border-radius: var(--radius-lg);
     padding: 24px;
     box-shadow: var(--shadow-sm);
-    border: 1px solid var(--border-light);
+    border: 1px solid var(--border-color);
     margin-bottom: 24px;
 }
 
-/* Grid System for Dashboard */
-.grid-3 {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 24px;
+.card-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 20px;
+}
+
+.card-header-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 20px;
+}
+
+.card-header-row .card-title {
+    margin-bottom: 0;
+}
+
+/* Page Header */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
     margin-bottom: 32px;
 }
 
-/* Buttons */
+.page-header h1 {
+    font-size: 1.75rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.page-subtitle {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+}
+
+/* Running Analysis Banner */
+.running-analysis-banner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    background: linear-gradient(to right, var(--primary), var(--primary-hover));
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    color: white;
+}
+
+.running-analysis-banner .banner-icon svg {
+    width: 40px;
+    height: 40px;
+    stroke: white;
+}
+
+.running-analysis-banner .banner-content {
+    flex: 1;
+}
+
+.running-analysis-banner .banner-content h3 {
+    font-size: 1.125rem;
+    margin-bottom: 4px;
+}
+
+.running-analysis-banner .banner-content p {
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+
+.running-analysis-banner .banner-progress {
+    width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.running-analysis-banner .banner-progress .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.3);
+}
+
+.running-analysis-banner .banner-progress .progress-fill {
+    background: white;
+}
+
+.running-analysis-banner .banner-progress span {
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-width: 40px;
+}
+
+.running-analysis-banner .btn-outline {
+    border-color: white;
+    color: white;
+}
+
+.running-analysis-banner .btn-outline:hover {
+    background: white;
+    color: var(--primary);
+}
+
+/* CTA Card */
+.cta-card {
+    background-color: var(--primary);
+    border-radius: var(--radius-lg);
+    padding: 28px 32px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+    color: white;
+}
+
+.cta-content h2 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin-bottom: 4px;
+}
+
+.cta-content p {
+    opacity: 0.9;
+    font-size: 0.9375rem;
+}
+
+/* ============================================
+   7. FORMS & INPUTS
+   ============================================ */
+.form-group {
+    margin-bottom: 20px;
+}
+
+.form-group label {
+    display: block;
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+}
+
+.input-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.input-field {
+    width: 100%;
+    padding: 12px 16px;
+    font-size: 0.9375rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    color: var(--text-primary);
+    transition: all var(--transition-fast);
+    font-family: inherit;
+}
+
+.input-field::placeholder {
+    color: var(--text-light);
+}
+
+.input-field:focus {
+    outline: none;
+    background-color: white;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.input-field.with-icon {
+    padding-left: 44px;
+}
+
+.input-field.with-icon-both {
+    padding-left: 44px;
+    padding-right: 44px;
+}
+
+.input-icon-left {
+    position: absolute;
+    left: 14px;
+    width: 20px;
+    height: 20px;
+    color: var(--text-light);
+    pointer-events: none;
+}
+
+.input-icon-right {
+    position: absolute;
+    right: 14px;
+    width: 20px;
+    height: 20px;
+    color: var(--text-light);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.input-icon-right:hover {
+    color: var(--text-muted);
+}
+
+.input-icon-right svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Search Box */
+.search-box {
+    position: relative;
+    width: 250px;
+}
+
+.search-box svg {
+    position: absolute;
+    left: 12px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 18px;
+    height: 18px;
+    color: var(--text-light);
+}
+
+.search-box input {
+    width: 100%;
+    padding: 10px 12px 10px 40px;
+    font-size: 0.875rem;
+    background-color: var(--bg-input);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    font-family: inherit;
+}
+
+.search-box input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* ============================================
+   8. BUTTONS
+   ============================================ */
 .btn {
     display: inline-flex;
     align-items: center;
     justify-content: center;
+    gap: 8px;
     padding: 10px 20px;
-    border-radius: 6px;
+    font-size: 0.875rem;
     font-weight: 500;
+    border-radius: var(--radius-md);
     cursor: pointer;
-    transition: all 0.2s;
+    transition: all var(--transition-fast);
     border: 1px solid transparent;
+    font-family: inherit;
+}
+
+.btn svg {
+    width: 18px;
+    height: 18px;
 }
 
 .btn-primary {
     background-color: var(--primary);
     color: white;
+    border-color: var(--primary);
 }
+
 .btn-primary:hover {
     background-color: var(--primary-hover);
 }
 
 .btn-outline {
     background-color: white;
-    border-color: var(--border-light);
-    color: var(--text-main);
+    color: var(--text-secondary);
+    border-color: var(--border-color);
 }
+
 .btn-outline:hover {
     border-color: var(--primary);
     color: var(--primary);
 }
 
-/* Progress Bars */
-.progress-label {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.85rem;
-    margin-bottom: 6px;
-    color: var(--text-muted);
+.btn-white {
+    background-color: white;
+    color: var(--primary);
+    border-color: white;
 }
-.progress-track {
+
+.btn-white:hover {
+    background-color: var(--gray-50);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 0.8125rem;
+}
+
+.btn-link {
+    background: none;
+    border: none;
+    color: var(--primary);
+    cursor: pointer;
+    font-size: 0.875rem;
+    font-weight: 500;
+    padding: 0;
+    font-family: inherit;
+}
+
+.btn-link:hover {
+    text-decoration: underline;
+}
+
+.btn-primary-large {
+    width: 100%;
+    background-color: var(--primary);
+    color: white;
+    padding: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: background var(--transition-fast);
+    font-family: inherit;
+}
+
+.btn-primary-large:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn-primary-large:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-guest-large {
+    width: 100%;
+    background-color: white;
+    color: var(--warning);
+    border: 1px solid var(--warning);
+    padding: 12px;
+    font-size: 0.9375rem;
+    font-weight: 600;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    transition: background var(--transition-fast);
+    font-family: inherit;
+}
+
+.btn-guest-large svg {
+    width: 18px;
+    height: 18px;
+}
+
+.btn-guest-large:hover {
+    background-color: var(--warning-bg);
+}
+
+/* ============================================
+   9. TABLES
+   ============================================ */
+.data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.875rem;
+}
+
+.data-table th {
+    text-align: left;
+    padding: 12px 16px;
+    background-color: var(--gray-50);
+    color: var(--text-muted);
+    font-weight: 600;
+    font-size: 0.8125rem;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.data-table td {
+    padding: 16px;
+    border-bottom: 1px solid var(--border-color);
+    color: var(--text-secondary);
+}
+
+.data-table tbody tr:hover {
+    background-color: var(--gray-50);
+}
+
+.cell-with-icon {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    color: var(--text-primary);
+}
+
+.cell-with-icon svg {
+    width: 18px;
+    height: 18px;
+    color: var(--primary);
+}
+
+/* ============================================
+   10. PROGRESS BARS
+   ============================================ */
+.progress-bar {
     height: 8px;
-    background-color: #E5E7EB;
+    background-color: var(--primary-light);
     border-radius: 4px;
     overflow: hidden;
-    margin-bottom: 16px;
 }
+
+.progress-bar-light {
+    background-color: var(--gray-100);
+}
+
 .progress-fill {
     height: 100%;
     background-color: var(--primary);
     border-radius: 4px;
+    transition: width var(--transition-slow);
 }
 
-/* Tables */
-.table-container {
-    overflow-x: auto;
+/* Resource Grid */
+.resource-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
-.data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-size: 0.95rem;
+
+.resource-item {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
-.data-table th {
-    text-align: left;
-    padding: 12px 16px;
-    background-color: #F9FAFB;
+
+.resource-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.resource-label {
+    font-size: 0.875rem;
     color: var(--text-muted);
-    font-weight: 600;
+}
+
+.resource-value {
+    font-size: 0.875rem;
+    font-weight: 500;
+    color: var(--text-secondary);
+}
+
+/* Stats Grid */
+.stats-grid {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
     border-bottom: 1px solid var(--border-light);
 }
-.data-table td {
-    padding: 16px;
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text-main);
-}
-.data-table tr:last-child td {
+
+.stat-row:last-child {
     border-bottom: none;
 }
 
-/* Utility */
-.hidden { display: none !important; }
-.text-success { color: var(--success); }
-.text-danger { color: var(--danger); }
-.mb-4 { margin-bottom: 16px; }
+.stat-label {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+}
+
+.stat-value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* ============================================
+   11. STATUS BADGES
+   ============================================ */
+.status-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 4px 10px;
+    border-radius: 12px;
+    font-size: 0.8125rem;
+    font-weight: 500;
+}
+
+.status-badge svg {
+    width: 14px;
+    height: 14px;
+}
+
+.status-completed {
+    background-color: var(--success-bg);
+    color: var(--success);
+}
+
+.status-failed {
+    background-color: var(--danger-bg);
+    color: var(--danger);
+}
+
+.status-running {
+    background-color: var(--info-bg);
+    color: var(--info);
+}
+
+/* ============================================
+   12. ANIMATIONS
+   ============================================ */
+.icon-spin {
+    animation: spin 2s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

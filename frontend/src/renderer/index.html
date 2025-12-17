@@ -8,108 +8,337 @@
     <link rel="stylesheet" href="assets/css/main.css">
 </head>
 <body>
+<!-- ========== LOGIN PAGE ========== -->
+<div id="page-login" class="login-view">
+        <div class="login-left-panel">
+            <div class="brand-container">
+                <div class="logo-box">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#008080" stroke-width="2.5">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+                </div>
+                <h1>Pathogenius</h1>
+                <p>Portable, offline metagenomic pathogen detection system for resource-limited settings.</p>
+            </div>
+        </div>
 
-    <div id="page-login" class="login-view">
-        <div style="margin: auto; text-align: center;">
-            <div class="logo-icon" style="width: 64px; height: 64px; font-size: 2rem; margin: 0 auto 20px auto;">P</div>
-            <h1 style="margin-bottom: 10px;">Pathogenius</h1>
-            <p style="color: var(--text-muted); margin-bottom: 30px;">Portable Metagenomics Platform</p>
-            <button class="btn btn-outline" style="width: 100%;" onclick="App.navigateTo('dashboard')">
-                Login (Guest Mode)
-            </button>
+        <div class="login-right-panel">
+            <div class="login-content">
+                <div class="login-header">
+                    <h2>Welcome</h2>
+                    <p>Sign in to access the system</p>
+                </div>
+
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="username-input">Username</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                            <circle cx="12" cy="7" r="4"></circle>
+                        </svg>
+                        <input type="text" id="username-input" class="input-field with-icon" placeholder="Enter your username" autocomplete="username">
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label for="password-input">Password</label>
+                    <div class="input-wrapper">
+                        <svg class="input-icon-left" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                        </svg>
+                        <input type="password" id="password-input" class="input-field with-icon-both" placeholder="Enter your password" autocomplete="current-password">
+                        <div id="eye-toggle" class="input-icon-right">
+                            <svg id="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
+                                <circle cx="12" cy="12" r="3"></circle>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="login-error" class="login-error hidden"></div>
+                <button type="submit" id="login-btn" class="btn-primary-large">Login</button>
+            </form>
+
+            <div class="divider"><span>Emergency Access</span></div>
+
+            <button id="guest-btn" class="btn-guest-large">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 8v4"></path><path d="M12 16h.01"></path>
+                    </svg>
+                    Guest Mode (Offline Access)
+                </button>
+
+                <div class="login-footer">
+                    <span class="status-dot"></span> System Status: Local/Offline
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="app-layout hidden">
-        <aside class="sidebar">
-            <div class="brand">
-                <div class="logo-icon">P</div>
-                <span>Pathogenius</span>
+<!-- ========== MAIN APP LAYOUT ========== -->
+<div class="app-layout hidden">
+    
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+        <div class="sidebar-brand">
+            <div class="brand-logo">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+            </div>
+            <div class="brand-text">
+                <span class="brand-name">Pathogenius</span>
+                <span class="brand-version">v1.0.2</span>
+            </div>
+        </div>
+
+        <div class="user-card">
+            <div class="user-avatar">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+            </div>
+            <div class="user-info">
+                <span class="user-name" id="sidebar-user-name">Dr. Field Worker</span>
+                <span class="user-role" id="sidebar-user-role">Researcher</span>
+            </div>
             </div>
             
             <nav class="nav-menu">
                 <button class="nav-item active" data-target="dashboard">
-                    <span style="margin-right: 10px;"></span> Dashboard
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+                    <polyline points="9 22 9 12 15 12 15 22"></polyline>
+                </svg>
+                <span>Dashboard</span>
                 </button>
                 <button class="nav-item" data-target="analysis">
-                    <span style="margin-right: 10px;"></span> New Analysis
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"></line>
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                </svg>
+                <span>New Analysis</span>
                 </button>
                 <button class="nav-item" data-target="results">
-                    <span style="margin-right: 10px;"></span> Results
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                    <polyline points="14 2 14 8 20 8"></polyline>
+                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                </svg>
+                <span>Results</span>
+                <span class="nav-badge hidden" id="running-count">0</span>
                 </button>
                 <button class="nav-item" data-target="database">
-                    <span style="margin-right: 10px;"></span> Database
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                </svg>
+                <span>Database</span>
                 </button>
             </nav>
             
             <div class="system-status-widget">
-                <strong>System Status</strong><br>
-                <span class="text-success">● Online</span>
-                <div style="margin-top: 5px; font-size: 0.8rem; color: #6B7280;">GPU: Available</div>
+            <h4>System Status</h4>
+            <div class="status-row">
+                <span class="status-label">Connection</span>
+                <span class="status-value">
+                    <svg class="icon-wifi-off" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                        <line x1="1" y1="1" x2="23" y2="23"></line>
+                        <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                        <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                    </svg>
+                    Offline
+                </span>
             </div>
+            <div class="status-row">
+                <span class="status-label">GPU</span>
+                <span class="status-value status-success">Available</span>
+            </div>
+            <div class="status-row">
+                <span class="status-label">Storage</span>
+                <span class="status-value" id="sidebar-storage">42.3 GB Free</span>
+            </div>
+            </div>
+
+        <button class="logout-btn" id="logout-btn">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
+                <polyline points="16 17 21 12 16 7"></polyline>
+                <line x1="21" y1="12" x2="9" y2="12"></line>
+            </svg>
+            <span>Logout</span>
+        </button>
         </aside>
 
+    <!-- MAIN CONTENT -->
         <main class="content-area">
+        
+        <!-- ========== DASHBOARD ========== -->
             <div id="page-dashboard" class="page-view">
-                <div style="margin-bottom: 30px;">
-                    <h1>Welcome, Dr. Field Worker</h1>
-                    <p style="color: var(--text-muted);">Manage your metagenomic analyses</p>
+            <header class="page-header">
+                <div>
+                    <h1>Welcome, <span id="dashboard-user-name">Dr. Field Worker</span></h1>
+                    <p class="page-subtitle">Manage your metagenomic analyses and pathogen detection workflows</p>
+                </div>
+            </header>
+
+            <!-- Active Analysis Banner (shown when analysis is running) -->
+            <div id="dashboard-running-analysis" class="running-analysis-banner hidden">
+                <div class="banner-icon">
+                    <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <path d="M12 6v6l4 2"></path>
+                    </svg>
+                </div>
+                <div class="banner-content">
+                    <h3 id="running-analysis-name">Analysis in Progress</h3>
+                    <p id="running-analysis-status">Processing reads...</p>
+                </div>
+                <div class="banner-progress">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="running-analysis-progress" style="width: 0%"></div>
+                    </div>
+                    <span id="running-analysis-percent">0%</span>
+                </div>
+                <button class="btn btn-outline btn-sm" onclick="App.navigateTo('results')">View Details</button>
                 </div>
                 
-                <div class="card" style="background-color: var(--primary); color: white; display: flex; justify-content: space-between; align-items: center;">
-                    <div>
-                        <h2 style="margin-bottom: 5px;">Start New Analysis</h2>
-                        <p style="opacity: 0.9;">Upload FASTQ files and detect pathogens</p>
+            <div class="cta-card">
+                <div class="cta-content">
+                    <h2>Start New Analysis</h2>
+                    <p>Upload FASTQ files and detect pathogens in your sample</p>
                     </div>
-                    <button class="btn" style="background: white; color: var(--primary);" onclick="App.navigateTo('analysis')">+ New Sequencing Analysis</button>
+                <button class="btn btn-white" onclick="App.navigateTo('analysis')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    New Sequencing Analysis
+                </button>
                 </div>
 
-                <div class="grid-3">
                     <div class="card">
-                        <h3 class="mb-4">System Resources</h3>
-                        <div class="progress-label"><span>CPU Usage</span> <span>34%</span></div>
-                        <div class="progress-track"><div class="progress-fill" style="width: 34%;"></div></div>
-                        <div class="progress-label"><span>RAM Usage</span> <span>8.2 GB</span></div>
-                        <div class="progress-track"><div class="progress-fill" style="width: 50%;"></div></div>
+                <h3 class="card-title">System Resources</h3>
+                <div class="resource-grid">
+                    <div class="resource-item">
+                        <div class="resource-header">
+                            <span class="resource-label">CPU Usage</span>
+                            <span class="resource-value" id="cpu-usage">34%</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="cpu-bar" style="width: 34%"></div></div>
                     </div>
-                    <div class="card">
-                        <h3 class="mb-4">Storage</h3>
-                        <div class="progress-label"><span>Database</span> <span>12.4 GB</span></div>
-                        <div class="progress-track"><div class="progress-fill" style="width: 60%;"></div></div>
+                    <div class="resource-item">
+                        <div class="resource-header">
+                            <span class="resource-label">RAM Usage</span>
+                            <span class="resource-value" id="ram-usage">8.2 GB / 16 GB</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="ram-bar" style="width: 51%"></div></div>
                     </div>
+                    <div class="resource-item">
+                        <div class="resource-header">
+                            <span class="resource-label">GPU Usage</span>
+                            <span class="resource-value" id="gpu-usage">12%</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" id="gpu-bar" style="width: 12%"></div></div>
+                    </div>
+                </div>
+                    </div>
+
                     <div class="card">
-                        <h3 class="mb-4">Summary</h3>
-                        <div style="font-size: 2rem; font-weight: bold;">127</div>
-                        <p style="color: var(--text-muted);">Total Analyses</p>
+                <h3 class="card-title">Storage</h3>
+                <div class="resource-grid">
+                    <div class="resource-item">
+                        <div class="resource-header">
+                            <span class="resource-label">Database Size</span>
+                            <span class="resource-value">12.4 GB</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
+                    </div>
+                    <div class="resource-item">
+                        <div class="resource-header">
+                            <span class="resource-label">Results Cache</span>
+                            <span class="resource-value">3.8 GB</span>
+                        </div>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 25%"></div></div>
+                    </div>
+                    <div class="resource-item">
+                        <div class="resource-header">
+                            <span class="resource-label">Free Space</span>
+                            <span class="resource-value text-primary">42.3 GB</span>
+                        </div>
+                        <div class="progress-bar progress-bar-light"><div class="progress-fill" style="width: 100%"></div></div>
+                    </div>
+                </div>
+                    </div>
+
+                    <div class="card">
+                <h3 class="card-title">Analysis Summary</h3>
+                <div class="stats-grid">
+                    <div class="stat-row"><span class="stat-label">Total Analyses</span><span class="stat-value">127</span></div>
+                    <div class="stat-row"><span class="stat-label">This Week</span><span class="stat-value">8</span></div>
+                    <div class="stat-row"><span class="stat-label">Pathogens Detected</span><span class="stat-value text-danger">23</span></div>
+                    <div class="stat-row"><span class="stat-label">Success Rate</span><span class="stat-value text-primary">94.5%</span></div>
                     </div>
                 </div>
 
-                <h3 class="mb-4">Recent Analyses</h3>
-                <div class="card" style="padding: 0;">
+            <div class="card">
+                <div class="card-header-row">
+                    <h3 class="card-title">Recent Analyses</h3>
+                    <div class="search-box">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                        <input type="text" placeholder="Search analyses..." id="analysis-search">
+                    </div>
+                </div>
                     <table class="data-table">
                         <thead>
                             <tr>
                                 <th>Analysis Name</th>
                                 <th>Date</th>
+                            <th>Input File</th>
                                 <th>Status</th>
-                                <th>Top Species</th>
-                                <th>Action</th>
+                            <th>Top Species Detected</th>
+                            <th>Actions</th>
                             </tr>
                         </thead>
-                        <tbody>
+                    <tbody id="analyses-table-body">
                             <tr>
-                                <td>Patient_001_Sample</td>
+                            <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Patient_001_Sample</div></td>
                                 <td>2025-12-10</td>
-                                <td class="text-success">Completed</td>
-                                <td>E. coli</td>
-                                <td><button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;" onclick="App.navigateTo('results')">View</button></td>
+                            <td class="text-muted">sample_001.fastq</td>
+                            <td><span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span></td>
+                            <td>Escherichia coli</td>
+                            <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
                             </tr>
                              <tr>
-                                <td>Water_Source_A</td>
+                            <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Water_Source_A</div></td>
                                 <td>2025-12-09</td>
-                                <td class="text-success">Completed</td>
-                                <td>P. aeruginosa</td>
-                                <td><button class="btn btn-outline" style="padding: 5px 10px; font-size: 0.8rem;">View</button></td>
+                            <td class="text-muted">water_a.fastq</td>
+                            <td><span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span></td>
+                            <td>Pseudomonas aeruginosa</td>
+                            <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
+                        </tr>
+                        <tr>
+                            <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Soil_Sample_042</div></td>
+                            <td>2025-12-08</td>
+                            <td class="text-muted">soil_042.fastq</td>
+                            <td><span class="status-badge status-failed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed</span></td>
+                            <td>—</td>
+                            <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
+                        </tr>
+                        <tr>
+                            <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Blood_Culture_Test</div></td>
+                            <td>2025-12-07</td>
+                            <td class="text-muted">blood_culture.fastq</td>
+                            <td><span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span></td>
+                            <td>Staphylococcus aureus</td>
+                            <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
                             </tr>
                         </tbody>
                     </table>
@@ -117,20 +346,26 @@
             </div>
             
             <div id="page-analysis" class="page-view hidden">
-                <h1>New Analysis Wizard</h1>
+                <h1>New Analysis</h1>
                 </div>
             
             <div id="page-results" class="page-view hidden">
                 <h1>Results View</h1>
                 </div>
             
-             <div id="page-database" class="page-view hidden">
+            <div id="page-database" class="page-view hidden">
                 <h1>Database Management</h1>
                 </div>
         </main>
     </div>
 
+<!-- Scripts -->
+<script src="js/utils.js"></script>
     <script src="js/app.js"></script>
+<script src="pages/login.js"></script>
     <script src="pages/dashboard.js"></script>
+<script src="pages/newanalysis.js"></script>
+    <script src="pages/results.js"></script>
+<script src="pages/database.js"></script>
     </body>
 </html>
