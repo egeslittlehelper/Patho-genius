@@ -1,0 +1,108 @@
+ 97.30	610709	610709	U	0	unclassified
+  2.70	16946	0	R	1	root
+  2.70	16946	15	R1	131567	  cellular organisms
+  2.69	16885	230	R2	2	    Bacteria
+  2.28	14321	47	K	3379134	      Pseudomonadati
+  2.19	13752	15	P	1224	        Pseudomonadota
+  2.18	13664	396	C	1236	          Gammaproteobacteria
+  0.58	3649	0	O	72274	            Pseudomonadales
+  0.58	3649	0	F	135621	              Pseudomonadaceae
+  0.58	3649	0	G	286	                Pseudomonas
+  0.58	3649	0	G1	136841	                  Pseudomonas aeruginosa group
+  0.58	3649	0	S	287	                    Pseudomonas aeruginosa
+  0.58	3649	3649	S1	208964	                      Pseudomonas aeruginosa PAO1
+  0.55	3468	0	O	135623	            Vibrionales
+  0.55	3468	0	F	641	              Vibrionaceae
+  0.55	3468	0	G	662	                Vibrio
+  0.55	3468	3468	S	666	                  Vibrio cholerae
+  0.53	3326	0	O	91347	            Enterobacterales
+  0.53	3326	192	F	543	              Enterobacteriaceae
+  0.31	1919	0	G	561	                Escherichia
+  0.31	1919	0	S	562	                  Escherichia coli
+  0.31	1919	0	S1	83333	                    Escherichia coli K-12
+  0.31	1919	1919	S2	511145	                      Escherichia coli str. K-12 substr. MG1655
+  0.19	1215	0	G	547	                Enterobacter
+  0.19	1215	0	G1	354276	                  Enterobacter cloacae complex
+  0.19	1215	1215	S	550	                    Enterobacter cloacae
+  0.42	2629	0	O	2887326	            Moraxellales
+  0.42	2629	110	F	468	              Moraxellaceae
+  0.36	2256	0	G	469	                Acinetobacter
+  0.36	2256	0	G1	909768	                  Acinetobacter calcoaceticus/baumannii complex
+  0.36	2256	2256	S	470	                    Acinetobacter baumannii
+  0.04	263	0	G	475	                Moraxella
+  0.04	263	263	S	480	                  Moraxella catarrhalis
+  0.03	196	0	O	135625	            Pasteurellales
+  0.03	196	0	F	712	              Pasteurellaceae
+  0.03	196	0	G	724	                Haemophilus
+  0.03	196	196	S	727	                  Haemophilus influenzae
+  0.01	73	0	C	28211	          Alphaproteobacteria
+  0.01	73	0	O	766	            Rickettsiales
+  0.01	73	0	F	775	              Rickettsiaceae
+  0.01	73	0	F1	33988	                Rickettsieae
+  0.01	73	0	G	69474	                  Orientia
+  0.01	73	0	S	784	                    Orientia tsutsugamushi
+  0.01	73	73	S1	334380	                      Orientia tsutsugamushi str. Ikeda
+  0.08	522	0	P	29547	        Campylobacterota
+  0.08	522	0	C	3031852	          Epsilonproteobacteria
+  0.08	522	0	O	213849	            Campylobacterales
+  0.08	522	0	F	72293	              Helicobacteraceae
+  0.08	522	0	G	209	                Helicobacter
+  0.08	522	522	S	210	                  Helicobacter pylori
+  0.37	2334	42	K	1783272	      Bacillati
+  0.22	1372	0	P	201174	        Actinomycetota
+  0.22	1372	0	C	1760	          Actinomycetes
+  0.22	1372	0	O	85007	            Mycobacteriales
+  0.22	1372	0	F	1762	              Mycobacteriaceae
+  0.22	1372	0	G	1763	                Mycobacterium
+  0.22	1372	0	G1	77643	                  Mycobacterium tuberculosis complex
+  0.22	1372	0	S	1773	                    Mycobacterium tuberculosis
+  0.22	1372	1372	S1	83332	                      Mycobacterium tuberculosis H37Rv
+  0.15	920	53	P	1239	        Bacillota
+  0.12	751	48	C	91061	          Bacilli
+  0.08	488	0	O	186826	            Lactobacillales
+  0.08	488	0	F	1300	              Streptococcaceae
+  0.08	488	0	G	1301	                Streptococcus
+  0.08	488	488	S	1313	                  Streptococcus pneumoniae
+  0.03	215	0	O	1385	            Bacillales
+  0.03	215	0	F	90964	              Staphylococcaceae
+  0.03	215	0	G	1279	                Staphylococcus
+  0.03	215	0	S	1280	                  Staphylococcus aureus
+  0.03	215	215	S1	93061	                    Staphylococcus aureus subsp. aureus NCTC 8325
+  0.02	116	0	C	186801	          Clostridia
+  0.02	116	0	O	186802	            Eubacteriales
+  0.02	116	0	F	31979	              Clostridiaceae
+  0.02	116	0	G	1485	                Clostridium
+  0.02	116	0	S	1513	                  Clostridium tetani
+  0.02	116	116	S1	212717	                    Clostridium tetani E88
+  0.01	46	1	R2	2759	    Eukaryota
+  0.00	22	0	R3	33154	      Opisthokonta
+  0.00	22	0	K	4751	        Fungi
+  0.00	22	0	K1	451864	          Dikarya
+  0.00	22	0	P	4890	            Ascomycota
+  0.00	22	0	P1	716545	              saccharomyceta
+  0.00	22	0	P2	147538	                Pezizomycotina
+  0.00	22	0	P3	716546	                  leotiomyceta
+  0.00	22	0	C	147545	                    Eurotiomycetes
+  0.00	22	0	C1	451871	                      Eurotiomycetidae
+  0.00	22	0	O	33183	                        Onygenales
+  0.00	22	0	F	33184	                          Onygenaceae
+  0.00	22	0	G	5500	                            Coccidioides
+  0.00	22	0	S	5501	                              Coccidioides immitis
+  0.00	22	22	S1	246410	                                Coccidioides immitis RS
+  0.00	22	0	R3	2698737	      Sar
+  0.00	22	0	R4	33630	        Alveolata
+  0.00	22	0	P	5794	          Apicomplexa
+  0.00	22	0	C	422676	            Aconoidasida
+  0.00	22	0	O	5819	              Haemosporida
+  0.00	22	0	F	1639119	                Plasmodiidae
+  0.00	22	0	G	5820	                  Plasmodium
+  0.00	22	0	G1	418107	                    Plasmodium (Laverania)
+  0.00	22	0	S	5833	                      Plasmodium falciparum
+  0.00	22	22	S1	36329	                        Plasmodium falciparum 3D7
+  0.00	1	0	R3	2611341	      Metamonada
+  0.00	1	0	P	207245	        Fornicata
+  0.00	1	0	O	5738	          Diplomonadida
+  0.00	1	0	F	5739	            Hexamitidae
+  0.00	1	0	F1	68459	              Giardiinae
+  0.00	1	0	G	5740	                Giardia
+  0.00	1	1	S	5741	                  Giardia duodenalis
