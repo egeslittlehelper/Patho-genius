@@ -248,6 +248,14 @@ const DashboardPage = {
             if (freeSpaceElement) {
                 freeSpaceElement.textContent = `${freeGB} GB`;
             }
+            // Update free space progress bar to show used percentage
+            if (disk.total) {
+                const usedPercent = ((disk.total - disk.free) / disk.total) * 100;
+                const freeBar = document.getElementById('free-space-bar');
+                if (freeBar) {
+                    freeBar.style.width = `${usedPercent}%`;
+                }
+            }
         }
     },
 
