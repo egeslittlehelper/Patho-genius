@@ -211,8 +211,8 @@ const DashboardPage = {
         
         // RAM
         if (memory) {
-            const usedGB = (memory.used / (1024 ** 3)).toFixed(1);
-            const totalGB = (memory.total / (1024 ** 3)).toFixed(0);
+            const usedGB = (memory.used / (1000 ** 3)).toFixed(1);
+            const totalGB = (memory.total / (1000 ** 3)).toFixed(0);
             
             const ramUsage = document.getElementById('ram-usage');
             const ramBar = document.getElementById('ram-bar');
