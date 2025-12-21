@@ -13,9 +13,6 @@ const authService = require('./services/auth-service');
 const analysisService = require('./services/analysis-service');
 const encryptionService = require('./services/encryption-service');
 
-// Global variables for CPU monitoring
-let previousCpuTimes = null;
-
 // Global reference to main window
 let mainWindow = null;
 
@@ -157,28 +154,17 @@ ipcMain.handle('app:get-system-stats', async () => {
         // Get CPU information
         const cpuInfo = await si.cpu();
         const cpus = os.cpus();
-        let usage = 0;
-        
-        if (previousCpuTimes) {
-            let totalIdleDelta = 0;
-            let totalTickDelta = 0;
-            cpus.forEach((cpu, index) => {
-                const prev = previousCpuTimes[index];
-                const idle = cpu.times.idle - prev.idle;
-                let total = 0;
-                for (let type in cpu.times) {
-                    total += cpu.times[type] - prev[type];
-                }
-                totalIdleDelta += idle;
-                totalTickDelta += total;
-            });
-            const idle = totalIdleDelta / cpus.length;
-            const total = totalTickDelta / cpus.length;
-            usage = 100 - ~~(100 * idle / total);
-        }
-        
-        // Update previous times for next calculation
-        previousCpuTimes = cpus.map(cpu => ({ ...cpu.times }));
+        let totalIdle = 0;
+        let totalTick = 0;
+        cpus.forEach(cpu => {
+            for (let type in cpu.times) {
+                totalTick += cpu.times[type];
+            }
+            totalIdle += cpu.times.idle;
+        });
+        const idle = totalIdle / cpus.length;
+        const total = totalTick / cpus.length;
+        const usage = 100 - ~~(100 * idle / total);
         
         // Get memory information
         const memInfo = await si.mem();

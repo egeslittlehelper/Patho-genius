@@ -143,6 +143,37 @@
     stroke: var(--primary);
 }
 
+/* Refresh Icon Button */
+.refresh-icon-btn {
+    width: 32px;
+    height: 32px;
+    background: transparent;
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-sm);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-left: 8px;
+    transition: all var(--transition-fast);
+}
+
+.refresh-icon-btn svg {
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-muted);
+    transition: stroke var(--transition-fast);
+}
+
+.refresh-icon-btn:hover {
+    background: var(--gray-100);
+    border-color: var(--primary);
+}
+
+.refresh-icon-btn:hover svg {
+    stroke: var(--primary);
+}
+
 /* Navigation Menu */
 .nav-menu {
     display: flex;
@@ -202,7 +233,7 @@
 }
 
 .nav-item.active .nav-badge {
-    background: white;
+    background: var(--bg-card);
     color: var(--danger);
 }
 

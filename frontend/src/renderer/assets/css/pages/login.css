@@ -11,7 +11,7 @@
     top: 0;
     left: 0;
     z-index: 1000;
-    background-color: white;
+    background-color: var(--bg-card);
 }
 
 /* Left Panel - Brand Section */
@@ -34,7 +34,7 @@
 .logo-box {
     width: 80px;
     height: 80px;
-    background: white;
+    background: var(--bg-card);
     border-radius: var(--radius-xl);
     display: flex;
     align-items: center;
@@ -59,7 +59,7 @@
 /* Right Panel - Login Form */
 .login-right-panel {
     width: 50%;
-    background: white;
+    background: var(--bg-card);
     display: flex;
     align-items: center;
     justify-content: center;
@@ -265,7 +265,7 @@
 .verification-code-input:focus {
     outline: none;
     border-color: var(--primary);
-    background: white;
+    background: var(--bg-card);
     box-shadow: 0 0 0 3px var(--primary-bg);
 }
 

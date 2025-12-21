@@ -30,8 +30,7 @@ const DashboardPage = {
         this.isInitialized = true;
         console.log('DashboardPage initialized');
 
-        // Start periodic updates
-        this.startPeriodicUpdates();
+        // No longer start periodic updates - manual refresh only
     },
 
     /**
@@ -257,16 +256,6 @@ const DashboardPage = {
                 }
             }
         }
-    },
-
-    /**
-     * Start periodic updates for system stats
-     */
-    startPeriodicUpdates() {
-        // Update every 3 seconds
-        setInterval(() => {
-            this.refresh();
-        }, 3000);
     },
 
     /**
