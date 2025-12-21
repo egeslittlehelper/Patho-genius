@@ -1,0 +1,70 @@
+/**
+ * DASHBOARD PAGE STYLES
+ * ============================================
+ */
+
+/* Running Analysis Banner */
+.running-analysis-banner {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    padding: 20px 24px;
+    background: linear-gradient(to right, var(--primary), var(--primary-hover));
+    border-radius: var(--radius-lg);
+    margin-bottom: 24px;
+    color: white;
+}
+
+.running-analysis-banner .banner-icon svg {
+    width: 40px;
+    height: 40px;
+    stroke: white;
+}
+
+.running-analysis-banner .banner-content {
+    flex: 1;
+}
+
+.running-analysis-banner .banner-content h3 {
+    font-size: 1.125rem;
+    margin-bottom: 4px;
+}
+
+.running-analysis-banner .banner-content p {
+    opacity: 0.9;
+    font-size: 0.875rem;
+}
+
+.running-analysis-banner .banner-progress {
+    width: 200px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.running-analysis-banner .banner-progress .progress-bar {
+    flex: 1;
+    height: 8px;
+    background: rgba(255,255,255,0.3);
+}
+
+.running-analysis-banner .banner-progress .progress-fill {
+    background: white;
+}
+
+.running-analysis-banner .banner-progress span {
+    font-size: 0.875rem;
+    font-weight: 600;
+    min-width: 40px;
+}
+
+.running-analysis-banner .btn-outline {
+    border-color: white;
+    color: white;
+}
+
+.running-analysis-banner .btn-outline:hover {
+    background: white;
+    color: var(--primary);
+}
+

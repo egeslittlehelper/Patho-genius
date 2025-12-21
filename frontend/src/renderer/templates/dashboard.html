@@ -1,0 +1,165 @@
+<!-- DASHBOARD PAGE TEMPLATE -->
+<div id="page-dashboard" class="page-view">
+    <header class="page-header">
+        <div>
+            <h1>Welcome, <span id="dashboard-user-name">Dr. Field Worker</span></h1>
+            <p class="page-subtitle">Manage your metagenomic analyses and pathogen detection workflows</p>
+        </div>
+    </header>
+
+    <!-- Active Analysis Banner (shown when analysis is running) -->
+    <div id="dashboard-running-analysis" class="running-analysis-banner hidden">
+        <div class="banner-icon">
+            <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 6v6l4 2"></path>
+            </svg>
+        </div>
+        <div class="banner-content">
+            <h3 id="running-analysis-name">Analysis in Progress</h3>
+            <p id="running-analysis-status">Processing reads...</p>
+        </div>
+        <div class="banner-progress">
+            <div class="progress-bar">
+                <div class="progress-fill" id="running-analysis-progress" style="width: 0%"></div>
+            </div>
+            <span id="running-analysis-percent">0%</span>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="App.navigateTo('results')">View Details</button>
+    </div>
+        
+    <div class="cta-card">
+        <div class="cta-content">
+            <h2>Start New Analysis</h2>
+            <p>Upload FASTQ files and detect pathogens in your sample</p>
+        </div>
+        <button class="btn btn-white" onclick="App.navigateTo('analysis')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="12" y1="5" x2="12" y2="19"></line>
+                <line x1="5" y1="12" x2="19" y2="12"></line>
+            </svg>
+            New Sequencing Analysis
+        </button>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">System Resources</h3>
+        <div class="resource-grid">
+            <div class="resource-item">
+                <div class="resource-header">
+                    <span class="resource-label">CPU Usage</span>
+                    <span class="resource-value" id="cpu-usage">34%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="cpu-bar" style="width: 34%"></div></div>
+            </div>
+            <div class="resource-item">
+                <div class="resource-header">
+                    <span class="resource-label">RAM Usage</span>
+                    <span class="resource-value" id="ram-usage">8.2 GB / 16 GB</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="ram-bar" style="width: 51%"></div></div>
+            </div>
+            <div class="resource-item">
+                <div class="resource-header">
+                    <span class="resource-label">GPU Usage</span>
+                    <span class="resource-value" id="gpu-usage">12%</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" id="gpu-bar" style="width: 12%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Storage</h3>
+        <div class="resource-grid">
+            <div class="resource-item">
+                <div class="resource-header">
+                    <span class="resource-label">Database Size</span>
+                    <span class="resource-value">12.4 GB</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width: 65%"></div></div>
+            </div>
+            <div class="resource-item">
+                <div class="resource-header">
+                    <span class="resource-label">Results Cache</span>
+                    <span class="resource-value">3.8 GB</span>
+                </div>
+                <div class="progress-bar"><div class="progress-fill" style="width: 25%"></div></div>
+            </div>
+            <div class="resource-item">
+                <div class="resource-header">
+                    <span class="resource-label">Free Space</span>
+                    <span class="resource-value text-primary">42.3 GB</span>
+                </div>
+                <div class="progress-bar progress-bar-light"><div class="progress-fill" style="width: 100%"></div></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Analysis Summary</h3>
+        <div class="stats-grid">
+            <div class="stat-row"><span class="stat-label">Total Analyses</span><span class="stat-value">127</span></div>
+            <div class="stat-row"><span class="stat-label">This Week</span><span class="stat-value">8</span></div>
+            <div class="stat-row"><span class="stat-label">Pathogens Detected</span><span class="stat-value text-danger">23</span></div>
+            <div class="stat-row"><span class="stat-label">Success Rate</span><span class="stat-value text-primary">94.5%</span></div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-header-row">
+            <h3 class="card-title">Recent Analyses</h3>
+            <div class="search-box">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                <input type="text" placeholder="Search analyses..." id="analysis-search">
+            </div>
+        </div>
+        <table class="data-table">
+            <thead>
+                <tr>
+                    <th>Analysis Name</th>
+                    <th>Date</th>
+                    <th>Input File</th>
+                    <th>Status</th>
+                    <th>Top Species Detected</th>
+                    <th>Actions</th>
+                </tr>
+            </thead>
+            <tbody id="analyses-table-body">
+                <tr>
+                    <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Patient_001_Sample</div></td>
+                    <td>2025-12-10</td>
+                    <td class="text-muted">sample_001.fastq</td>
+                    <td><span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span></td>
+                    <td>Escherichia coli</td>
+                    <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
+                </tr>
+                <tr>
+                    <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Water_Source_A</div></td>
+                    <td>2025-12-09</td>
+                    <td class="text-muted">water_a.fastq</td>
+                    <td><span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span></td>
+                    <td>Pseudomonas aeruginosa</td>
+                    <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
+                </tr>
+                <tr>
+                    <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Soil_Sample_042</div></td>
+                    <td>2025-12-08</td>
+                    <td class="text-muted">soil_042.fastq</td>
+                    <td><span class="status-badge status-failed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed</span></td>
+                    <td>—</td>
+                    <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
+                </tr>
+                <tr>
+                    <td><div class="cell-with-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>Blood_Culture_Test</div></td>
+                    <td>2025-12-07</td>
+                    <td class="text-muted">blood_culture.fastq</td>
+                    <td><span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span></td>
+                    <td>Staphylococcus aureus</td>
+                    <td><button class="btn-link" onclick="App.navigateTo('results')">View Report</button></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
