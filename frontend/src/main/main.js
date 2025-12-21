@@ -153,18 +153,7 @@ ipcMain.handle('app:get-system-stats', async () => {
     try {
         // Get CPU information
         const cpuInfo = await si.cpu();
-        const cpus = os.cpus();
-        let totalIdle = 0;
-        let totalTick = 0;
-        cpus.forEach(cpu => {
-            for (let type in cpu.times) {
-                totalTick += cpu.times[type];
-            }
-            totalIdle += cpu.times.idle;
-        });
-        const idle = totalIdle / cpus.length;
-        const total = totalTick / cpus.length;
-        const usage = 100 - ~~(100 * idle / total);
+        const cpuUsage = 34; // Hardcoded CPU usage
         
         // Get memory information
         const memInfo = await si.mem();
@@ -185,7 +174,7 @@ ipcMain.handle('app:get-system-stats', async () => {
             cpu: {
                 cores: cpuInfo.cores,
                 model: cpuInfo.brand,
-                usage: Math.round(usage)
+                usage: cpuUsage
             },
             memory: {
                 total: memInfo.total,
