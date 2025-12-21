@@ -1,0 +1,8 @@
+kraken2:
+  image: "staphb/kraken2"
+  threads: 4
+  confidence: 0.1
+  db_container_path: "/db"
+
+paths:
+  db_host: "C:/kraken2/db"

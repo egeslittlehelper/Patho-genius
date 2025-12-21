@@ -1,0 +1,13 @@
+
+FASTQ
+  ↓
+[validate_input]
+  ↓
+[kraken2_classify]
+  ↓
+[kraken2_report]
+  ↓
+[aggregate_results]
+
+
+Batch oriented, modular, containerized Snakemake DAG inspired.
