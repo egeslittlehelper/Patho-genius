@@ -5,3 +5,5 @@ dist/
 *.code-workspace
 *config.json
 *results.json
+*.fastq
+*.fasta
