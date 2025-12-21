@@ -29,6 +29,9 @@ const DashboardPage = {
         await this.loadData();
         this.isInitialized = true;
         console.log('DashboardPage initialized');
+
+        // Start periodic updates
+        this.startPeriodicUpdates();
     },
 
     /**
@@ -204,7 +207,7 @@ const DashboardPage = {
     updateSystemDisplay() {
         if (!this.systemStats) return;
 
-        const { memory, cpu } = this.systemStats;
+        const { memory, cpu, gpu, disk, network } = this.systemStats;
         
         // RAM
         if (memory) {
@@ -218,12 +221,44 @@ const DashboardPage = {
         }
 
         // CPU
-        if (cpu?.usage) {
+        if (cpu?.usage !== undefined) {
             const cpuUsage = document.getElementById('cpu-usage');
             const cpuBar = document.getElementById('cpu-bar');
             if (cpuUsage) cpuUsage.textContent = `${cpu.usage}%`;
             if (cpuBar) cpuBar.style.width = `${cpu.usage}%`;
         }
+
+        // GPU
+        if (gpu) {
+            const gpuUsage = document.getElementById('gpu-usage');
+            const gpuBar = document.getElementById('gpu-bar');
+            if (gpu.available) {
+                if (gpuUsage) gpuUsage.textContent = `${gpu.name}`;
+                if (gpuBar) gpuBar.style.width = `100%`; // Assuming available means 100% ready
+            } else {
+                if (gpuUsage) gpuUsage.textContent = 'No GPU';
+                if (gpuBar) gpuBar.style.width = `0%`;
+            }
+        }
+
+        // Storage - Update Free Space
+        if (disk) {
+            const freeGB = (disk.free / (1024 ** 3)).toFixed(1);
+            const freeSpaceElement = document.querySelector('.resource-label + .resource-value.text-primary');
+            if (freeSpaceElement) {
+                freeSpaceElement.textContent = `${freeGB} GB`;
+            }
+        }
+    },
+
+    /**
+     * Start periodic updates for system stats
+     */
+    startPeriodicUpdates() {
+        // Update every 3 seconds
+        setInterval(() => {
+            this.refresh();
+        }, 3000);
     },
 
     /**

@@ -25,6 +25,12 @@ const App = {
         this.setupLogout();
         this.setupRegistration();
         
+        // Update login status
+        this.updateLoginStatus();
+        
+        // Start periodic updates
+        this.startPeriodicUpdates();
+        
         // Check for existing session
         await this.checkExistingSession();
         
@@ -538,10 +544,137 @@ const App = {
         // Update logout button for guest mode
         this.updateLogoutButton(isGuest);
 
+        // Update connection status
+        this.updateConnectionStatus(isGuest);
+
+        // Update sidebar storage
+        this.updateSidebarStorage();
+
         // If guest, show warning about no persistent storage
         if (isGuest) {
             console.log('Guest mode active - session will not be saved');
         }
+    },
+
+    /**
+     * Update connection status in sidebar
+     * @param {boolean} isGuest - Whether user is in guest mode
+     */
+    async updateConnectionStatus(isGuest) {
+        const statusValue = document.querySelector('.status-row .status-value');
+        const wifiIcon = statusValue?.querySelector('svg');
+        
+        if (!statusValue) return;
+
+        if (isGuest) {
+            // Guest mode
+            statusValue.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="12" cy="7" r="4"></circle>
+                </svg>
+                Guest Mode
+            `;
+            return;
+        }
+
+        // Check internet connectivity
+        try {
+            // Try to fetch a small resource with timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            const response = await fetch('https://www.google.com/favicon.ico', {
+                method: 'HEAD',
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            // If we get here without error, assume connected
+            statusValue.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <path d="M5 12.55a11 11 0 0 1 14.08 0"></path>
+                    <path d="M1.42 9a16 16 0 0 1 21.16 0"></path>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                </svg>
+                Online
+            `;
+        } catch (error) {
+            // Not connected
+            statusValue.innerHTML = `
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <line x1="1" y1="1" x2="23" y2="23"></line>
+                    <path d="M16.72 11.06A10.94 10.94 0 0 1 19 12.55"></path>
+                    <path d="M5 12.55a10.94 10.94 0 0 1 5.17-2.39"></path>
+                    <path d="M10.71 5.05A16 16 0 0 1 22.58 9"></path>
+                    <path d="M1.42 9a15.91 15.91 0 0 1 4.7-2.88"></path>
+                    <path d="M8.53 16.11a6 6 0 0 1 6.95 0"></path>
+                    <line x1="12" y1="20" x2="12.01" y2="20"></line>
+                </svg>
+                Offline
+            `;
+        }
+    },
+
+    /**
+     * Update login page system status
+     */
+    async updateLoginStatus() {
+        const loginFooter = document.querySelector('.login-footer');
+        if (!loginFooter) return;
+
+        try {
+            // Check internet connectivity
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
+            await fetch('https://www.google.com/favicon.ico', {
+                method: 'HEAD',
+                cache: 'no-cache',
+                signal: controller.signal
+            });
+            
+            clearTimeout(timeoutId);
+            
+            // Connected - green dot
+            loginFooter.innerHTML = '<span class="status-dot" style="background-color: #10b981;"></span> System Status: Online';
+        } catch (error) {
+            // Not connected - gray dot
+            loginFooter.innerHTML = '<span class="status-dot" style="background-color: #6b7280;"></span> System Status: Offline';
+        }
+    },
+
+    /**
+     * Update sidebar storage display
+     */
+    async updateSidebarStorage() {
+        try {
+            const systemStats = await window.api.system.getStats();
+            if (systemStats.disk) {
+                const freeGB = (systemStats.disk.free / (1024 ** 3)).toFixed(1);
+                const storageElement = document.getElementById('sidebar-storage');
+                if (storageElement) {
+                    storageElement.textContent = `${freeGB} GB Free`;
+                }
+            }
+        } catch (error) {
+            console.error('Failed to update sidebar storage:', error);
+        }
+    },
+
+    /**
+     * Start periodic updates for system status
+     */
+    startPeriodicUpdates() {
+        // Update every 3 seconds
+        setInterval(() => {
+            this.updateLoginStatus();
+            this.updateSidebarStorage();
+            this.updateConnectionStatus(this.state.isGuestMode);
+        }, 3000);
     },
 
     /**

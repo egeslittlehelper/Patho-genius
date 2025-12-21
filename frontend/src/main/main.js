@@ -6,11 +6,15 @@
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
 const os = require('os');
+const si = require('systeminformation');
 
 // Services
 const authService = require('./services/auth-service');
 const analysisService = require('./services/analysis-service');
 const encryptionService = require('./services/encryption-service');
+
+// Global variables for CPU monitoring
+let previousCpuTimes = null;
 
 // Global reference to main window
 let mainWindow = null;
@@ -149,50 +153,117 @@ ipcMain.handle('app:delete-analysis', async (event, analysisId) => {
 /* IPC HANDLERS - System Status */
 
 ipcMain.handle('app:get-system-stats', async () => {
-    const cpus = os.cpus();
-    const totalMemory = os.totalmem();
-    const freeMemory = os.freemem();
-    const usedMemory = totalMemory - freeMemory;
-    
-    // Get disk space (simplified - would need more for accurate free space)
-    let diskInfo = { free: 0, total: 0 };
     try {
-        // This is a simplified approach
-        // In production, use a package like 'check-disk-space'
-        diskInfo = {
-            free: 42.3 * 1024 * 1024 * 1024, // Mock 42.3 GB
-            total: 500 * 1024 * 1024 * 1024
-        };
-    } catch (e) {
-        console.error('Failed to get disk info:', e);
-    }
-    
-    return {
-        cpu: {
-            cores: cpus.length,
-            model: cpus[0]?.model || 'Unknown',
-            usage: Math.round(Math.random() * 40 + 20) // Mock CPU usage
-        },
-        memory: {
-            total: totalMemory,
-            used: usedMemory,
-            free: freeMemory,
-            percentUsed: Math.round((usedMemory / totalMemory) * 100)
-        },
-        disk: diskInfo,
-        gpu: {
-            available: true, // Would need CUDA check for real detection
-            name: 'NVIDIA GPU' // Mock
-        },
-        platform: os.platform(),
-        hostname: os.hostname(),
-        // Analysis service config
-        analysisConfig: {
-            workflowDir: analysisService.ANALYSIS_CONFIG.WORKFLOW_DIR,
-            resultsDir: analysisService.ANALYSIS_CONFIG.RESULTS_DIR,
-            databasePath: analysisService.ANALYSIS_CONFIG.KRAKEN2_DB
+        // Get CPU information
+        const cpuInfo = await si.cpu();
+        const cpus = os.cpus();
+        let usage = 0;
+        
+        if (previousCpuTimes) {
+            let totalIdleDelta = 0;
+            let totalTickDelta = 0;
+            cpus.forEach((cpu, index) => {
+                const prev = previousCpuTimes[index];
+                const idle = cpu.times.idle - prev.idle;
+                let total = 0;
+                for (let type in cpu.times) {
+                    total += cpu.times[type] - prev[type];
+                }
+                totalIdleDelta += idle;
+                totalTickDelta += total;
+            });
+            const idle = totalIdleDelta / cpus.length;
+            const total = totalTickDelta / cpus.length;
+            usage = 100 - ~~(100 * idle / total);
         }
-    };
+        
+        // Update previous times for next calculation
+        previousCpuTimes = cpus.map(cpu => ({ ...cpu.times }));
+        
+        // Get memory information
+        const memInfo = await si.mem();
+        
+        // Get disk information
+        const diskInfo = await si.fsSize();
+        const mainDisk = diskInfo.find(disk => disk.mount === 'C:' || disk.mount === '/') || diskInfo[0];
+        
+        // Get GPU information
+        const gpuInfo = await si.graphics();
+        const primaryGpu = gpuInfo.controllers.find(gpu => gpu.vendor !== 'Microsoft') || gpuInfo.controllers[0];
+        
+        // Get network information
+        const networkInterfaces = await si.networkInterfaces();
+        const activeInterface = networkInterfaces.find(iface => iface.operstate === 'up' && iface.ip4);
+        
+        return {
+            cpu: {
+                cores: cpuInfo.cores,
+                model: cpuInfo.brand,
+                usage: Math.round(usage)
+            },
+            memory: {
+                total: memInfo.total,
+                used: memInfo.used,
+                free: memInfo.free,
+                percentUsed: Math.round((memInfo.used / memInfo.total) * 100)
+            },
+            disk: {
+                free: mainDisk ? mainDisk.available : 0,
+                total: mainDisk ? mainDisk.size : 0,
+                used: mainDisk ? mainDisk.used : 0,
+                percentUsed: mainDisk ? Math.round(mainDisk.use) : 0
+            },
+            gpu: {
+                available: gpuInfo.controllers.length > 0,
+                name: primaryGpu ? primaryGpu.model : 'No GPU detected',
+                vendor: primaryGpu ? primaryGpu.vendor : 'Unknown'
+            },
+            network: {
+                connected: activeInterface ? true : false,
+                interface: activeInterface ? activeInterface.iface : 'None',
+                ip: activeInterface ? activeInterface.ip4 : 'N/A'
+            },
+            platform: os.platform(),
+            hostname: os.hostname(),
+            // Analysis service config
+            analysisConfig: {
+                workflowDir: analysisService.ANALYSIS_CONFIG.WORKFLOW_DIR,
+                resultsDir: analysisService.ANALYSIS_CONFIG.RESULTS_DIR,
+                databasePath: analysisService.ANALYSIS_CONFIG.KRAKEN2_DB
+            }
+        };
+    } catch (error) {
+        console.error('Failed to get system stats:', error);
+        // Fallback to basic OS info
+        const cpus = os.cpus();
+        const totalMemory = os.totalmem();
+        const freeMemory = os.freemem();
+        const usedMemory = totalMemory - freeMemory;
+        
+        return {
+            cpu: {
+                cores: cpus.length,
+                model: cpus[0]?.model || 'Unknown',
+                usage: 0 // Unable to get usage
+            },
+            memory: {
+                total: totalMemory,
+                used: usedMemory,
+                free: freeMemory,
+                percentUsed: Math.round((usedMemory / totalMemory) * 100)
+            },
+            disk: { free: 0, total: 0, used: 0, percentUsed: 0 },
+            gpu: { available: false, name: 'Unknown', vendor: 'Unknown' },
+            network: { connected: false, interface: 'Unknown', ip: 'N/A' },
+            platform: os.platform(),
+            hostname: os.hostname(),
+            analysisConfig: {
+                workflowDir: analysisService.ANALYSIS_CONFIG.WORKFLOW_DIR,
+                resultsDir: analysisService.ANALYSIS_CONFIG.RESULTS_DIR,
+                databasePath: analysisService.ANALYSIS_CONFIG.KRAKEN2_DB
+            }
+        };
+    }
 });
 
 /* IPC HANDLERS - Database Management */

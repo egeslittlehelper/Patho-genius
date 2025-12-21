@@ -321,4 +321,4 @@ contextBridge.exposeInMainWorld('api', {
     }
 });
 
-console.log('🔌 Pathogenius Preload Bridge Ready');
+console.log('Pathogenius Preload Bridge Ready');
