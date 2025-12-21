@@ -34,6 +34,7 @@ const SettingsPage = {
         
         this.loadSettings();
         this.updateUI();
+        this.applyTheme();
         
         // Initialize account security section (hide for guests)
         this.initAccountSecuritySection();
@@ -104,6 +105,17 @@ const SettingsPage = {
             notifyToggle.addEventListener('change', (e) => {
                 this.settings.notificationsEnabled = e.target.checked;
                 this.saveSettings();
+                this.showSavedNotification();
+            });
+        }
+
+        // Dark Mode Toggle
+        const darkModeToggle = document.getElementById('toggle-dark-mode');
+        if (darkModeToggle) {
+            darkModeToggle.addEventListener('change', (e) => {
+                this.settings.theme = e.target.checked ? 'dark' : 'light';
+                this.saveSettings();
+                this.applyTheme();
                 this.showSavedNotification();
             });
         }
@@ -196,6 +208,22 @@ const SettingsPage = {
         // Notifications Toggle
         const notifyToggle = document.getElementById('toggle-notifications');
         if (notifyToggle) notifyToggle.checked = this.settings.notificationsEnabled;
+
+        // Dark Mode Toggle
+        const darkModeToggle = document.getElementById('toggle-dark-mode');
+        if (darkModeToggle) darkModeToggle.checked = this.settings.theme === 'dark';
+    },
+
+    /**
+     * Apply the current theme
+     */
+    applyTheme() {
+        const body = document.body;
+        if (this.settings.theme === 'dark') {
+            body.classList.add('dark-mode');
+        } else {
+            body.classList.remove('dark-mode');
+        }
     },
 
     /**

@@ -475,7 +475,7 @@
     padding: 6px 12px;
     font-size: 0.8125rem;
     border: 1px solid var(--border-color);
-    background: white;
+    background: var(--bg-card);
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all var(--transition-fast);

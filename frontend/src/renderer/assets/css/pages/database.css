@@ -150,7 +150,8 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
     border: 1px solid var(--border-color);
-    background: white;
+    background: var(--bg-card);
+    color: var(--text-secondary);
     transition: all 0.2s;
 }
 

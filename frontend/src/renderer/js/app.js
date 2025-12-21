@@ -25,6 +25,9 @@ const App = {
         this.setupLogout();
         this.setupRegistration();
         
+        // Apply theme from saved settings
+        this.applyTheme();
+        
         // Update login status
         this.updateLoginStatus();
         
@@ -35,6 +38,26 @@ const App = {
         await this.checkExistingSession();
         
         console.log('App initialized');
+    },
+
+    /**
+     * Apply theme from saved settings
+     */
+    applyTheme() {
+        try {
+            const saved = localStorage.getItem('pathogenius_settings');
+            if (saved) {
+                const settings = JSON.parse(saved);
+                const body = document.body;
+                if (settings.theme === 'dark') {
+                    body.classList.add('dark-mode');
+                } else {
+                    body.classList.remove('dark-mode');
+                }
+            }
+        } catch (error) {
+            console.error('Error applying theme:', error);
+        }
     },
 
     /**
@@ -674,7 +697,7 @@ const App = {
             this.updateLoginStatus();
             this.updateSidebarStorage();
             this.updateConnectionStatus(this.state.isGuestMode);
-        }, 3000);
+        }, 10000);
     },
 
     /**

@@ -115,7 +115,7 @@
 
 .input-field:focus {
     outline: none;
-    background-color: white;
+    background-color: var(--bg-card);
     border-color: var(--primary);
     box-shadow: 0 0 0 3px var(--primary-bg);
 }
@@ -336,6 +336,15 @@
     transform: translateX(22px);
 }
 
+/* Dark mode adjustments for toggle switch */
+.dark-mode .toggle-slider {
+    background-color: var(--gray-600);
+}
+
+.dark-mode .toggle-slider:before {
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
 /* BUTTONS */
 .btn {
     display: inline-flex;
@@ -368,7 +377,7 @@
 }
 
 .btn-outline {
-    background-color: white;
+    background-color: var(--bg-card);
     color: var(--text-secondary);
     border-color: var(--border-color);
 }
@@ -379,13 +388,13 @@
 }
 
 .btn-white {
-    background-color: white;
+    background-color: var(--bg-card);
     color: var(--primary);
-    border-color: white;
+    border-color: var(--bg-card);
 }
 
 .btn-white:hover {
-    background-color: var(--gray-50);
+    background-color: var(--bg-input);
 }
 
 .btn-sm {
@@ -438,7 +447,7 @@
 
 .btn-guest-large {
     width: 100%;
-    background-color: white;
+    background-color: var(--bg-card);
     color: var(--warning);
     border: 1px solid var(--warning);
     padding: 8px;
@@ -634,7 +643,7 @@
 
 .alert-warning {
     background-color: var(--warning-bg);
-    border: 1px solid #FDE68A;
+    border: 1px solid var(--warning-light);
     color: var(--text-secondary);
 }
 
@@ -643,8 +652,8 @@
 }
 
 .alert-info {
-    background-color: #FFFEF0;
-    border: 1px solid #FEF08A;
+    background-color: var(--info-bg);
+    border: 1px solid var(--info-light);
     color: var(--text-secondary);
 }
 

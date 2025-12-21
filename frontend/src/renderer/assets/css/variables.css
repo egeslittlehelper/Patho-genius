@@ -77,3 +77,51 @@
     --transition-normal: 200ms ease;
     --transition-slow: 300ms ease;
 }
+
+/* DARK MODE THEME */
+.dark-mode {
+    /* BRAND COLORS */
+    --primary: #008080;
+    --primary-hover: #006666;
+    --primary-light: #1A2A2A;
+    --primary-bg: rgba(0, 128, 128, 0.2);
+
+    /* SEMANTIC COLORS */
+    --success: #34D399;
+    --success-bg: #1A2E2A;
+    --warning: #FBBF24;
+    --warning-bg: #2E2A1A;
+    --danger: #F87171;
+    --danger-bg: #2E1A1A;
+    --danger-light: #451A1A;
+    --info: #60A5FA;
+    --info-bg: #1A2A3E;
+
+    /* NEUTRAL COLORS */
+    --gray-50: #1F2937;
+    --gray-100: #374151;
+    --gray-200: #4B5563;
+    --gray-300: #6B7280;
+    --gray-400: #9CA3AF;
+    --gray-500: #D1D5DB;
+    --gray-600: #E5E7EB;
+    --gray-700: #F3F4F6;
+    --gray-800: #F9FAFB;
+    --gray-900: #FFFFFF;
+
+    /* BACKGROUND COLORS */
+    --bg-body: #0F172A;
+    --bg-sidebar: #1E293B;
+    --bg-card: #334155;
+    --bg-input: #475569;
+
+    /* TEXT COLORS */
+    --text-primary: #F8FAFC;
+    --text-secondary: #E2E8F0;
+    --text-muted: #94A3B8;
+    --text-light: #64748B;
+
+    /* BORDER & SHADOWS */
+    --border-color: #475569;
+    --border-light: #334155;
+}
