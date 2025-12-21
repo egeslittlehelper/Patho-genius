@@ -1,0 +1,130 @@
+<!-- DATABASE MANAGEMENT PAGE TEMPLATE -->
+<div id="page-database" class="page-view hidden">
+    <header class="page-header">
+        <div>
+            <h1>Database Management</h1>
+            <p class="page-subtitle">Manage reference databases for pathogen detection and taxonomic classification</p>
+        </div>
+    </header>
+
+    <div class="card database-card-primary">
+        <div class="database-header">
+            <div class="database-icon">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+                    <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+                    <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+                </svg>
+            </div>
+            <div class="database-title">
+                <h3>Current Reference Database</h3>
+                <p>NCBI RefSeq 2025 - Bacterial and Viral Genomes</p>
+            </div>
+            <span class="status-badge status-active">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
+                Active
+            </span>
+        </div>
+        <div class="database-stats">
+            <div class="db-stat">
+                <span class="db-stat-label">Version</span>
+                <span class="db-stat-value">2025.01</span>
+            </div>
+            <div class="db-stat">
+                <span class="db-stat-label">Index Size</span>
+                <span class="db-stat-value">12.4 GB</span>
+            </div>
+            <div class="db-stat">
+                <span class="db-stat-label">Total Genomes</span>
+                <span class="db-stat-value">24,582</span>
+            </div>
+            <div class="db-stat">
+                <span class="db-stat-label">Last Updated</span>
+                <span class="db-stat-value">Dec 1, 2025</span>
+            </div>
+        </div>
+        <div class="database-actions-row">
+            <button class="btn btn-outline">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
+                Check for Updates
+            </button>
+            <button class="btn btn-outline">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                Export Database
+            </button>
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Import Custom Reference Database</h3>
+        <p class="text-muted">Add custom FASTA files to extend the reference database with specific organisms or sequences for offline analysis</p>
+        <div class="upload-zone upload-zone-sm" id="db-upload-zone">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            <p>Drop FASTA files here or click to browse</p>
+            <button class="btn btn-outline btn-sm" id="import-db-btn">Browse Files</button>
+        </div>
+    </div>
+
+    <!-- Custom Species Management -->
+    <div class="card">
+        <div class="card-header-row">
+            <h3 class="card-title">Custom Species</h3>
+            <div class="card-actions">
+                <div class="search-box" style="width: 200px;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" placeholder="Search species..." id="species-search">
+                </div>
+                <button class="btn btn-primary btn-sm" id="add-fasta-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                        <line x1="12" y1="5" x2="12" y2="19"></line>
+                        <line x1="5" y1="12" x2="19" y2="12"></line>
+                    </svg>
+                    Add FASTA
+                </button>
+            </div>
+        </div>
+        <p class="text-muted" style="margin-bottom: 16px;">User-added species and custom reference sequences</p>
+        <div id="custom-species-list">
+            <!-- Populated by JavaScript -->
+        </div>
+    </div>
+
+    <div class="card">
+        <h3 class="card-title">Database Components</h3>
+        <div class="database-list">
+            <div class="database-item">
+                <div class="database-info">
+                    <h4>Bacterial Genomes</h4>
+                    <p class="text-muted">15,234 species • 8.2 GB</p>
+                </div>
+                <span class="status-badge status-completed">Indexed</span>
+            </div>
+            <div class="database-item">
+                <div class="database-info">
+                    <h4>Viral Genomes</h4>
+                    <p class="text-muted">4,521 species • 2.1 GB</p>
+                </div>
+                <span class="status-badge status-completed">Indexed</span>
+            </div>
+            <div class="database-item">
+                <div class="database-info">
+                    <h4>AMR Gene Database</h4>
+                    <p class="text-muted">2,847 genes • 1.8 GB</p>
+                </div>
+                <span class="status-badge status-completed">Indexed</span>
+            </div>
+            <div class="database-item">
+                <div class="database-info">
+                    <h4>Taxonomy Index (Kraken2)</h4>
+                    <p class="text-muted">k-mer index • 0.3 GB</p>
+                </div>
+                <span class="status-badge status-completed">Ready</span>
+            </div>
+        </div>
+    </div>
+</div>
+

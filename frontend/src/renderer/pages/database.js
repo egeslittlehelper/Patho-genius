@@ -1,0 +1,361 @@
+/**
+ * DATABASE.JS - Database Management Controller
+ * Purpose: Manage Kraken2 reference databases
+ */
+
+const DatabasePage = {
+    // Current database info
+    databaseInfo: null,
+    customSpecies: [], // User-added species
+    isEventsBound: false, // Prevent duplicate event binding
+
+    /**
+     * Initialize database page
+     */
+    init() {
+        console.log('DatabasePage initializing...');
+        
+        // Only bind events once to prevent duplicate listeners
+        if (!this.isEventsBound) {
+            this.bindEvents();
+            this.isEventsBound = true;
+        }
+        
+        this.loadDatabaseInfo();
+        this.loadCustomSpecies();
+        console.log('DatabasePage initialized');
+    },
+
+    /**
+     * Bind event listeners
+     */
+    bindEvents() {
+        const importBtn = document.getElementById('import-db-btn');
+        if (importBtn) {
+            importBtn.addEventListener('click', () => this.importDatabase());
+        }
+
+        const addFastaBtn = document.getElementById('add-fasta-btn');
+        if (addFastaBtn) {
+            addFastaBtn.addEventListener('click', () => this.addFastaFile());
+        }
+
+        // Search in custom species
+        const speciesSearch = document.getElementById('species-search');
+        if (speciesSearch) {
+            speciesSearch.addEventListener('input', (e) => this.filterSpecies(e.target.value));
+        }
+    },
+
+    /**
+     * Load database information from backend
+     */
+    async loadDatabaseInfo() {
+        try {
+            if (window.api?.database?.getInfo) {
+                this.databaseInfo = await window.api.database.getInfo();
+                this.updateDisplay();
+            }
+        } catch (error) {
+            console.error('Failed to load database info:', error);
+        }
+    },
+
+    /**
+     * Update display with database info
+     */
+    updateDisplay() {
+        // Database info is pre-rendered in HTML
+        // In production, dynamically update from this.databaseInfo
+    },
+
+    /**
+     * Import custom database files
+     */
+    async importDatabase() {
+        try {
+            let folder = null;
+            
+            if (window.api?.files?.selectFolder) {
+                folder = await window.api.files.selectFolder();
+            }
+
+            if (!folder) {
+                console.log('Import cancelled');
+                return;
+            }
+
+            console.log('Importing from:', folder);
+            
+            if (window.api?.database?.import) {
+                const result = await window.api.database.import(folder);
+                if (result.success) {
+                    alert('Database import started. This may take several minutes.');
+                } else {
+                    alert('Import failed: ' + result.error);
+                }
+            } else {
+                alert('Import feature requires backend integration');
+            }
+        } catch (error) {
+            console.error('Import error:', error);
+            alert('Failed to import database');
+        }
+    },
+
+    /**
+     * Check for database updates
+     */
+    async checkUpdates() {
+        try {
+            if (window.api?.database?.checkUpdates) {
+                const result = await window.api.database.checkUpdates();
+                alert(result.message);
+            } else {
+                alert('Update check requires network connection');
+            }
+        } catch (error) {
+            console.error('Update check error:', error);
+            alert('Failed to check for updates');
+        }
+    },
+
+    /**
+     * Export database
+     */
+    async exportDatabase() {
+        alert('Export feature - Coming soon');
+    },
+
+    /**
+     * Load custom species from storage
+     */
+    loadCustomSpecies() {
+        try {
+            const saved = localStorage.getItem('pathogenius_custom_species');
+            if (saved) {
+                this.customSpecies = JSON.parse(saved);
+            } else {
+                // Mock data for development
+                this.customSpecies = [
+                    {
+                        id: 'sp_001',
+                        name: 'Custom Pathogen A',
+                        taxId: 'CUSTOM001',
+                        type: 'bacteria',
+                        source: 'custom_pathogen_a.fasta',
+                        addedAt: '2025-12-10T10:30:00Z',
+                        sequences: 15
+                    },
+                    {
+                        id: 'sp_002',
+                        name: 'Local Strain XYZ',
+                        taxId: 'CUSTOM002',
+                        type: 'bacteria',
+                        source: 'local_strain_xyz.fasta',
+                        addedAt: '2025-12-08T14:20:00Z',
+                        sequences: 8
+                    }
+                ];
+            }
+            this.renderCustomSpecies();
+        } catch (error) {
+            console.error('Failed to load custom species:', error);
+            this.customSpecies = [];
+        }
+    },
+
+    /**
+     * Save custom species to storage
+     */
+    saveCustomSpecies() {
+        try {
+            localStorage.setItem('pathogenius_custom_species', JSON.stringify(this.customSpecies));
+        } catch (error) {
+            console.error('Failed to save custom species:', error);
+        }
+    },
+
+    /**
+     * Add FASTA file to database (add species)
+     */
+    async addFastaFile() {
+        try {
+            let files = [];
+            
+            if (window.api?.files?.selectFiles) {
+                files = await window.api.files.selectFiles();
+            } else {
+                // Mock for development - show dialog
+                const fileName = prompt('Enter FASTA file name (mock):', 'new_species.fasta');
+                if (fileName) {
+                    files = [fileName];
+                }
+            }
+
+            if (files && files.length > 0) {
+                // Show metadata dialog
+                this.showAddSpeciesDialog(files[0]);
+            }
+        } catch (error) {
+            console.error('Failed to select FASTA file:', error);
+            alert('Failed to select file');
+        }
+    },
+
+    /**
+     * Show dialog to add species metadata
+     */
+    showAddSpeciesDialog(filePath) {
+        const fileName = filePath.split(/[\\/]/).pop();
+        const speciesName = prompt('Enter species/organism name:', fileName.replace('.fasta', '').replace('.fa', ''));
+        
+        if (!speciesName) return;
+
+        const taxId = prompt('Enter taxonomic ID (optional):', 'CUSTOM' + Date.now().toString().slice(-6));
+        const type = prompt('Enter type (bacteria/viral/fungal/other):', 'bacteria');
+
+        // Create new species entry
+        const newSpecies = {
+            id: 'sp_' + Date.now().toString(36),
+            name: speciesName,
+            taxId: taxId || 'CUSTOM' + Date.now(),
+            type: type || 'bacteria',
+            source: fileName,
+            addedAt: new Date().toISOString(),
+            sequences: Math.floor(Math.random() * 20) + 1 // Mock sequence count
+        };
+
+        this.customSpecies.unshift(newSpecies);
+        this.saveCustomSpecies();
+        this.renderCustomSpecies();
+
+        console.log('Species added:', newSpecies.name);
+        
+        // Would call backend to index the FASTA file
+        if (window.api?.database?.addFasta) {
+            window.api.database.addFasta(filePath, newSpecies);
+        }
+    },
+
+    /**
+     * Remove species from database
+     */
+    async removeSpecies(speciesId) {
+        if (!confirm('Remove this species from the database? The original file will not be deleted.')) return;
+
+        try {
+            if (window.api?.database?.removeSpecies) {
+                await window.api.database.removeSpecies(speciesId);
+            }
+
+            this.customSpecies = this.customSpecies.filter(s => s.id !== speciesId);
+            this.saveCustomSpecies();
+            this.renderCustomSpecies();
+
+            console.log('Species removed:', speciesId);
+        } catch (error) {
+            console.error('Failed to remove species:', error);
+            alert('Failed to remove species');
+        }
+    },
+
+    /**
+     * Edit species metadata
+     */
+    editSpecies(speciesId) {
+        const species = this.customSpecies.find(s => s.id === speciesId);
+        if (!species) return;
+
+        const newName = prompt('Edit species name:', species.name);
+        if (newName === null) return;
+
+        const newTaxId = prompt('Edit taxonomic ID:', species.taxId);
+        if (newTaxId === null) return;
+
+        const newType = prompt('Edit type (bacteria/viral/fungal/other):', species.type);
+        if (newType === null) return;
+
+        // Update species
+        species.name = newName || species.name;
+        species.taxId = newTaxId || species.taxId;
+        species.type = newType || species.type;
+        species.updatedAt = new Date().toISOString();
+
+        this.saveCustomSpecies();
+        this.renderCustomSpecies();
+
+        console.log('Species updated:', species.name);
+
+        // Would call backend to update metadata
+        if (window.api?.database?.updateSpecies) {
+            window.api.database.updateSpecies(speciesId, species);
+        }
+    },
+
+    /**
+     * Render custom species list
+     */
+    renderCustomSpecies() {
+        const container = document.getElementById('custom-species-list');
+        if (!container) return;
+
+        if (this.customSpecies.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <p class="text-muted">No custom species added yet.</p>
+                    <p class="text-muted" style="font-size: 0.8125rem;">Upload FASTA files to add species to your local database.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = this.customSpecies.map(species => `
+            <div class="species-entry" data-id="${species.id}">
+                <div class="species-info">
+                    <span class="species-name">${species.name}</span>
+                    <span class="species-meta">
+                        ${species.type} • Tax ID: ${species.taxId} • ${species.sequences || 0} sequences • Added ${this.formatDate(species.addedAt)}
+                    </span>
+                </div>
+                <div class="species-actions">
+                    <button class="species-action-btn" onclick="DatabasePage.editSpecies('${species.id}')" title="Edit">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;">
+                            <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"></path>
+                        </svg>
+                        Edit
+                    </button>
+                    <button class="species-action-btn btn-remove" onclick="DatabasePage.removeSpecies('${species.id}')" title="Remove">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;">
+                            <polyline points="3 6 5 6 21 6"></polyline>
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                        </svg>
+                        Remove
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    },
+
+    /**
+     * Filter species by search term
+     */
+    filterSpecies(searchTerm) {
+        const term = searchTerm.toLowerCase();
+        const entries = document.querySelectorAll('.species-entry');
+        
+        entries.forEach(entry => {
+            const text = entry.textContent.toLowerCase();
+            entry.style.display = text.includes(term) ? '' : 'none';
+        });
+    },
+
+    /**
+     * Format date for display (delegating to Utils)
+     */
+    formatDate(dateStr) {
+        return Utils.formatDate(dateStr);
+    }
+};
+
+window.DatabasePage = DatabasePage;

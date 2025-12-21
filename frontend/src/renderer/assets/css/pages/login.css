@@ -1,0 +1,287 @@
+/**
+ * LOGIN & REGISTER PAGE STYLES
+ * ============================================
+ */
+
+.login-view {
+    display: flex;
+    height: 100vh;
+    width: 100vw;
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1000;
+    background-color: white;
+}
+
+/* Left Panel - Brand Section */
+.login-left-panel {
+    width: 50%;
+    background-color: var(--primary);
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    color: white;
+}
+
+.brand-container {
+    text-align: center;
+    max-width: 400px;
+    padding: 40px;
+}
+
+.logo-box {
+    width: 80px;
+    height: 80px;
+    background: white;
+    border-radius: var(--radius-xl);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 24px auto;
+    box-shadow: var(--shadow-lg);
+}
+
+.brand-container h1 {
+    font-size: 2.25rem;
+    font-weight: 700;
+    margin-bottom: 16px;
+    letter-spacing: -0.5px;
+}
+
+.brand-container p {
+    font-size: 1.1rem;
+    line-height: 1.6;
+    opacity: 0.9;
+}
+
+/* Right Panel - Login Form */
+.login-right-panel {
+    width: 50%;
+    background: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.login-content {
+    width: 100%;
+    max-width: 320px;
+    padding: 0 24px;
+}
+
+.login-header {
+    margin-bottom: 15px;
+}
+
+.login-header h2 {
+    font-size: 1.75rem;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+    font-weight: 600;
+}
+
+.login-header p {
+    color: var(--text-muted);
+    font-size: 1rem;
+}
+
+.login-footer {
+    margin-top: 22px;
+    text-align: center;
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.status-dot {
+    width: 8px;
+    height: 8px;
+    background-color: var(--gray-400);
+    border-radius: 50%;
+}
+
+.login-error {
+    background-color: var(--danger-bg);
+    border: 1px solid var(--danger-light);
+    color: var(--danger);
+    padding: 8px 16px;
+    border-radius: var(--radius-md);
+    font-size: 0.875rem;
+    margin-bottom: 16px;
+}
+
+.divider {
+    display: flex;
+    align-items: center;
+    margin: 28px 0;
+    color: var(--text-light);
+    font-size: 0.8rem;
+}
+
+.divider::before,
+.divider::after {
+    content: "";
+    flex: 1;
+    border-bottom: 1px solid var(--border-color);
+}
+
+.divider span {
+    padding: 0 16px;
+}
+
+/* Registration Page */
+.register-content {
+    max-width: 340px;
+}
+
+.back-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    background: none;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    cursor: pointer;
+    padding: 8px 0;
+    margin-bottom: 16px;
+    font-family: inherit;
+    transition: color var(--transition-fast);
+}
+
+.back-btn svg {
+    width: 18px;
+    height: 18px;
+}
+
+.back-btn:hover {
+    color: var(--primary);
+}
+
+.register-link {
+    text-align: center;
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 24px;
+}
+
+.register-link a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.register-link a:hover {
+    text-decoration: underline;
+}
+
+.back-link {
+    margin-top: 16px;
+}
+
+.password-strength {
+    margin-top: 6px;
+    font-size: 0.75rem;
+}
+
+/* Forgot Password Link */
+.forgot-password-link {
+    text-align: right;
+    margin-top: 12px;
+}
+
+.forgot-password-link a {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    text-decoration: none;
+}
+
+.forgot-password-link a:hover {
+    color: var(--primary);
+    text-decoration: underline;
+}
+
+/* Email Verification Section */
+.verification-container {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.verification-icon {
+    width: 64px;
+    height: 64px;
+    background: var(--primary-light);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 20px;
+}
+
+.verification-icon svg {
+    width: 32px;
+    height: 32px;
+    stroke: var(--primary);
+}
+
+.verification-container h3 {
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 8px;
+}
+
+.verification-container p {
+    color: var(--text-muted);
+    font-size: 0.9375rem;
+    margin-bottom: 24px;
+}
+
+.verification-code-inputs {
+    display: flex;
+    gap: 8px;
+    justify-content: center;
+    margin-bottom: 24px;
+}
+
+.verification-code-input {
+    width: 48px;
+    height: 56px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 600;
+    border: 2px solid var(--border-color);
+    border-radius: var(--radius-md);
+    background: var(--bg-input);
+    transition: all var(--transition-fast);
+    font-family: var(--font-mono);
+}
+
+.verification-code-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: white;
+    box-shadow: 0 0 0 3px var(--primary-bg);
+}
+
+.resend-link {
+    font-size: 0.875rem;
+    color: var(--text-muted);
+    margin-top: 16px;
+}
+
+.resend-link a {
+    color: var(--primary);
+    text-decoration: none;
+    font-weight: 500;
+}
+
+.resend-link a:hover {
+    text-decoration: underline;
+}
+

@@ -1,0 +1,99 @@
+<!-- REGISTRATION PAGE TEMPLATE -->
+<div id="page-register" class="login-view hidden">
+    <div class="login-left-panel">
+        <div class="brand-container">
+            <div class="logo-box">
+                <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#008080" stroke-width="2.5">
+                    <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                </svg>
+            </div>
+            <h1>Pathogenius</h1>
+            <p>Create your account to access the pathogen detection system.</p>
+        </div>
+    </div>
+
+    <div class="login-right-panel">
+        <div class="login-content register-content">
+            <button class="back-btn" id="back-to-login-top-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <polyline points="15 18 9 12 15 6"></polyline>
+                </svg>
+                Back to Login
+            </button>
+            <div class="login-header">
+                <h2>Create Account</h2>
+                <p>Register to start analyzing samples</p>
+            </div>
+
+            <form id="register-form">
+                <div class="form-group">
+                    <label for="register-username">Username</label>
+                    <input type="text" id="register-username" class="input-field" placeholder="Choose a username" autocomplete="username">
+                </div>
+
+                <div class="form-group">
+                    <label for="register-email">Email</label>
+                    <input type="email" id="register-email" class="input-field" placeholder="Enter your email" autocomplete="email">
+                </div>
+
+                <div class="form-group">
+                    <label for="register-display-name">Display Name</label>
+                    <input type="text" id="register-display-name" class="input-field" placeholder="Dr. Your Name">
+                </div>
+
+                <div class="form-group">
+                    <label for="register-institution">Institution / Organization</label>
+                    <input type="text" id="register-institution" class="input-field" placeholder="e.g., University Hospital">
+                </div>
+
+                <div class="form-group">
+                    <label for="register-password">Password</label>
+                    <input type="password" id="register-password" class="input-field" placeholder="Min 12 characters" autocomplete="new-password">
+                    <div id="password-strength" class="password-strength"></div>
+                </div>
+
+                <div class="form-group">
+                    <label for="register-confirm-password">Confirm Password</label>
+                    <input type="password" id="register-confirm-password" class="input-field" placeholder="Re-enter password" autocomplete="new-password">
+                </div>
+
+                <div id="register-error" class="login-error hidden"></div>
+                <button type="submit" id="register-btn" class="btn-primary-large">Create Account</button>
+            </form>
+
+            <!-- Email Verification Section -->
+            <div id="email-verification-section" class="hidden">
+                <div class="verification-container">
+                    <div class="verification-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"></path>
+                            <polyline points="22,6 12,13 2,6"></polyline>
+                        </svg>
+                    </div>
+                    <h3>Verify Your Email</h3>
+                    <p>We've sent a verification code to <strong id="verification-email"></strong></p>
+                    
+                    <div class="verification-code-inputs">
+                        <input type="text" maxlength="1" class="verification-code-input" data-index="0">
+                        <input type="text" maxlength="1" class="verification-code-input" data-index="1">
+                        <input type="text" maxlength="1" class="verification-code-input" data-index="2">
+                        <input type="text" maxlength="1" class="verification-code-input" data-index="3">
+                        <input type="text" maxlength="1" class="verification-code-input" data-index="4">
+                        <input type="text" maxlength="1" class="verification-code-input" data-index="5">
+                    </div>
+                    
+                    <button type="button" id="verify-email-btn" class="btn-primary-large" onclick="RegisterPage.verifyEmailCode()">Verify Email</button>
+                    
+                    <p class="resend-link">
+                        Didn't receive the code? <a href="#" onclick="RegisterPage.resendVerificationEmail(); return false;">Resend</a>
+                    </p>
+                </div>
+            </div>
+
+            <div class="register-link back-link">
+                Already have an account? <a href="#" id="back-to-login-btn">Sign in</a>
+            </div>
+        </div>
+    </div>
+</div>
+
