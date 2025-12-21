@@ -266,7 +266,7 @@ const DashboardPage = {
         // Update every 3 seconds
         setInterval(() => {
             this.refresh();
-        }, 10000);
+        }, 30000);
     },
 
     /**

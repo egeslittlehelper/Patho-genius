@@ -234,6 +234,7 @@ const SettingsPage = {
             this.settings = { ...this.defaults };
             this.saveSettings();
             this.updateUI();
+            this.applyTheme();
             this.showSavedNotification('Settings reset to defaults');
         }
     },
@@ -270,6 +271,7 @@ const SettingsPage = {
                 this.settings = { ...this.defaults, ...imported };
                 this.saveSettings();
                 this.updateUI();
+                this.applyTheme();
                 this.showSavedNotification('Settings imported successfully');
             } catch (error) {
                 alert('Failed to import settings: Invalid file format');

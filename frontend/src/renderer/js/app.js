@@ -697,7 +697,7 @@ const App = {
             this.updateLoginStatus();
             this.updateSidebarStorage();
             this.updateConnectionStatus(this.state.isGuestMode);
-        }, 10000);
+        }, 30000);
     },
 
     /**
