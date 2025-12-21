@@ -384,7 +384,7 @@ const ResultsPage = {
             reads: p.reads,
             confidence: p.confidence,
             risk: this.capitalize(p.risk_level),
-            color: this.getRiskColor(p.risk_level)
+            color: this.getRiskColorShaded(p.risk_level, `${p.name}|${p.strain || ''}|${p.tax_id || ''}`)
         })) || [];
 
         // Add unclassified if available
@@ -419,16 +419,70 @@ const ResultsPage = {
     },
 
     /**
-     * Get color based on risk level
+     * Deterministic hash -> 0..1 for stable shading per label
      */
-    getRiskColor(riskLevel) {
-        const colors = {
-            'high': '#EF4444',
-            'medium': '#F59E0B',
-            'low': '#10B981'
-        };
-        return colors[riskLevel?.toLowerCase()] || '#9CA3AF';
+    hashToUnit(str = '') {
+        let h = 2166136261; // FNV-1a base
+        for (let i = 0; i < str.length; i++) {
+            h ^= str.charCodeAt(i);
+            h = Math.imul(h, 16777619);
+        }
+        // unsigned -> 0..1
+        return (h >>> 0) / 4294967295;
     },
+
+    /**
+     * Mix two hex colors (t in [0..1]): returns hex
+     */
+    mixHex(hexA, hexB, t) {
+        const toRgb = (hex) => {
+            const h = hex.replace('#', '').trim();
+            const n = parseInt(h.length === 3 ? h.split('').map(c => c + c).join('') : h, 16);
+            return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+        };
+        const toHex = ({ r, g, b }) => {
+            const clamp = (x) => Math.max(0, Math.min(255, Math.round(x)));
+            return '#' + [clamp(r), clamp(g), clamp(b)]
+                .map(v => v.toString(16).padStart(2, '0'))
+                .join('');
+        };
+
+        const a = toRgb(hexA);
+        const b = toRgb(hexB);
+        return toHex({
+            r: a.r + (b.r - a.r) * t,
+            g: a.g + (b.g - a.g) * t,
+            b: a.b + (b.b - a.b) * t
+        });
+    },
+
+    /**
+     * Base risk color + deterministic shade per key (species name/strain/etc.)
+     * Keeps risk semantics but improves adjacent readability.
+     */
+    getRiskColorShaded(riskLevel, shadeKey) {
+        const base = {
+            high:   '#EF4444',
+            medium: '#F59E0B',
+            low:    '#10B981'
+        }[(riskLevel || '').toLowerCase()] || '#9CA3AF';
+
+        // deterministically choose a mix amount for this species
+        // range keeps it subtle: 0.12..0.35
+        const u = this.hashToUnit(shadeKey || '');
+        const t = 0.12 + (0.35 - 0.12) * u;
+
+        // alternate between lightening and darkening in a stable way
+        // even/odd bucket from hash:
+        const lighten = u < 0.5;
+
+        // mix with white to lighten or with black to darken
+        return lighten
+            ? this.mixHex(base, '#FFFFFF', t)
+            : this.mixHex(base, '#000000', t * 0.55); // darkening needs less mix to stay readable
+    },
+
+
 
     /**
      * Cancel a running analysis
