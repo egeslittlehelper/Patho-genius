@@ -416,6 +416,11 @@ const ResultsPage = {
         setTimeout(() => {
             Charts.renderSankey('sankey-chart');
         }, 200);
+
+        // Render radar chart for comparative analysis
+        setTimeout(() => {
+            Charts.renderRadar('radar-chart');
+        }, 250);
     },
 
     /**

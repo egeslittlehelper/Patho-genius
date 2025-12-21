@@ -619,6 +619,186 @@ const Charts = {
     },
 
     // ============================================
+    // RADAR CHART
+    // Multi-dimensional pathogen comparison
+    // ============================================
+
+    /**
+     * Render radar chart for pathogen comparison
+     * @param {string} containerId - Container element ID
+     * @param {object} data - Radar chart data with pathogens and metrics
+     */
+    renderRadar(containerId, data = null) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        const chartData = data || this.getMockRadarData();
+        const width = container.clientWidth || 400;
+        const height = 400;
+        const centerX = width / 2;
+        const centerY = height / 2;
+        const maxRadius = Math.min(width, height) / 2 - 40;
+
+        // Calculate radar axes
+        const axes = chartData.axes || ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'];
+        const numAxes = axes.length;
+        const angleStep = (Math.PI * 2) / numAxes;
+
+        container.innerHTML = `
+            <svg width="${width}" height="${height}" class="radar-chart">
+                <g transform="translate(${centerX}, ${centerY})">
+                    ${this.generateRadarAxes(axes, maxRadius)}
+                    ${this.generateRadarData(chartData.pathogens, axes, maxRadius)}
+                </g>
+            </svg>
+            <div class="chart-legend radar-legend">
+                ${this.generateRadarLegend(chartData.pathogens)}
+            </div>
+        `;
+
+        this.attachRadarEvents(container);
+    },
+
+    /**
+     * Generate radar chart axes
+     */
+    generateRadarAxes(axes, maxRadius) {
+        const numAxes = axes.length;
+        const angleStep = (Math.PI * 2) / numAxes;
+        let axesHtml = '';
+
+        // Draw axes lines and labels
+        axes.forEach((axis, index) => {
+            const angle = index * angleStep - Math.PI / 2; // Start from top
+            const x2 = Math.cos(angle) * maxRadius;
+            const y2 = Math.sin(angle) * maxRadius;
+
+            // Axis line
+            axesHtml += `<line x1="0" y1="0" x2="${x2}" y2="${y2}" class="radar-axis" stroke="#E5E7EB" stroke-width="1"/>`;
+
+            // Axis label
+            const labelRadius = maxRadius + 20;
+            const labelX = Math.cos(angle) * labelRadius;
+            const labelY = Math.sin(angle) * labelRadius;
+            const textAnchor = labelX > 0 ? 'start' : 'end';
+            const dominantBaseline = labelY > 0 ? 'hanging' : 'baseline';
+
+            axesHtml += `
+                <text x="${labelX}" y="${labelY}"
+                      text-anchor="${textAnchor}"
+                      dominant-baseline="${dominantBaseline}"
+                      class="radar-axis-label"
+                      fill="#374151"
+                      font-size="12">${axis}</text>
+            `;
+
+            // Grid circles
+            for (let i = 1; i <= 4; i++) {
+                const radius = (maxRadius * i) / 4;
+                axesHtml += `<circle cx="0" cy="0" r="${radius}" fill="none" stroke="#F3F4F6" stroke-width="1" opacity="0.5"/>`;
+            }
+        });
+
+        return axesHtml;
+    },
+
+    /**
+     * Generate radar data polygons
+     */
+    generateRadarData(pathogens, axes, maxRadius) {
+        let dataHtml = '';
+
+        pathogens.forEach((pathogen, index) => {
+            const points = axes.map((axis, axisIndex) => {
+                const value = pathogen.metrics[axis] || 0;
+                const normalizedValue = this.normalizeRadarValue(value, axis);
+                const angle = axisIndex * (Math.PI * 2) / axes.length - Math.PI / 2;
+                const radius = normalizedValue * maxRadius;
+                const x = Math.cos(angle) * radius;
+                const y = Math.sin(angle) * radius;
+                return `${x},${y}`;
+            }).join(' ');
+
+            dataHtml += `
+                <polygon points="${points}"
+                         fill="${pathogen.color}"
+                         fill-opacity="0.1"
+                         stroke="${pathogen.color}"
+                         stroke-width="2"
+                         class="radar-polygon"
+                         data-name="${pathogen.name}"
+                         data-metrics="${JSON.stringify(pathogen.metrics).replace(/"/g, '&quot;')}"/>
+            `;
+        });
+
+        return dataHtml;
+    },
+
+    /**
+     * Generate radar chart legend
+     */
+    generateRadarLegend(pathogens) {
+        return pathogens.map(pathogen => `
+            <span class="legend-item">
+                <span class="legend-dot" style="background: ${pathogen.color}"></span>
+                ${pathogen.name}
+            </span>
+        `).join('');
+    },
+
+    /**
+     * Attach radar chart event listeners
+     */
+    attachRadarEvents(container) {
+        container.querySelectorAll('.radar-polygon').forEach(polygon => {
+            polygon.addEventListener('mouseenter', (e) => {
+                const name = polygon.dataset.name;
+                const metrics = JSON.parse(polygon.dataset.metrics.replace(/&quot;/g, '"'));
+
+                polygon.style.strokeWidth = '3';
+                polygon.style.fillOpacity = '0.2';
+
+                let tooltipContent = '';
+                Object.entries(metrics).forEach(([key, value]) => {
+                    tooltipContent += `<div><strong>${key}:</strong> ${value}</div>`;
+                });
+
+                this.showTooltip(e.pageX, e.pageY, name, tooltipContent);
+            });
+
+            polygon.addEventListener('mousemove', (e) => {
+                this.showTooltip(e.pageX, e.pageY,
+                    polygon.dataset.name,
+                    this.tooltip.querySelector('.tooltip-content').innerHTML
+                );
+            });
+
+            polygon.addEventListener('mouseleave', () => {
+                polygon.style.strokeWidth = '2';
+                polygon.style.fillOpacity = '0.1';
+                this.hideTooltip();
+            });
+        });
+    },
+
+    /**
+     * Normalize radar values to 0-1 scale
+     */
+    normalizeRadarValue(value, axis) {
+        // Define max values for each axis
+        const maxValues = {
+            'Abundance': 100,
+            'Confidence': 100,
+            'Virulence': 20,
+            'AMR': 10,
+            'Risk': 10
+        };
+
+        const max = maxValues[axis] || 100;
+        return Math.min(value / max, 1);
+    },
+
+    // ============================================
     // HELPER FUNCTIONS
     // ============================================
 
@@ -870,9 +1050,65 @@ const Charts = {
     },
 
     /**
+     * Mock radar data - pathogen comparison across multiple dimensions
+     * Shows: Abundance, Confidence, Virulence, AMR, Risk
+     */
+    getMockRadarData() {
+        return {
+            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
+            pathogens: [
+                {
+                    name: 'Escherichia coli O157:H7',
+                    color: '#EF4444',
+                    metrics: {
+                        'Abundance': 45.2,
+                        'Confidence': 95,
+                        'Virulence': 12,
+                        'AMR': 5,
+                        'Risk': 9
+                    }
+                },
+                {
+                    name: 'Staphylococcus aureus (MRSA)',
+                    color: '#F97316',
+                    metrics: {
+                        'Abundance': 18.6,
+                        'Confidence': 87,
+                        'Virulence': 8,
+                        'AMR': 7,
+                        'Risk': 8
+                    }
+                },
+                {
+                    name: 'Pseudomonas aeruginosa',
+                    color: '#F59E0B',
+                    metrics: {
+                        'Abundance': 8.3,
+                        'Confidence': 82,
+                        'Virulence': 6,
+                        'AMR': 4,
+                        'Risk': 6
+                    }
+                },
+                {
+                    name: 'Klebsiella pneumoniae (KPC+)',
+                    color: '#EAB308',
+                    metrics: {
+                        'Abundance': 5.1,
+                        'Confidence': 78,
+                        'Virulence': 4,
+                        'AMR': 3,
+                        'Risk': 7
+                    }
+                }
+            ]
+        };
+    },
+
+    /**
      * Transform backend API response to chart-ready format
      * @param {object} apiResponse - Raw API response
-     * @param {string} chartType - 'sunburst' | 'sankey' | 'treemap'
+     * @param {string} chartType - 'sunburst' | 'sankey' | 'treemap' | 'radar'
      * @returns {object} Chart-ready data
      */
     transformApiData(apiResponse, chartType) {
@@ -885,6 +1121,8 @@ const Charts = {
                 return this.getMockSankeyData();
             case 'treemap':
                 return this.getMockTreemapData();
+            case 'radar':
+                return this.getMockRadarData();
             default:
                 return null;
         }

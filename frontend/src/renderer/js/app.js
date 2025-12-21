@@ -478,6 +478,13 @@ const App = {
         const activeContent = document.getElementById(`tab-${tabId}`);
         if (activeContent) {
             activeContent.classList.add('active');
+            
+            // Re-render charts if needed when tab becomes active
+            if (tabId === 'comparative' && window.Charts && window.Charts.renderRadar) {
+                setTimeout(() => {
+                    Charts.renderRadar('radar-chart');
+                }, 100);
+            }
         }
     },
 

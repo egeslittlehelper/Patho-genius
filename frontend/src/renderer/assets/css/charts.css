@@ -427,3 +427,33 @@
     letter-spacing: 0.5px;
 }
 
+/* Radar Chart */
+.radar-chart {
+    display: block;
+    margin: 0 auto;
+}
+
+.radar-axis {
+    stroke: var(--border-color);
+    stroke-width: 1;
+}
+
+.radar-axis-label {
+    font-weight: 500;
+    fill: var(--text-secondary);
+}
+
+.radar-polygon {
+    cursor: pointer;
+    transition: fill-opacity 0.15s ease, stroke-width 0.15s ease;
+}
+
+.radar-polygon:hover {
+    fill-opacity: 0.2 !important;
+    stroke-width: 3 !important;
+}
+
+.radar-legend {
+    margin-top: 16px;
+}
+
