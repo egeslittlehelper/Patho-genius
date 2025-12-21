@@ -1,6 +1,11 @@
-// TODO: Replace with actual API
+/**
+ * Authentication Service (Main Process)
+ * Handles user authentication logic - ready for backend integration
+ */
+
+// TODO: Replace with actual backend API calls when backend is ready
 const AUTH_CONFIG = {
-    // API endpoint
+    // Backend API endpoint (configure when backend is ready)
     API_BASE_URL: process.env.AUTH_API_URL || 'http://localhost:8000/api',
     
     // Session timeout in milliseconds (30 minutes)
@@ -10,7 +15,7 @@ const AUTH_CONFIG = {
     ALLOW_GUEST_MODE: true
 };
 
-// In-memory session store (replace)
+// In-memory session store (replace with proper session management)
 let currentSession = null;
 
 /**
@@ -26,7 +31,8 @@ async function login(username, password) {
             return { success: false, error: 'Username and password are required' };
         }
 
-        // TODO: Replace this mock
+        // TODO: Replace this mock with actual API call
+        // Example backend integration:
         // const response = await fetch(`${AUTH_CONFIG.API_BASE_URL}/auth/login`, {
         //     method: 'POST',
         //     headers: { 'Content-Type': 'application/json' },
@@ -35,7 +41,7 @@ async function login(username, password) {
         // const data = await response.json();
         // if (!response.ok) throw new Error(data.message);
 
-        // MOCK: Simulated authentication
+        // MOCK: Simulated authentication (remove when backend is ready)
         const mockUser = await mockAuthenticate(username, password);
         
         if (mockUser) {
@@ -70,6 +76,10 @@ async function loginAsGuest() {
         return { success: false, error: 'Guest mode is disabled' };
     }
 
+    // Guest permissions for offline/portable use:
+    // - 'read': Can view ALL stored analysis results (important for portable field use)
+    // - 'analyze': Can run new analyses during this session
+    // - Cannot: manage users, manage database, modify system settings
     const guestUser = {
         id: 'guest',
         username: 'Guest',
@@ -143,8 +153,12 @@ function hasPermission(permission) {
     return currentSession.user.permissions.includes(permission);
 }
 
+// ============================================
+// MOCK FUNCTIONS (Remove when backend is ready)
+// ============================================
+
 /**
- * Mock authentication
+ * Mock authentication - replace with real API call
  */
 async function mockAuthenticate(username, password) {
     // Simulate network delay
@@ -184,11 +198,75 @@ function generateMockToken() {
     return 'mock_' + Math.random().toString(36).substring(2, 15);
 }
 
+// ============================================
+
+/**
+ * Register a new user
+ * @param {object} userData - User registration data
+ * @returns {Promise<{success: boolean, user?: object, error?: string}>}
+ */
+async function register(userData) {
+    try {
+        const { username, email, password, displayName, role } = userData;
+
+        // Input validation
+        if (!username || username.length < 3) {
+            return { success: false, error: 'Username must be at least 3 characters' };
+        }
+
+        if (!email || !email.includes('@')) {
+            return { success: false, error: 'Invalid email address' };
+        }
+
+        if (!password || password.length < 6) {
+            return { success: false, error: 'Password must be at least 6 characters' };
+        }
+
+        // TODO: Replace with actual backend API call
+        // Example:
+        // const response = await fetch(`${AUTH_CONFIG.API_BASE_URL}/auth/register`, {
+        //     method: 'POST',
+        //     headers: { 'Content-Type': 'application/json' },
+        //     body: JSON.stringify(userData)
+        // });
+
+        // MOCK: Simulated registration (remove when backend is ready)
+        await new Promise(resolve => setTimeout(resolve, 500));
+
+        const newUser = {
+            id: Date.now().toString(),
+            username: username.toLowerCase(),
+            email: email.toLowerCase(),
+            displayName: displayName || username,
+            role: role || 'researcher',
+            permissions: getPermissionsForRole(role || 'researcher'),
+            createdAt: new Date().toISOString()
+        };
+
+        console.log('User registered:', newUser.username);
+
+        return {
+            success: true,
+            user: {
+                id: newUser.id,
+                username: newUser.username,
+                displayName: newUser.displayName,
+                role: newUser.role
+            }
+        };
+    } catch (error) {
+        console.error('Registration error:', error);
+        return { success: false, error: error.message || 'Registration failed' };
+    }
+}
+
 module.exports = {
     login,
     loginAsGuest,
     logout,
     getSession,
     hasPermission,
+    register,
     AUTH_CONFIG
 };
+
