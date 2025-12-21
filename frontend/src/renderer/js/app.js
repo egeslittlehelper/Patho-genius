@@ -31,8 +31,12 @@ const App = {
         // Update login status
         this.updateLoginStatus();
         
-        // Start periodic updates
-        this.startPeriodicUpdates();
+        // Update system status once on startup
+        this.updateSidebarStorage();
+        this.updateConnectionStatus(this.state.isGuestMode);
+        
+        // Setup refresh button
+        this.setupRefreshButton();
         
         // Check for existing session
         await this.checkExistingSession();
@@ -131,6 +135,40 @@ const App = {
         const logoutBtn = document.getElementById('logout-btn');
         if (logoutBtn) {
             logoutBtn.addEventListener('click', () => this.logout());
+        }
+    },
+
+    /**
+     * Setup refresh button handler
+     */
+    setupRefreshButton() {
+        const refreshBtn = document.getElementById('sidebar-refresh-btn');
+        if (refreshBtn) {
+            refreshBtn.addEventListener('click', async () => {
+                // Add loading state
+                refreshBtn.disabled = true;
+                refreshBtn.style.opacity = '0.6';
+                
+                try {
+                    // Update sidebar system status
+                    await Promise.all([
+                        this.updateSidebarStorage(),
+                        this.updateConnectionStatus(this.state.isGuestMode),
+                        this.updateLoginStatus()
+                    ]);
+                    
+                    // Also refresh dashboard system stats if on dashboard page
+                    if (this.state.currentPage === 'dashboard' && window.DashboardPage) {
+                        await window.DashboardPage.loadSystemStats();
+                    }
+                } catch (error) {
+                    console.error('Error refreshing system status:', error);
+                } finally {
+                    // Remove loading state
+                    refreshBtn.disabled = false;
+                    refreshBtn.style.opacity = '1';
+                }
+            });
         }
     },
 
@@ -686,18 +724,6 @@ const App = {
         } catch (error) {
             console.error('Failed to update sidebar storage:', error);
         }
-    },
-
-    /**
-     * Start periodic updates for system status
-     */
-    startPeriodicUpdates() {
-        // Update every 3 seconds
-        setInterval(() => {
-            this.updateLoginStatus();
-            this.updateSidebarStorage();
-            this.updateConnectionStatus(this.state.isGuestMode);
-        }, 30000);
     },
 
     /**
