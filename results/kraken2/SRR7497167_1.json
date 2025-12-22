@@ -1,0 +1,234 @@
+{
+  "sample_id": "SRR7497167_1",
+  "processed_date": "2025-12-22 09:59:34",
+  "pathogens_detected": [
+    {
+      "name": "Acinetobacter sp. KCTC 92772",
+      "tax_id": 3045147,
+      "abundance": 0.25,
+      "reads": 1585
+    },
+    {
+      "name": "Acinetobacter johnsonii",
+      "tax_id": 40214,
+      "abundance": 0.28,
+      "reads": 1768
+    },
+    {
+      "name": "Moraxella osloensis",
+      "tax_id": 34062,
+      "abundance": 0.25,
+      "reads": 1563
+    },
+    {
+      "name": "Vibrio plantisponsor",
+      "tax_id": 664643,
+      "abundance": 0.38,
+      "reads": 2368
+    },
+    {
+      "name": "Vibrio navarrensis",
+      "tax_id": 29495,
+      "abundance": 0.22,
+      "reads": 1383
+    },
+    {
+      "name": "Vibrio mimicus",
+      "tax_id": 674,
+      "abundance": 0.21,
+      "reads": 1293
+    },
+    {
+      "name": "Vibrio cholerae",
+      "tax_id": 666,
+      "abundance": 0.11,
+      "reads": 702
+    },
+    {
+      "name": "Aeromonas caviae",
+      "tax_id": 648,
+      "abundance": 0.21,
+      "reads": 1337
+    },
+    {
+      "name": "Escherichia coli",
+      "tax_id": 562,
+      "abundance": 0.13,
+      "reads": 785
+    },
+    {
+      "name": "Pseudomonas alcaligenes",
+      "tax_id": 43263,
+      "abundance": 0.21,
+      "reads": 1321
+    },
+    {
+      "name": "Acidovorax temperans",
+      "tax_id": 80878,
+      "abundance": 0.76,
+      "reads": 4782
+    },
+    {
+      "name": "Acidovorax sp. KKS102",
+      "tax_id": 358220,
+      "abundance": 0.18,
+      "reads": 1126
+    },
+    {
+      "name": "Diaphorobacter limosus",
+      "tax_id": 3036128,
+      "abundance": 0.16,
+      "reads": 1033
+    },
+    {
+      "name": "Thauera aminoaromatica",
+      "tax_id": 164330,
+      "abundance": 0.32,
+      "reads": 2006
+    },
+    {
+      "name": "Uruburuella suis",
+      "tax_id": 252130,
+      "abundance": 0.12,
+      "reads": 725
+    },
+    {
+      "name": "Aquaspirillum sp. LM1",
+      "tax_id": 1938604,
+      "abundance": 0.12,
+      "reads": 778
+    },
+    {
+      "name": "Mycolicibacterium mageritense",
+      "tax_id": 53462,
+      "abundance": 0.14,
+      "reads": 873
+    },
+    {
+      "name": "Micropruina glycogenica",
+      "tax_id": 75385,
+      "abundance": 0.18,
+      "reads": 1124
+    },
+    {
+      "name": "Acetoanaerobium sticklandii",
+      "tax_id": 1511,
+      "abundance": 0.11,
+      "reads": 668
+    },
+    {
+      "name": "Streptococcus parasuis",
+      "tax_id": 1501662,
+      "abundance": 0.28,
+      "reads": 1766
+    },
+    {
+      "name": "Megamonas funiformis",
+      "tax_id": 437897,
+      "abundance": 0.11,
+      "reads": 713
+    },
+    {
+      "name": "Aliarcobacter cryaerophilus",
+      "tax_id": 28198,
+      "abundance": 2.52,
+      "reads": 15799
+    },
+    {
+      "name": "Aliarcobacter skirrowii",
+      "tax_id": 28200,
+      "abundance": 0.23,
+      "reads": 1460
+    },
+    {
+      "name": "Aliarcobacter cibarius",
+      "tax_id": 255507,
+      "abundance": 0.16,
+      "reads": 975
+    },
+    {
+      "name": "Aliarcobacter butzleri",
+      "tax_id": 28197,
+      "abundance": 0.11,
+      "reads": 677
+    },
+    {
+      "name": "Arcobacter aquimarinus",
+      "tax_id": 1315211,
+      "abundance": 0.45,
+      "reads": 2844
+    },
+    {
+      "name": "Arcobacter acticola",
+      "tax_id": 1849015,
+      "abundance": 0.39,
+      "reads": 2427
+    },
+    {
+      "name": "Arcobacter ellisii",
+      "tax_id": 913109,
+      "abundance": 0.24,
+      "reads": 1519
+    },
+    {
+      "name": "Bacteroides graminisolvens",
+      "tax_id": 477666,
+      "abundance": 0.59,
+      "reads": 3677
+    },
+    {
+      "name": "Bacteroides uniformis",
+      "tax_id": 820,
+      "abundance": 0.24,
+      "reads": 1486
+    },
+    {
+      "name": "Bacteroides thetaiotaomicron",
+      "tax_id": 818,
+      "abundance": 0.14,
+      "reads": 877
+    },
+    {
+      "name": "Phocaeicola vulgatus",
+      "tax_id": 821,
+      "abundance": 0.37,
+      "reads": 2307
+    },
+    {
+      "name": "Phocaeicola dorei",
+      "tax_id": 357276,
+      "abundance": 0.14,
+      "reads": 899
+    },
+    {
+      "name": "Parabacteroides distasonis",
+      "tax_id": 823,
+      "abundance": 0.11,
+      "reads": 672
+    },
+    {
+      "name": "Cloacibacterium caeni",
+      "tax_id": 2004710,
+      "abundance": 0.56,
+      "reads": 3539
+    },
+    {
+      "name": "Cloacibacterium normanense",
+      "tax_id": 237258,
+      "abundance": 0.21,
+      "reads": 1300
+    },
+    {
+      "name": "Epilithonimonas vandammei",
+      "tax_id": 2487072,
+      "abundance": 0.12,
+      "reads": 732
+    },
+    {
+      "name": "Homo sapiens",
+      "tax_id": 9606,
+      "abundance": 1.4,
+      "reads": 8801
+    }
+  ]
+}

@@ -1,65 +1,42 @@
 import os
-from glob import glob
+import json
+from datetime import datetime
 
-########################################
-# Configuration
-########################################
-
-configfile: "config.yaml"
-
-FASTQ_DIR = "data/fastq"
-
-SAMPLES = [
-    os.path.basename(f).rsplit(".", 1)[0]
-    for f in glob(f"{FASTQ_DIR}/*.fastq")
-]
-
-os.makedirs("results/kraken2", exist_ok=True)
-os.makedirs("logs/kraken2", exist_ok=True)
-
-PROJECT_ROOT = os.getcwd().replace("\\", "/")
-
-########################################
-# Final target
-########################################
+# Define the Windows-visible path to your Ubuntu home
+UBUNTU_HOME_WIN = r"\\wsl.localhost\Ubuntu\home\yalid"
 
 rule all:
     input:
-        expand("results/kraken2/{sample}.json", sample=SAMPLES)
+        "results/kraken2/SRR7497167_1.json"
 
-########################################
-# 1. Kraken2 classification (Docker)
-########################################
+import shutil
 
-rule kraken2_classify:
+rule kraken2_classify_native:
     input:
-        fastq="data/fastq/{sample}.fastq"
+        fastq=ancient(os.path.join(UBUNTU_HOME_WIN,"fastq","SRR7497167_1.fastq"))
     output:
-        kraken="results/kraken2/{sample}.kraken",
-        report="results/kraken2/{sample}.report"
-    threads:
-        config["kraken2"]["threads"]
-    log:
-        "logs/kraken2/{sample}.log"
-    shell:
-        """
-        docker run --rm \
-          -v "{config[paths][db_host]}:{config[kraken2][db_container_path]}" \
-          -v "{PROJECT_ROOT}:/work" \
-          {config[kraken2][image]} \
-          kraken2 \
-            --db {config[kraken2][db_container_path]} \
-            --threads {threads} \
-            --confidence {config[kraken2][confidence]} \
-            --report /work/{output.report} \
-            /work/{input.fastq} \
-            > /work/{output.kraken} \
-            2> /work/{log}
-        """
+        report="results/kraken2/SRR7497167_1.report",
+        kraken="results/kraken2/SRR7497167_1.kraken"
+    run:
+        # 1. Since files already exist in Ubuntu, we check before running
+        # This prevents re-running the 10-minute Kraken process if not needed
+        wsl_report = "/home/yalid/results/kraken2/SRR7497167_1.report"
 
-########################################
-# 2. Convert Kraken2 report to JSON
-########################################
+        # Check if files are missing in Ubuntu; only then run Kraken2
+        check_cmd = f'wsl -d Ubuntu [ -f {wsl_report} ]'
+        if subprocess.call(check_cmd) != 0:
+            shell('wsl -d Ubuntu bash -c "mkdir -p /home/yalid/results/kraken2 && '
+                  'kraken2 --db /home/yalid/my_pathogen_db --threads 8 '
+                  '--report /home/yalid/results/kraken2/SRR7497167_1.report '
+                  '/home/yalid/fastq/SRR7497167_1.fastq > /home/yalid/results/kraken2/SRR7497167_1.kraken"')
+
+        # 2. Ensure the Windows results directory exists
+        os.makedirs("results/kraken2",exist_ok=True)
+
+        # 3. Use Python to copy the files from WSL to Windows
+        # UBUNTU_HOME_WIN should be r"\\wsl.localhost\Ubuntu\home\yalid"
+        shutil.copy2(os.path.join(UBUNTU_HOME_WIN,"results","kraken2","SRR7497167_1.report"),output.report)
+        shutil.copy2(os.path.join(UBUNTU_HOME_WIN,"results","kraken2","SRR7497167_1.kraken"),output.kraken)
 
 rule kraken2_to_json:
     input:
@@ -67,39 +44,26 @@ rule kraken2_to_json:
     output:
         json="results/kraken2/{sample}.json"
     run:
-        import json
-        from datetime import datetime
-
-        results = []
-
-        with open(input.report) as f:
+        pathogens = []
+        with open(input.report,"r") as f:
             for line in f:
-                cols = line.rstrip("\n").split("\t")
-                if len(cols) < 6:
-                    continue
-
-                percent, reads_clade, reads_direct, rank, taxid, name = cols
-
-                if rank == "S":
-                    results.append({
-                        "rank": "species",
-                        "taxon": name.strip(),
-                        "taxid": int(taxid),
-                        "reads": int(reads_clade),
-                        "percentage": float(percent)
+                cols = line.strip().split("\t")
+                if len(cols) < 6: continue
+                perc, reads, _, rank, taxid, name = cols
+                # Filter for Species (S) with > 0.1% abundance
+                if rank == "S" and float(perc) > 0.1:
+                    pathogens.append({
+                        "name": name.strip(),
+                        "tax_id": int(taxid),
+                        "abundance": float(perc),
+                        "reads": int(reads)
                     })
 
         output_data = {
-            "sample": wildcards.sample,
-            "analysis_timestamp": datetime.utcnow().isoformat() + "Z",
-            "tool": "kraken2",
-            "database": "local_kraken2_db",
-            "parameters": {
-                "confidence": config["kraken2"]["confidence"],
-                "threads": config["kraken2"]["threads"]
-            },
-            "results": results
+            "sample_id": wildcards.sample,
+            "processed_date": datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+            "pathogens_detected": pathogens
         }
 
-        with open(output.json, "w") as out:
-            json.dump(output_data, out, indent=2)
+        with open(output.json,"w") as out:
+            json.dump(output_data,out,indent=2)
