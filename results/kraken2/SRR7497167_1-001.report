@@ -1,0 +1,95 @@
+ 97.36	611075	611075	U	0	unclassified
+  2.64	16580	0	R	1	root
+  2.64	16580	12	R1	131567	  cellular organisms
+  2.63	16521	225	D	2	    Bacteria
+  2.29	14376	56	K	3379134	      Pseudomonadati
+  2.20	13795	21	P	1224	        Pseudomonadota
+  2.18	13692	408	C	1236	          Gammaproteobacteria
+  0.58	3650	0	O	72274	            Pseudomonadales
+  0.58	3650	0	F	135621	              Pseudomonadaceae
+  0.58	3650	0	G	286	                Pseudomonas
+  0.58	3650	0	G1	136841	                  Pseudomonas aeruginosa group
+  0.58	3650	3650	S	287	                    Pseudomonas aeruginosa
+  0.55	3468	0	O	135623	            Vibrionales
+  0.55	3468	0	F	641	              Vibrionaceae
+  0.55	3468	0	G	662	                Vibrio
+  0.55	3468	3468	S	666	                  Vibrio cholerae
+  0.53	3327	0	O	91347	            Enterobacterales
+  0.53	3327	191	F	543	              Enterobacteriaceae
+  0.31	1924	0	G	561	                Escherichia
+  0.31	1924	1924	S	562	                  Escherichia coli
+  0.19	1212	0	G	547	                Enterobacter
+  0.19	1212	0	G1	354276	                  Enterobacter cloacae complex
+  0.19	1212	1212	S	550	                    Enterobacter cloacae
+  0.42	2641	0	O	2887326	            Moraxellales
+  0.42	2641	118	F	468	              Moraxellaceae
+  0.36	2254	0	G	469	                Acinetobacter
+  0.36	2254	0	G1	909768	                  Acinetobacter calcoaceticus/baumannii complex
+  0.36	2254	2254	S	470	                    Acinetobacter baumannii
+  0.04	269	0	G	475	                Moraxella
+  0.04	269	269	S	480	                  Moraxella catarrhalis
+  0.03	198	0	O	135625	            Pasteurellales
+  0.03	198	0	F	712	              Pasteurellaceae
+  0.03	198	0	G	724	                Haemophilus
+  0.03	198	198	S	727	                  Haemophilus influenzae
+  0.01	82	0	C	28211	          Alphaproteobacteria
+  0.01	82	0	O	766	            Rickettsiales
+  0.01	82	0	F	775	              Rickettsiaceae
+  0.01	82	0	F1	33988	                Rickettsieae
+  0.01	82	0	G	69474	                  Orientia
+  0.01	82	82	S	784	                    Orientia tsutsugamushi
+  0.08	525	0	P	29547	        Campylobacterota
+  0.08	525	0	C	3031852	          Epsilonproteobacteria
+  0.08	525	0	O	213849	            Campylobacterales
+  0.08	525	0	F	72293	              Helicobacteraceae
+  0.08	525	0	G	209	                Helicobacter
+  0.08	525	525	S	210	                  Helicobacter pylori
+  0.31	1920	43	K	1783272	      Bacillati
+  0.22	1370	0	P	201174	        Actinomycetota
+  0.22	1370	0	C	1760	          Actinomycetes
+  0.22	1370	0	O	85007	            Mycobacteriales
+  0.22	1370	0	F	1762	              Mycobacteriaceae
+  0.22	1370	0	G	1763	                Mycobacterium
+  0.22	1370	0	G1	77643	                  Mycobacterium tuberculosis complex
+  0.22	1370	1370	S	1773	                    Mycobacterium tuberculosis
+  0.08	507	26	P	1239	        Bacillota
+  0.05	318	0	C	91061	          Bacilli
+  0.05	318	0	O	1385	            Bacillales
+  0.05	318	0	F	90964	              Staphylococcaceae
+  0.05	318	0	G	1279	                Staphylococcus
+  0.05	318	318	S	1280	                  Staphylococcus aureus
+  0.03	163	0	C	186801	          Clostridia
+  0.03	163	0	O	186802	            Eubacteriales
+  0.03	163	0	F	31979	              Clostridiaceae
+  0.03	163	0	G	1485	                Clostridium
+  0.03	163	163	S	1513	                  Clostridium tetani
+  0.01	47	2	D	2759	    Eukaryota
+  0.00	23	0	D1	33154	      Opisthokonta
+  0.00	23	0	K	4751	        Fungi
+  0.00	23	0	K1	451864	          Dikarya
+  0.00	23	0	P	4890	            Ascomycota
+  0.00	23	0	P1	716545	              saccharomyceta
+  0.00	23	0	P2	147538	                Pezizomycotina
+  0.00	23	0	P3	716546	                  leotiomyceta
+  0.00	23	0	C	147545	                    Eurotiomycetes
+  0.00	23	0	C1	451871	                      Eurotiomycetidae
+  0.00	23	0	O	33183	                        Onygenales
+  0.00	23	0	F	33184	                          Onygenaceae
+  0.00	23	0	G	5500	                            Coccidioides
+  0.00	23	23	S	5501	                              Coccidioides immitis
+  0.00	20	0	D1	2698737	      Sar
+  0.00	20	0	D2	33630	        Alveolata
+  0.00	20	0	P	5794	          Apicomplexa
+  0.00	20	0	C	422676	            Aconoidasida
+  0.00	20	0	O	5819	              Haemosporida
+  0.00	20	0	F	1639119	                Plasmodiidae
+  0.00	20	0	G	5820	                  Plasmodium
+  0.00	20	0	G1	418107	                    Plasmodium (Laverania)
+  0.00	20	20	S	5833	                      Plasmodium falciparum
+  0.00	2	0	D1	2611341	      Metamonada
+  0.00	2	0	P	207245	        Fornicata
+  0.00	2	0	O	5738	          Diplomonadida
+  0.00	2	0	F	5739	            Hexamitidae
+  0.00	2	0	F1	68459	              Giardiinae
+  0.00	2	0	G	5740	                Giardia
+  0.00	2	2	S	5741	                  Giardia duodenalis

@@ -12,10 +12,14 @@ __pycache__/
 *$py.class
 
 # Bioinformatics Data
+fastQ_reads/
+kraken_db/
 data/*.fastq
 data/*.fq
 *.fastq
 *.fq
+*.fna
+
 
 # Snakemake internal files
 .snakemake/

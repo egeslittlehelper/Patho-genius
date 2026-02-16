@@ -2,41 +2,48 @@ import os
 import json
 from datetime import datetime
 
-# Define the Windows-visible path to your Ubuntu home
-UBUNTU_HOME_WIN = r"\\wsl.localhost\Ubuntu\home\yalid"
+configfile: "config.yaml"
+
+SAMPLE = "SRR7497167_1-001"
+# Convert relative paths to absolute for Docker mounts
+DB_HOST = os.path.abspath(config["paths"]["db_host_windows"]).replace("\\", "/")
+DATA_HOST = os.path.abspath(config["paths"]["data_host_windows"]).replace("\\", "/")
+RESULTS_HOST = os.path.abspath(os.path.join("results", "kraken2")).replace("\\", "/")
+IMAGE = config["kraken2"]["image"]
 
 rule all:
     input:
-        "results/kraken2/SRR7497167_1.json"
+        f"results/kraken2/{SAMPLE}.json"
 
-import shutil
-
-rule kraken2_classify_native:
+rule kraken2_classify_container:
     input:
-        fastq=ancient(os.path.join(UBUNTU_HOME_WIN,"fastq","SRR7497167_1.fastq"))
+        fastq=os.path.join(DATA_HOST, f"{SAMPLE}.fastq")
     output:
-        report="results/kraken2/SRR7497167_1.report",
-        kraken="results/kraken2/SRR7497167_1.kraken"
+        report=f"results/kraken2/{SAMPLE}.report",
+        kraken=f"results/kraken2/{SAMPLE}.kraken"
+    params:
+        db=DB_HOST,
+        data=DATA_HOST,
+        out=RESULTS_HOST,
+        image=IMAGE,
+        sample=SAMPLE,
+        threads=config["kraken2"]["threads"],
+        confidence=config["kraken2"].get("confidence")
     run:
-        # 1. Since files already exist in Ubuntu, we check before running
-        # This prevents re-running the 10-minute Kraken process if not needed
-        wsl_report = "/home/yalid/results/kraken2/SRR7497167_1.report"
-
-        # Check if files are missing in Ubuntu; only then run Kraken2
-        check_cmd = f'wsl -d Ubuntu [ -f {wsl_report} ]'
-        if subprocess.call(check_cmd) != 0:
-            shell('wsl -d Ubuntu bash -c "mkdir -p /home/yalid/results/kraken2 && '
-                  'kraken2 --db /home/yalid/my_pathogen_db --threads 8 '
-                  '--report /home/yalid/results/kraken2/SRR7497167_1.report '
-                  '/home/yalid/fastq/SRR7497167_1.fastq > /home/yalid/results/kraken2/SRR7497167_1.kraken"')
-
-        # 2. Ensure the Windows results directory exists
-        os.makedirs("results/kraken2",exist_ok=True)
-
-        # 3. Use Python to copy the files from WSL to Windows
-        # UBUNTU_HOME_WIN should be r"\\wsl.localhost\Ubuntu\home\yalid"
-        shutil.copy2(os.path.join(UBUNTU_HOME_WIN,"results","kraken2","SRR7497167_1.report"),output.report)
-        shutil.copy2(os.path.join(UBUNTU_HOME_WIN,"results","kraken2","SRR7497167_1.kraken"),output.kraken)
+        os.makedirs(RESULTS_HOST, exist_ok=True)
+        conf_arg = ""
+        if params.confidence is not None:
+            conf_arg = f"--confidence {params.confidence}"
+        shell(
+            'docker run --rm '
+            '-v "{params.db}:/db" '
+            '-v "{params.data}:/data" '
+            '-v "{params.out}:/out" '
+            '{params.image} '
+            'sh -c "kraken2 --db /db --threads {params.threads} {conf_arg} '
+            '--report /out/{params.sample}.report '
+            '/data/{params.sample}.fastq > /out/{params.sample}.kraken"'
+        )
 
 rule kraken2_to_json:
     input:
@@ -50,8 +57,8 @@ rule kraken2_to_json:
                 cols = line.strip().split("\t")
                 if len(cols) < 6: continue
                 perc, reads, _, rank, taxid, name = cols
-                # Filter for Species (S) with > 0.1% abundance
-                if rank == "S" and float(perc) > 0.1:
+                # Filter for Species (S) with > 0.01% abundance
+                if rank == "S" and float(perc) > 0.01:
                     pathogens.append({
                         "name": name.strip(),
                         "tax_id": int(taxid),

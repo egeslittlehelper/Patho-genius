@@ -1,9 +1,9 @@
 paths:
-  # Everything is now inside your WSL home directory
-  db_host: "/home/yalid/my_pathogen_db"
-  data_wsl: "/home/yalid/fastq"
-  results_wsl: "/home/yalid/results/kraken2"
+  # Relative paths (workspace-relative, portable across machines)
+  db_host_windows: "./kraken_db"
+  data_host_windows: "./fastQ_reads"
 
 kraken2:
+  image: "staphb/kraken2:latest"
   threads: 8
-  confidence: 0.1
+  confidence: 0.0  # Default: 0.0 (no filtering), higher = more stringent
