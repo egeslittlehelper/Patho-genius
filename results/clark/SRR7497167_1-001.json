@@ -1,0 +1,91 @@
+{
+  "sample_id": "SRR7497167_1-001",
+  "processed_date": "2026-04-09 01:35:34",
+  "classifier": "CLARK-l",
+  "pathogens_detected": [
+    {
+      "name": "Acinetobacter baumannii",
+      "tax_id": 470,
+      "abundance": 0.114235,
+      "reads": 717
+    },
+    {
+      "name": "Clostridium tetani",
+      "tax_id": 1513,
+      "abundance": 0.0353697,
+      "reads": 222
+    },
+    {
+      "name": "Coccidioides immitis",
+      "tax_id": 5501,
+      "abundance": 1.60104,
+      "reads": 10049
+    },
+    {
+      "name": "Enterobacter cloacae",
+      "tax_id": 550,
+      "abundance": 0.118377,
+      "reads": 743
+    },
+    {
+      "name": "Escherichia coli",
+      "tax_id": 562,
+      "abundance": 0.252049,
+      "reads": 1582
+    },
+    {
+      "name": "Haemophilus influenzae",
+      "tax_id": 727,
+      "abundance": 0.0294748,
+      "reads": 185
+    },
+    {
+      "name": "Helicobacter pylori",
+      "tax_id": 210,
+      "abundance": 0.0307494,
+      "reads": 193
+    },
+    {
+      "name": "Moraxella catarrhalis",
+      "tax_id": 480,
+      "abundance": 0.0391935,
+      "reads": 246
+    },
+    {
+      "name": "Mycobacterium tuberculosis",
+      "tax_id": 1773,
+      "abundance": 0.036963,
+      "reads": 232
+    },
+    {
+      "name": "Plasmodium falciparum",
+      "tax_id": 5833,
+      "abundance": 2.44147,
+      "reads": 15324
+    },
+    {
+      "name": "Pseudomonas aeruginosa",
+      "tax_id": 287,
+      "abundance": 0.119014,
+      "reads": 747
+    },
+    {
+      "name": "Staphylococcus aureus",
+      "tax_id": 1280,
+      "abundance": 0.0458851,
+      "reads": 288
+    },
+    {
+      "name": "Streptococcus pneumoniae",
+      "tax_id": 1313,
+      "abundance": 0.0173662,
+      "reads": 109
+    },
+    {
+      "name": "Vibrio cholerae",
+      "tax_id": 666,
+      "abundance": 0.274673,
+      "reads": 1724
+    }
+  ]
+}

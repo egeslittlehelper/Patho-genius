@@ -14,6 +14,7 @@ __pycache__/
 # Bioinformatics Data
 fastQ_reads/
 kraken_db/
+clark_db/
 data/*.fastq
 data/*.fq
 *.fastq
