@@ -1,0 +1,369 @@
+<!-- RESULTS PAGE TEMPLATE -->
+<div id="page-results" class="page-view hidden">
+    <header class="page-header">
+        <div>
+            <h1>Analysis Results</h1>
+            <p class="page-subtitle">View running analyses, history, and detailed reports</p>
+        </div>
+    </header>
+
+    <!-- Results Source Tabs -->
+    <div class="results-source-tabs" id="results-source-tabs">
+        <button class="source-tab active" data-source="local" onclick="ResultsPage.switchSource('local')">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <rect x="2" y="2" width="20" height="8" rx="2" ry="2"></rect>
+                <rect x="2" y="14" width="20" height="8" rx="2" ry="2"></rect>
+                <line x1="6" y1="6" x2="6.01" y2="6"></line>
+                <line x1="6" y1="18" x2="6.01" y2="18"></line>
+            </svg>
+            Local Results
+        </button>
+        <button class="source-tab" data-source="cloud" onclick="ResultsPage.switchSource('cloud')" id="cloud-results-tab">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+            </svg>
+            Cloud Results
+            <span class="guest-lock-icon hidden" id="cloud-lock-icon" title="Login required">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </span>
+        </button>
+    </div>
+
+    <!-- Running Analyses Section -->
+    <div id="running-analyses-section" class="card running-analyses-card">
+        <div class="card-header-row">
+            <h3 class="card-title">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                Running Analyses
+            </h3>
+            <span class="count-badge" id="running-analyses-count">0 active</span>
+        </div>
+        <div id="running-analyses-list">
+            <p class="text-muted empty-state">No analyses currently running</p>
+        </div>
+    </div>
+
+    <!-- Local Results Section -->
+    <div id="local-results-section">
+        <!-- Analysis History Browser -->
+        <div class="card" id="analysis-history-section">
+            <div class="card-header-row">
+                <h3 class="card-title">Analysis History</h3>
+                <div class="search-box">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" placeholder="Search analyses..." id="results-search">
+                </div>
+            </div>
+            <table class="data-table" id="results-history-table">
+                <thead>
+                    <tr>
+                        <th>Analysis Name</th>
+                        <th>Date</th>
+                        <th>Sample Type</th>
+                        <th>Status</th>
+                        <th>Pathogens Found</th>
+                        <th>Report</th>
+                        <th style="width: 100px;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="results-history-body">
+                    <!-- Populated by JavaScript -->
+                </tbody>
+            </table>
+        </div>
+    </div><!-- End local-results-section -->
+
+    <!-- Cloud Results Section (for registered users) -->
+    <div id="cloud-results-section" class="hidden">
+        <div class="card">
+            <div class="card-header-row">
+                <h3 class="card-title">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:20px;height:20px;margin-right:8px;vertical-align:middle;">
+                        <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                    </svg>
+                    Cloud Results
+                </h3>
+                <div class="card-actions">
+                    <button class="btn btn-outline btn-sm" onclick="ResultsPage.refreshCloudResults()">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                            <path d="M21 2v6h-6"></path>
+                            <path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path>
+                            <path d="M3 22v-6h6"></path>
+                            <path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path>
+                        </svg>
+                        Refresh
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Connection Status Banner -->
+            <div id="cloud-connection-status" class="cloud-status-banner">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
+                </svg>
+                <span id="cloud-status-text">Checking connection...</span>
+            </div>
+
+            <!-- Guest Mode Warning -->
+            <div id="cloud-guest-warning" class="cloud-warning hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+                <div>
+                    <strong>Login Required</strong>
+                    <p>Cloud sync features are only available for registered users. <a href="#" onclick="App.navigateTo('login'); return false;">Login</a> or <a href="#" onclick="App.showRegister(); return false;">Create an account</a> to access your cloud results.</p>
+                </div>
+            </div>
+
+            <!-- Cloud Results Table -->
+            <div id="cloud-results-content">
+                <table class="data-table" id="cloud-results-table">
+                    <thead>
+                        <tr>
+                            <th>Analysis Name</th>
+                            <th>Date</th>
+                            <th>Sample Type</th>
+                            <th>Size</th>
+                            <th>Synced</th>
+                            <th style="width: 120px;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cloud-results-body">
+                        <!-- Populated by JavaScript -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div><!-- End cloud-results-section -->
+
+    <!-- Detailed Results View (shown when an analysis is selected) -->
+    <div id="results-detail-view" class="hidden">
+        <div class="results-detail-header">
+            <button class="btn btn-outline btn-sm" id="back-to-history-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                Back to History
+            </button>
+            <div class="results-detail-title">
+                <h2 id="detail-analysis-name">Patient_001_Blood_Sample</h2>
+                <p class="page-subtitle" id="results-subtitle">Completed on Dec 12, 2025 at 2:45 PM</p>
+            </div>
+            <div class="header-actions">
+                <button class="btn btn-outline" onclick="ResultsPage.exportResult('json')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    View Raw Data
+                </button>
+                <button class="btn btn-primary" onclick="ResultsPage.exportResult('pdf')">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Export Report
+                </button>
+            </div>
+        </div>
+
+        <div class="alert alert-warning">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+            <div><strong>DECISION SUPPORT ONLY - NOT FOR CLINICAL DIAGNOSIS:</strong> This analysis provides computational predictions only. All findings MUST be verified with clinical laboratory tests.</div>
+        </div>
+
+        <!-- Results Tabs -->
+        <div class="tabs">
+            <button class="tab-btn active" data-tab="overview">Overview & Summary</button>
+            <button class="tab-btn" data-tab="taxonomic">Taxonomic Analysis</button>
+            <button class="tab-btn" data-tab="quality">Quality Control</button>
+            <button class="tab-btn" data-tab="pathogens">Pathogen Details</button>
+            <button class="tab-btn" data-tab="comparative">Comparative Analysis</button>
+        </div>
+
+        <!-- Tab: Overview -->
+        <div class="tab-content active" id="tab-overview">
+            <div class="card">
+                <div class="card-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                    <h3>AI-Powered Clinical Summary</h3>
+                </div>
+                <p class="summary-text">Metagenomic analysis of the blood sample reveals a <strong>polymicrobial infection</strong> dominated by <strong>Escherichia coli O157:H7</strong> (95% confidence, 45.2% relative abundance, 3.42M reads). This highly pathogenic strain carries 12 virulence genes and 5 antimicrobial resistance genes.</p>
+                <p class="summary-text">Co-detection of <strong>Staphylococcus aureus MRSA USA300</strong> (87% confidence, 18.6% abundance) with 7 AMR genes suggests methicillin-resistant co-infection.</p>
+                <div class="alert alert-danger">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    <strong>CRITICAL ALERT:</strong> Multiple MDR (multidrug-resistant) pathogens detected. Immediate infectious disease consultation required.
+                </div>
+                <div class="alert alert-info"><strong>Clinical Recommendation:</strong> Initiate broad-spectrum IV antibiotics pending susceptibility testing. Consider vancomycin + meropenem combination therapy.</div>
+            </div>
+
+            <div class="stats-cards-grid">
+                <div class="stat-card">
+                    <div class="stat-card-header"><span>Total Reads</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline></svg></div>
+                    <div class="stat-card-value">11.89M</div>
+                    <div class="stat-card-sub">↑ 94.2% high quality</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header"><span>Species Detected</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle></svg></div>
+                    <div class="stat-card-value">342</div>
+                    <div class="stat-card-sub">63.6% classified</div>
+                </div>
+                <div class="stat-card stat-card-danger">
+                    <div class="stat-card-header"><span>Pathogens</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg></div>
+                    <div class="stat-card-value">4 Critical</div>
+                    <div class="stat-card-sub">High virulence</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-card-header"><span>AMR Genes</span><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg></div>
+                    <div class="stat-card-value">19 Total</div>
+                    <div class="stat-card-sub">Multi-drug resistant</div>
+                </div>
+            </div>
+
+            <div class="pathogen-cards" id="pathogen-cards-overview"></div>
+        </div>
+
+        <!-- Tab: Taxonomic Analysis -->
+        <div class="tab-content" id="tab-taxonomic">
+            <div class="card">
+                <h3 class="card-title">Species Abundance Treemap</h3>
+                <p class="text-muted">Proportional visualization of detected species - hover for details</p>
+                <div id="abundance-treemap-chart" style="min-height: 400px;"></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Hierarchical Taxonomy (Sunburst)</h3>
+                <p class="text-muted">Multi-level taxonomic classification: Domain → Phylum → Species</p>
+                <div id="sunburst-chart" style="min-height: 450px;"></div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Read Classification Flow (Sankey)</h3>
+                <p class="text-muted">Visualization of how reads flow through the classification pipeline</p>
+                <div id="sankey-chart" style="min-height: 420px;"></div>
+            </div>
+        </div>
+
+        <!-- Tab: Quality Control -->
+        <div class="tab-content" id="tab-quality">
+            <div class="card">
+                <h3 class="card-title">Read Quality Score Distribution</h3>
+                <p class="text-muted">Phred quality scores across all reads (higher = better)</p>
+                <div class="bar-chart" id="quality-chart">
+                    <div class="bar-chart-y-axis">
+                        <span>32</span><span>24</span><span>16</span><span>8</span><span>0</span>
+                    </div>
+                    <div class="bar-chart-bars">
+                        <div class="bar-item"><div class="bar" style="height: 2%"></div><span>Q10</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 3%"></div><span>Q15</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 5%"></div><span>Q20</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 18%"></div><span>Q25</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 52%"></div><span>Q30</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 85%"></div><span>Q35</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 95%"></div><span>Q38</span></div>
+                        <div class="bar-item"><div class="bar" style="height: 35%"></div><span>Q40</span></div>
+                    </div>
+                    <div class="bar-chart-x-label">Quality Score</div>
+                </div>
+            </div>
+            <div class="card">
+                <h3 class="card-title">Quality Control Summary</h3>
+                <div class="qc-metrics">
+                    <div class="qc-metric">
+                        <span class="qc-label">Average Read Quality</span>
+                        <span class="qc-value">Q38</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 95%"></div></div>
+                        <span class="qc-sub">Excellent quality</span>
+                    </div>
+                    <div class="qc-metric">
+                        <span class="qc-label">Classification Rate</span>
+                        <span class="qc-value">63.6%</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 63.6%"></div></div>
+                        <span class="qc-sub">7.56M classified reads</span>
+                    </div>
+                    <div class="qc-metric">
+                        <span class="qc-label">Mean Coverage Depth</span>
+                        <span class="qc-value">145x</span>
+                        <div class="progress-bar"><div class="progress-fill" style="width: 90%"></div></div>
+                        <span class="qc-sub">High confidence</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Pathogen Details -->
+        <div class="tab-content" id="tab-pathogens">
+            <div class="pathogen-detail-card">
+                <div class="pathogen-detail-header">
+                    <div>
+                        <h3>Escherichia coli</h3>
+                        <p class="pathogen-strain">Strain: O157:H7</p>
+                    </div>
+                    <span class="risk-badge risk-high">High Risk</span>
+                </div>
+                <div class="pathogen-detail-stats">
+                    <div class="detail-stat">
+                        <span class="detail-label">Relative Abundance</span>
+                        <span class="detail-value">45.2%</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-label">Read Count</span>
+                        <span class="detail-value">3.42M</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-label">Confidence Score</span>
+                        <span class="detail-value text-primary">95%</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-label">AMR Genes Detected</span>
+                        <span class="detail-value">5</span>
+                    </div>
+                </div>
+                <div class="alert alert-danger-light">
+                    <strong>Virulence Factors</strong>
+                    <p>12 genes detected including toxin production, adhesion factors, and immune evasion mechanisms</p>
+                </div>
+                <div class="alert alert-info">
+                    <strong>Clinical Relevance</strong>
+                    <p>Associated with severe gastroenteritis and hemolytic uremic syndrome (HUS)</p>
+                </div>
+            </div>
+
+            <div class="pathogen-detail-card">
+                <div class="pathogen-detail-header">
+                    <div>
+                        <h3>Staphylococcus aureus</h3>
+                        <p class="pathogen-strain">Strain: MRSA USA300</p>
+                    </div>
+                    <span class="risk-badge risk-high">High Risk</span>
+                </div>
+                <div class="pathogen-detail-stats">
+                    <div class="detail-stat">
+                        <span class="detail-label">Relative Abundance</span>
+                        <span class="detail-value">18.6%</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-label">Read Count</span>
+                        <span class="detail-value">1.41M</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-label">Confidence Score</span>
+                        <span class="detail-value text-primary">87%</span>
+                    </div>
+                    <div class="detail-stat">
+                        <span class="detail-label">AMR Genes Detected</span>
+                        <span class="detail-value">7</span>
+                    </div>
+                </div>
+                <div class="alert alert-danger-light">
+                    <strong>Antibiotic Resistance</strong>
+                    <p>mecA gene detected - methicillin resistant. Sensitive to vancomycin.</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Tab: Comparative Analysis -->
+        <div class="tab-content" id="tab-comparative">
+            <div class="card">
+                <h3 class="card-title">Pathogen Characteristic Comparison</h3>
+                <p class="text-muted">Radar plot showing relative abundance, confidence, virulence, and AMR profiles</p>
+                <div id="radar-chart" style="min-height: 450px;"></div>
+            </div>
+        </div>
+    </div><!-- End results-detail-view -->
+</div>
+

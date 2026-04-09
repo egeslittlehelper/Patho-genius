@@ -1,0 +1,60 @@
+<!-- MODALS TEMPLATE -->
+
+<!-- Admin Reset Password Modal -->
+<div id="reset-password-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reset User Password</h3>
+            <button class="modal-close" onclick="SettingsPage.closeResetPasswordModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Set a new temporary password for <strong id="reset-user-display">user</strong>. The user will be required to change this password on next login.</p>
+            <form id="admin-reset-password-form">
+                <input type="hidden" id="reset-user-id">
+                <div class="form-group">
+                    <label for="new-temp-password">New Password</label>
+                    <input type="password" id="new-temp-password" class="input-field" placeholder="Enter new password" required minlength="6">
+                    <div class="password-requirements">
+                        <ul>
+                            <li>Minimum 6 characters</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label for="confirm-temp-password">Confirm Password</label>
+                    <input type="password" id="confirm-temp-password" class="input-field" placeholder="Confirm new password" required>
+                </div>
+                <div id="reset-password-error" class="login-error hidden"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="SettingsPage.closeResetPasswordModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary">Reset Password</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Forgot Password Modal -->
+<div id="forgot-password-modal" class="modal-overlay hidden">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>Reset Password</h3>
+            <button class="modal-close" onclick="App.closeForgotPasswordModal()">×</button>
+        </div>
+        <div class="modal-body">
+            <p class="modal-description">Enter your email address or username and we'll send you a link to reset your password.</p>
+            <form id="forgot-password-form">
+                <div class="form-group">
+                    <label for="forgot-email">Email or Username</label>
+                    <input type="text" id="forgot-email" class="input-field" placeholder="Enter your email or username" required>
+                </div>
+                <div id="forgot-password-message" class="hidden"></div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-outline" onclick="App.closeForgotPasswordModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary" id="send-recovery-btn">Send Recovery Link</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+

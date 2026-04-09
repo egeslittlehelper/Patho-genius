@@ -1,0 +1,127 @@
+/**
+ * CSS VARIABLES
+ * Purpose: Central design tokens for consistent theming
+ */
+
+:root {
+    /* BRAND COLORS */
+    --primary: #008080;
+    --primary-hover: #006666;
+    --primary-light: #E6F3F3;
+    --primary-bg: rgba(0, 128, 128, 0.1);
+
+    /* SEMANTIC COLORS
+       Used for status indicators and feedback */
+    --success: #10B981;        /* Green - Completed, Available */
+    --success-bg: #ECFDF5;
+    --warning: #F59E0B;        /* Amber - Alerts, Caution */
+    --warning-bg: #FFFBEB;
+    --danger: #EF4444;         /* Red - Errors, Critical, Failed */
+    --danger-bg: #FEF2F2;
+    --danger-light: #FEE2E2;
+    --info: #3B82F6;           /* Blue - Information */
+    --info-bg: #EFF6FF;
+
+    /* NEUTRAL COLORS
+       Grays for text, borders, backgrounds */
+    --gray-50: #F9FAFB;
+    --gray-100: #F3F4F6;
+    --gray-200: #E5E7EB;
+    --gray-300: #D1D5DB;
+    --gray-400: #9CA3AF;
+    --gray-500: #6B7280;
+    --gray-600: #4B5563;
+    --gray-700: #374151;
+    --gray-800: #1F2937;
+    --gray-900: #111827;
+
+    /* BACKGROUND COLORS
+       Page and component backgrounds */
+    --bg-body: #F5F7FA;        /* Main app background */
+    --bg-sidebar: #FFFFFF;     /* Sidebar background */
+    --bg-card: #FFFFFF;        /* Card/panel background */
+    --bg-input: #F3F4F6;       /* Input field background */
+
+    /* TEXT COLORS
+       Typography hierarchy */
+    --text-primary: #111827;   /* Headings, important text */
+    --text-secondary: #374151; /* Body text */
+    --text-muted: #6B7280;     /* Subtle text, labels */
+    --text-light: #9CA3AF;     /* Placeholder text */
+
+    /* BORDER & SHADOWS
+       Visual separation and depth */
+    --border-color: #E5E7EB;
+    --border-light: #F3F4F6;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.05);
+    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+
+    /* LAYOUT DIMENSIONS
+       Consistent spacing and sizing */
+    --sidebar-width: 280px;
+    --header-height: 60px;
+    --radius-sm: 4px;
+    --radius-md: 8px;
+    --radius-lg: 12px;
+    --radius-xl: 16px;
+
+    /* TYPOGRAPHY
+       Font stack and sizes */
+    --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    --font-mono: 'SF Mono', 'Fira Code', Consolas, monospace;
+    
+    /* TRANSITIONS
+       Smooth animations */
+    --transition-fast: 150ms ease;
+    --transition-normal: 200ms ease;
+    --transition-slow: 300ms ease;
+}
+
+/* DARK MODE THEME */
+.dark-mode {
+    /* BRAND COLORS */
+    --primary: #008080;
+    --primary-hover: #006666;
+    --primary-light: #1A2A2A;
+    --primary-bg: rgba(0, 128, 128, 0.2);
+
+    /* SEMANTIC COLORS */
+    --success: #34D399;
+    --success-bg: #1A2E2A;
+    --warning: #FBBF24;
+    --warning-bg: #2E2A1A;
+    --danger: #F87171;
+    --danger-bg: #2E1A1A;
+    --danger-light: #451A1A;
+    --info: #60A5FA;
+    --info-bg: #1A2A3E;
+
+    /* NEUTRAL COLORS */
+    --gray-50: #1F2937;
+    --gray-100: #374151;
+    --gray-200: #4B5563;
+    --gray-300: #6B7280;
+    --gray-400: #9CA3AF;
+    --gray-500: #D1D5DB;
+    --gray-600: #E5E7EB;
+    --gray-700: #F3F4F6;
+    --gray-800: #F9FAFB;
+    --gray-900: #FFFFFF;
+
+    /* BACKGROUND COLORS */
+    --bg-body: #0F172A;
+    --bg-sidebar: #1E293B;
+    --bg-card: #334155;
+    --bg-input: #475569;
+
+    /* TEXT COLORS */
+    --text-primary: #F8FAFC;
+    --text-secondary: #E2E8F0;
+    --text-muted: #94A3B8;
+    --text-light: #64748B;
+
+    /* BORDER & SHADOWS */
+    --border-color: #475569;
+    --border-light: #334155;
+}

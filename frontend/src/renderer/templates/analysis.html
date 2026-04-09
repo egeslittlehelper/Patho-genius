@@ -1,0 +1,141 @@
+<!-- NEW ANALYSIS PAGE TEMPLATE (Step Wizard) -->
+<div id="page-analysis" class="page-view hidden">
+    <header class="page-header">
+        <div>
+            <h1>New Sequencing Analysis</h1>
+            <p class="page-subtitle">Configure and launch a new metagenomic pathogen detection analysis</p>
+        </div>
+    </header>
+
+    <!-- Step Indicator -->
+    <div class="step-wizard">
+        <div class="step active" data-step="1">
+            <span class="step-number">1</span>
+            <span class="step-label">Input Files</span>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step" data-step="2">
+            <span class="step-number">2</span>
+            <span class="step-label">Configuration</span>
+        </div>
+        <div class="step-arrow">→</div>
+        <div class="step" data-step="3">
+            <span class="step-number">3</span>
+            <span class="step-label">Launch</span>
+        </div>
+    </div>
+
+    <!-- Step 1: Input Files -->
+    <div class="wizard-step active" id="wizard-step-1">
+        <div class="card">
+            <h3 class="card-title">Upload FASTQ Files</h3>
+            <div class="upload-zone" id="upload-zone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                    <polyline points="17 8 12 3 7 8"></polyline>
+                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                </svg>
+                <p class="upload-title">Drag & Drop FASTQ Files</p>
+                <p class="upload-subtitle">or click to browse your files</p>
+                <button class="btn btn-outline" id="select-files-btn">Browse Files</button>
+            </div>
+            <div id="file-list" class="file-list hidden"></div>
+        </div>
+        <div class="wizard-actions">
+            <div></div>
+            <button class="btn btn-primary" onclick="AnalysisPage.nextStep()">
+                Next: Configuration
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 2: Configuration -->
+    <div class="wizard-step" id="wizard-step-2">
+        <div class="card">
+            <h3 class="card-title">Analysis Configuration</h3>
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="analysis-name">Analysis Name</label>
+                    <input type="text" id="analysis-name" class="input-field" placeholder="e.g., Patient_001_Sample">
+                </div>
+                <div class="form-group">
+                    <label for="sample-type">Sample Type</label>
+                    <select id="sample-type" class="input-field">
+                        <option value="clinical">Clinical Sample</option>
+                        <option value="environmental">Environmental</option>
+                        <option value="food">Food Safety</option>
+                        <option value="other">Other</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="database-select">Reference Database</label>
+                    <select id="database-select" class="input-field">
+                        <option value="ncbi-refseq">NCBI RefSeq 2025 (Default)</option>
+                        <option value="bacteria">Bacteria Only</option>
+                        <option value="viral">Viral Only</option>
+                        <option value="custom">Custom Database</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="confidence-threshold">Confidence Threshold</label>
+                    <select id="confidence-threshold" class="input-field">
+                        <option value="0.5">50% (More sensitive)</option>
+                        <option value="0.7" selected>70% (Balanced)</option>
+                        <option value="0.9">90% (High precision)</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="wizard-actions">
+            <button class="btn btn-outline" onclick="AnalysisPage.prevStep()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                Back
+            </button>
+            <button class="btn btn-primary" onclick="AnalysisPage.nextStep()">
+                Next: Launch
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Step 3: Launch -->
+    <div class="wizard-step" id="wizard-step-3">
+        <div class="card">
+            <h3 class="card-title">Review & Launch</h3>
+            <div class="review-summary">
+                <div class="review-row">
+                    <span class="review-label">Analysis Name</span>
+                    <span class="review-value" id="review-name">—</span>
+                </div>
+                <div class="review-row">
+                    <span class="review-label">Input Files</span>
+                    <span class="review-value" id="review-files">0 files selected</span>
+                </div>
+                <div class="review-row">
+                    <span class="review-label">Sample Type</span>
+                    <span class="review-value" id="review-sample">—</span>
+                </div>
+                <div class="review-row">
+                    <span class="review-label">Reference Database</span>
+                    <span class="review-value" id="review-database">—</span>
+                </div>
+                <div class="review-row">
+                    <span class="review-label">Estimated Time</span>
+                    <span class="review-value">~15-30 minutes</span>
+                </div>
+            </div>
+        </div>
+        <div class="wizard-actions">
+            <button class="btn btn-outline" onclick="AnalysisPage.prevStep()">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                Back
+            </button>
+            <button class="btn btn-primary btn-lg" id="start-analysis-btn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                Start Analysis
+            </button>
+        </div>
+    </div>
+</div>
+

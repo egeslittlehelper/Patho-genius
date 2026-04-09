@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pathogenius</title>
+    
+    <!-- CSS Variables -->
+    <link rel="stylesheet" href="assets/css/variables.css">
+    
+    <!-- Core Styles -->
+    <link rel="stylesheet" href="assets/css/base.css">
+    <link rel="stylesheet" href="assets/css/layout.css">
+    <link rel="stylesheet" href="assets/css/components.css">
+    
+    <!-- Page-Specific Styles -->
+    <link rel="stylesheet" href="assets/css/pages/login.css">
+    <link rel="stylesheet" href="assets/css/pages/dashboard.css">
+    <link rel="stylesheet" href="assets/css/pages/analysis.css">
+    <link rel="stylesheet" href="assets/css/pages/results.css">
+    <link rel="stylesheet" href="assets/css/pages/database.css">
+    <link rel="stylesheet" href="assets/css/pages/settings.css">
+    
+    <!-- Feature Styles -->
+    <link rel="stylesheet" href="assets/css/charts.css">
+    <link rel="stylesheet" href="assets/css/modals.css">
+    
+    <style>
+        /* Initial loading screen */
+        #loading-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--bg-primary, #0f172a);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.3s ease;
+        }
+        #loading-screen.fade-out {
+            opacity: 0;
+            pointer-events: none;
+        }
+        #loading-screen .logo-pulse {
+            animation: pulse 1.5s ease-in-out infinite;
+        }
+        @keyframes pulse {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+        }
+        #loading-screen h2 {
+            margin-top: 24px;
+            color: var(--text-primary, #f1f5f9);
+            font-size: 24px;
+            font-weight: 600;
+        }
+        #loading-screen p {
+            margin-top: 8px;
+            color: var(--text-muted, #94a3b8);
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- ========== LOADING SCREEN ========== -->
+<div id="loading-screen">
+    <div class="logo-pulse">
+        <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#008080" stroke-width="2.5">
+                        <path d="M22 12h-4l-3 9L9 3l-3 9H2"/>
+                    </svg>
+    </div>
+    <h2>Pathogenius</h2>
+    <p>Loading application...</p>
+                    </div>
+                    
+<!-- ========== AUTH PAGES (Login/Register) ========== -->
+<div id="auth-container">
+    <!-- Loaded from templates/login.html and templates/register.html -->
+</div>
+
+<!-- ========== MAIN APP LAYOUT ========== -->
+<div class="app-layout hidden">
+    
+    <!-- SIDEBAR - Loaded from templates/sidebar.html -->
+    <div id="sidebar-container"></div>
+
+    <!-- MAIN CONTENT AREA -->
+        <main class="content-area">
+        <!-- Pages loaded from templates/*.html -->
+        <div id="pages-container"></div>
+        </main>
+    </div>
+
+<!-- ========== MODALS ========== -->
+<div id="modals-container">
+    <!-- Loaded from templates/modals.html -->
+    </div>
+
+<!-- ========== SCRIPTS ========== -->
+<!-- Utilities -->
+<script src="js/utils.js"></script>
+<script src="js/template-loader.js"></script>
+
+<!-- Core App -->
+<script src="js/app.js"></script>
+<script src="js/charts.js"></script>
+
+<!-- Page Controllers -->
+<script src="pages/login.js"></script>
+<script src="pages/register.js"></script>
+<script src="pages/dashboard.js"></script>
+<script src="pages/newanalysis.js"></script>
+<script src="pages/results.js"></script>
+<script src="pages/database.js"></script>
+<script src="pages/settings.js"></script>
+
+</body>
+</html>

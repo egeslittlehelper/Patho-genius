@@ -1,0 +1,9 @@
+node_modules/
+dist/
+.DS_Store
+*.log
+*.code-workspace
+*config.json
+*results.json
+*.fastq
+*.fasta

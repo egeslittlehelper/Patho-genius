@@ -1,0 +1,129 @@
+/**
+ * NEW ANALYSIS PAGE STYLES
+ * ============================================
+ */
+
+/* Step Wizard */
+.step-wizard {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    margin-bottom: 32px;
+    padding: 20px;
+    background: var(--bg-card);
+    border-radius: var(--radius-lg);
+    border: 1px solid var(--border-color);
+}
+
+.step {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.step-number {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background-color: var(--gray-200);
+    color: var(--text-muted);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 600;
+    font-size: 0.875rem;
+}
+
+.step.active .step-number {
+    background-color: var(--primary);
+    color: white;
+}
+
+.step.completed .step-number {
+    background-color: var(--success);
+    color: white;
+}
+
+.step-label {
+    font-size: 0.9375rem;
+    color: var(--text-muted);
+    font-weight: 500;
+}
+
+.step.active .step-label {
+    color: var(--text-primary);
+}
+
+.step-arrow {
+    color: var(--gray-300);
+    font-size: 1.25rem;
+}
+
+.wizard-step {
+    display: none;
+}
+
+.wizard-step.active {
+    display: block;
+}
+
+.wizard-actions {
+    display: flex;
+    justify-content: space-between;
+    margin-top: 24px;
+}
+
+/* Review Summary */
+.review-summary {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.review-row {
+    display: flex;
+    justify-content: space-between;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.review-label {
+    color: var(--text-muted);
+}
+
+.review-value {
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* File List */
+.file-list {
+    margin-top: 16px;
+}
+
+.file-list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 12px 0;
+    border-bottom: 1px solid var(--border-color);
+    margin-bottom: 8px;
+}
+
+.file-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    background-color: var(--gray-50);
+    border-radius: var(--radius-md);
+    margin-bottom: 8px;
+}
+
+.file-item svg {
+    width: 20px;
+    height: 20px;
+    stroke: var(--primary);
+}
+

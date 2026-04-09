@@ -1,0 +1,198 @@
+/**
+ * SETTINGS PAGE STYLES
+ * ============================================
+ */
+
+.settings-section {
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+.setting-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: 16px 0;
+    border-bottom: 1px solid var(--border-light);
+}
+
+.setting-row:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
+}
+
+.setting-info h4 {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.setting-info p {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    max-width: 400px;
+}
+
+.setting-row-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+}
+
+/* Settings Notification */
+.settings-notification {
+    position: fixed;
+    top: 20px;
+    right: 20px;
+    background-color: var(--success);
+    color: white;
+    padding: 12px 20px;
+    border-radius: var(--radius-md);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.875rem;
+    font-weight: 500;
+    box-shadow: var(--shadow-lg);
+    z-index: 1000;
+    animation: slideIn 0.3s ease;
+}
+
+.settings-notification svg {
+    width: 18px;
+    height: 18px;
+}
+
+/* Settings Actions */
+.settings-actions {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* System Info Grid */
+.system-info-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+}
+
+.info-item {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.info-label {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+}
+
+.info-value {
+    font-size: 0.9375rem;
+    font-weight: 600;
+    color: var(--text-primary);
+}
+
+/* Admin User Management */
+.admin-only-section {
+    border: 2px solid var(--warning);
+    border-left-width: 4px;
+}
+
+.admin-badge {
+    display: inline-block;
+    font-size: 0.6875rem;
+    padding: 3px 8px;
+    background-color: var(--warning);
+    color: white;
+    border-radius: 4px;
+    margin-left: 12px;
+    text-transform: uppercase;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+}
+
+.section-description {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+    margin-bottom: 20px;
+}
+
+.user-management-section {
+    margin-top: 16px;
+}
+
+.user-search-bar {
+    display: flex;
+    gap: 12px;
+    margin-bottom: 16px;
+}
+
+.user-table {
+    width: 100%;
+}
+
+.user-table .user-role-badge {
+    display: inline-block;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.75rem;
+    font-weight: 500;
+    text-transform: capitalize;
+}
+
+.user-role-badge.admin {
+    background-color: var(--warning-bg);
+    color: var(--warning);
+}
+
+.user-role-badge.researcher {
+    background-color: var(--primary-light);
+    color: var(--primary);
+}
+
+.user-role-badge.viewer {
+    background-color: var(--gray-100);
+    color: var(--text-secondary);
+}
+
+.you-badge {
+    font-size: 0.6875rem;
+    color: var(--text-muted);
+    margin-left: 6px;
+    font-weight: normal;
+}
+
+/* Password Requirements */
+.password-requirements {
+    font-size: 0.8125rem;
+    color: var(--text-muted);
+    margin-top: 8px;
+}
+
+.password-requirements ul {
+    margin: 8px 0 0 16px;
+    padding: 0;
+}
+
+.password-requirements li {
+    margin-bottom: 4px;
+}
+
+/* Change Password Form */
+.change-password-form {
+    max-width: 500px;
+}
+
+.change-password-section .setting-info h4 {
+    margin-bottom: 4px;
+}
+
+.change-password-section .setting-info p {
+    color: var(--text-secondary);
+    font-size: 0.875rem;
+}
+
