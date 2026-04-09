@@ -1,0 +1,26 @@
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# PyCharm / JetBrains IDE
+.idea/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Bioinformatics Data
+fastQ_reads/
+kraken_db/
+clark_db/
+data/*.fastq
+data/*.fq
+*.fastq
+*.fq
+*.fna
+
+
+# Snakemake internal files
+.snakemake/

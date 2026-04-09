@@ -1,0 +1,72 @@
+{
+  "sample_id": "SRR7497167_1-001",
+  "processed_date": "2026-02-16 19:11:17",
+  "pathogens_detected": [
+    {
+      "name": "Pseudomonas aeruginosa",
+      "tax_id": 287,
+      "abundance": 0.58,
+      "reads": 3650
+    },
+    {
+      "name": "Vibrio cholerae",
+      "tax_id": 666,
+      "abundance": 0.55,
+      "reads": 3468
+    },
+    {
+      "name": "Escherichia coli",
+      "tax_id": 562,
+      "abundance": 0.31,
+      "reads": 1924
+    },
+    {
+      "name": "Enterobacter cloacae",
+      "tax_id": 550,
+      "abundance": 0.19,
+      "reads": 1212
+    },
+    {
+      "name": "Acinetobacter baumannii",
+      "tax_id": 470,
+      "abundance": 0.36,
+      "reads": 2254
+    },
+    {
+      "name": "Moraxella catarrhalis",
+      "tax_id": 480,
+      "abundance": 0.04,
+      "reads": 269
+    },
+    {
+      "name": "Haemophilus influenzae",
+      "tax_id": 727,
+      "abundance": 0.03,
+      "reads": 198
+    },
+    {
+      "name": "Helicobacter pylori",
+      "tax_id": 210,
+      "abundance": 0.08,
+      "reads": 525
+    },
+    {
+      "name": "Mycobacterium tuberculosis",
+      "tax_id": 1773,
+      "abundance": 0.22,
+      "reads": 1370
+    },
+    {
+      "name": "Staphylococcus aureus",
+      "tax_id": 1280,
+      "abundance": 0.05,
+      "reads": 318
+    },
+    {
+      "name": "Clostridium tetani",
+      "tax_id": 1513,
+      "abundance": 0.03,
+      "reads": 163
+    }
+  ]
+}

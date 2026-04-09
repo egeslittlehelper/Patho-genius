@@ -1,0 +1,13 @@
+paths:
+  # Relative paths (workspace-relative, portable across machines)
+  db_host_windows: "./clark_db"
+  data_host_windows: "./fastQ_reads"
+
+# Sample basename for inputs: fastQ_reads/{sample}.fastq and results/clark/{sample}.json
+sample: "SRR7497167_1"
+
+clark:
+  image: "quay.io/biocontainers/clark:1.2.6.1--h4ac6f70_3"
+  threads: 8
+  kmer_length: 27   # Default k-mer length for CLARK-l
+  sampling_factor: 2  # Sampling factor for CLARK-l (higher = faster, less sensitive)

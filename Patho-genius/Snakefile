@@ -1,0 +1,280 @@
+import os
+import csv
+import json
+from datetime import datetime
+
+configfile: "config.yaml"
+
+SAMPLE = config.get("sample", "SRR7497167_1-001")
+# Convert relative paths to absolute for Docker volume mounts.
+# IMPORTANT: resolve relative to the workflow base directory (directory containing this Snakefile),
+# because the Electron app may launch Snakemake from a different working directory.
+BASEDIR = workflow.basedir
+
+DB_HOST = os.path.abspath(os.path.join(BASEDIR, config["paths"]["db_host_windows"])).replace("\\", "/")
+DATA_HOST = os.path.abspath(os.path.join(BASEDIR, config["paths"]["data_host_windows"])).replace("\\", "/")
+RESULTS_HOST = os.path.abspath(os.path.join(BASEDIR, "results", "clark")).replace("\\", "/")
+IMAGE      = config["clark"]["image"]
+CLARK_DIR  = "/usr/local/opt/clark"   # CLARK install path inside the container
+
+rule all:
+    input:
+        f"results/clark/{SAMPLE}.json"
+
+
+rule clark_lite_classify:
+    """
+    Run CLARK-l classification directly (bypasses classify_metagenome.sh
+    which requires a .settings file that does not persist between Docker runs).
+
+    CLARK-l output CSV columns:
+      Object_ID, Length, 1st_assignment (taxid), hit_count_1,
+      2nd_assignment, hit_count_2, confidence_score
+    """
+    input:
+        fastq=os.path.join(DATA_HOST, f"{SAMPLE}.fastq")
+    output:
+        clark_csv=f"results/clark/{SAMPLE}.clark.csv"
+    params:
+        db=DB_HOST,
+        data=DATA_HOST,
+        out=RESULTS_HOST,
+        image=IMAGE,
+        sample=SAMPLE,
+        threads=config["clark"]["threads"],
+        kmer=config["clark"].get("kmer_length", 27),
+    run:
+        os.makedirs(RESULTS_HOST, exist_ok=True)
+        # -T  targets definition built by build_clark_db.py (set_targets.sh)
+        # -D  database directory (k-mer index is built/cached here on first run)
+        # -m 2  express mode (fastest; default=1, full=0)
+        # -k  k-mer length (must match what was used when building targets)
+        shell(
+            'docker run --rm '
+            '-v "{params.db}:/db" '
+            '-v "{params.data}:/data" '
+            '-v "{params.out}:/out" '
+            '{params.image} '
+            'sh -c "'
+            'CLARK-l '
+            '-T /db/targets.txt '
+            '-D /db/ '
+            '-O /data/{params.sample}.fastq '
+            '-R /out/{params.sample}.clark '
+            '-n {params.threads} '
+            '-k {params.kmer} '
+            '-m 2'
+            '"'
+        )
+
+
+rule clark_abundance_report:
+    """
+    Estimate species-level abundance from the CLARK-l CSV output.
+
+    estimate_abundance.sh wraps getAbundance which reads:
+      -D  database directory (for targets.txt / taxonomy names)
+      -F  CLARK result CSV
+
+    Output CSV columns: Name, TaxID, Lineage, Count, Proportion(%)
+    """
+    input:
+        clark_csv=f"results/clark/{SAMPLE}.clark.csv"
+    output:
+        abundance=f"results/clark/{SAMPLE}.abundance.csv"
+    params:
+        db=DB_HOST,
+        out=RESULTS_HOST,
+        image=IMAGE,
+        sample=SAMPLE,
+        clark_dir=CLARK_DIR,
+    run:
+        shell(
+            'docker run --rm '
+            '-v "{params.db}:/db" '
+            '-v "{params.out}:/out" '
+            '-w {params.clark_dir} '
+            '{params.image} '
+            'sh -c "'
+            './estimate_abundance.sh '
+            '-D /db/ '
+            '-F /out/{params.sample}.clark.csv '
+            '> /out/{params.sample}.abundance.csv'
+            '"'
+        )
+
+
+rule clark_to_json:
+    """
+    Convert CLARK abundance CSV to JSON matching the Pathogenius Electron UI
+    (same shape as frontend mock results.json), plus legacy fields for scripts.
+
+    Input CSV columns (estimate_abundance.sh):
+      Name, TaxID, Lineage, Count, Proportion_All(%), Proportion_Classified(%)
+    """
+    input:
+        abundance="results/clark/{sample}.abundance.csv"
+    output:
+        json="results/clark/{sample}.json"
+    run:
+        # Taxa commonly flagged as higher clinical interest for this panel (heuristic UI risk)
+        high_priority_taxa = {
+            470, 550, 562, 666, 727, 287, 1280, 1313, 1773, 1513, 5501, 5833, 210, 480,
+        }
+
+        rows_data = []
+        unknown_reads = 0
+        total_reads = 0
+
+        with open(input.abundance, newline="") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if not row or row[0].startswith("#"):
+                    continue
+                if row[0].strip() == "Name":
+                    header_skipped = True
+                    continue
+                if len(row) < 5:
+                    continue
+
+                name = row[0].strip()
+                lineage = row[2].strip() if len(row) > 2 else ""
+                try:
+                    reads = int(row[3].strip())
+                except (ValueError, IndexError):
+                    reads = 0
+
+                prop_all = 0.0
+                prop_classified = 0.0
+                try:
+                    prop_all = float(row[4].strip())
+                except (ValueError, IndexError):
+                    pass
+                if len(row) > 5:
+                    try:
+                        prop_classified = float(row[5].strip())
+                    except (ValueError, IndexError):
+                        prop_classified = 0.0
+
+                total_reads += reads
+
+                if name == "UNKNOWN":
+                    unknown_reads += reads
+                    continue
+
+                taxid = None
+                try:
+                    taxid = int(row[1].strip())
+                except (ValueError, IndexError):
+                    pass
+
+                rows_data.append({
+                    "name": name,
+                    "tax_id": taxid,
+                    "lineage": lineage,
+                    "reads": reads,
+                    "proportion_all": prop_all,
+                    "proportion_classified": prop_classified,
+                })
+
+        classified_reads = total_reads - unknown_reads
+        if total_reads <= 0:
+            classification_rate = 0.0
+        else:
+            classification_rate = round(100.0 * classified_reads / total_reads, 2)
+
+        species_detected = len(rows_data)
+
+        pathogens_min = []
+        pathogens_ui = []
+
+        def strain_from_lineage(lin):
+            if not lin:
+                return "—"
+            parts = [p.strip() for p in lin.split(";") if p.strip()]
+            return parts[-1] if parts else "—"
+
+        def risk_level(name, tax_id, abundance):
+            if tax_id is not None and tax_id in high_priority_taxa:
+                return "high"
+            if abundance >= 1.0:
+                return "medium"
+            return "low"
+
+        def confidence_score(abundance, reads):
+            base = 60.0 + min(35.0, float(abundance) * 8.0 + min(reads, 5000) / 500.0)
+            return int(max(55, min(99, round(base))))
+
+        proto_pc = 0.0
+        firm_pc = 0.0
+        virus_pc = 0.0
+
+        for r in rows_data:
+            p_all = r["proportion_all"]
+            pc = r["proportion_classified"] if r["proportion_classified"] > 0 else p_all
+            lin_l = (r["lineage"] or "").lower()
+            if "viruses" in lin_l:
+                virus_pc += pc
+            if "proteobacteria" in lin_l or "pseudomonadota" in lin_l:
+                proto_pc += pc
+            if "firmicutes" in lin_l or "bacillota" in lin_l:
+                firm_pc += pc
+
+            if p_all > 0.01 and r["tax_id"] is not None:
+                tid = r["tax_id"]
+                pathogens_min.append({
+                    "name": r["name"],
+                    "tax_id": tid,
+                    "abundance": round(p_all, 6),
+                    "reads": r["reads"],
+                })
+                pathogens_ui.append({
+                    "name": r["name"],
+                    "strain": strain_from_lineage(r["lineage"]),
+                    "tax_id": tid,
+                    "abundance": round(p_all, 2),
+                    "reads": r["reads"],
+                    "confidence": confidence_score(p_all, r["reads"]),
+                    "amr_genes": 0,
+                    "virulence_genes": 0,
+                    "risk_level": risk_level(r["name"], tid, p_all),
+                })
+
+        pathogens_ui.sort(key=lambda x: x["abundance"], reverse=True)
+
+        now = datetime.now()
+        completed_iso = now.strftime("%Y-%m-%dT%H:%M:%S.000Z")
+
+        output_data = {
+            "analysis_name": wildcards.sample,
+            "sample_type": "clinical",
+            "completed_at": completed_iso,
+            "sample_id": wildcards.sample,
+            "processed_date": now.strftime("%Y-%m-%d %H:%M:%S"),
+            "classifier": "CLARK-l",
+            "summary": {
+                "total_reads": total_reads,
+                "classified_reads": classified_reads,
+                "classification_rate": classification_rate,
+                "species_detected": species_detected,
+                "pathogens_detected": len(pathogens_ui),
+                "amr_genes": 0,
+            },
+            "quality": {
+                "average_quality": None,
+                "high_quality_rate": None,
+                "mean_coverage": None,
+                "note": "Not computed by CLARK-l pipeline",
+            },
+            "pathogens": pathogens_ui,
+            "pathogens_detected": pathogens_min,
+            "taxonomy": {
+                "bacteria": classification_rate,
+                "viruses": round(virus_pc, 2),
+                "proteobacteria": round(min(100.0, proto_pc), 2),
+                "firmicutes": round(min(100.0, firm_pc), 2),
+            },
+        }
+
+        with open(output.json, "w") as out:
+            json.dump(output_data, out, indent=2)
