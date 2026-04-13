@@ -1,7 +1,19 @@
 /**
- * ANALYSIS SERVICE
- * Electron bridge: copies FASTQ into Patho-genius, runs Snakemake + CLARK-l,
- * normalizes results JSON for the renderer (same shape as mock results).
+ * ANALYSIS SERVICE — Edge-Computing Edition
+ * ═══════════════════════════════════════════════════════════════════════════════
+ * Electron bridge: copies FASTQ into Patho-genius, runs Snakemake which
+ * dispatches GPU classification to a Jetson Nano over Tailscale SSH,
+ * then normalizes the results JSON for the renderer.
+ *
+ * Pipeline stages reflected in the UI:
+ *   1. Upload FASTQ → Jetson Nano (scp)
+ *   2. CU-CLARK-L GPU classification (ssh)
+ *   3. Download classification results (scp)
+ *   4. Remote cleanup (ssh rm)
+ *   5. Abundance estimation on Nano (ssh)
+ *   6. Download abundance results (scp)
+ *   7. Local JSON conversion
+ * ═══════════════════════════════════════════════════════════════════════════════
  */
 
 const { spawn } = require('child_process');
@@ -98,7 +110,7 @@ function mergeFrontendMetadata(clarkJson, userConfig) {
             average_quality: out.quality?.average_quality ?? null,
             high_quality_rate: out.quality?.high_quality_rate ?? null,
             mean_coverage: out.quality?.mean_coverage ?? null,
-            note: out.quality?.note || 'Not computed by CLARK-l pipeline',
+            note: out.quality?.note || 'Not computed by CU-CLARK-L edge pipeline',
         };
     }
     return out;
@@ -132,22 +144,80 @@ function killProcessTree(child) {
     }
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// Progress parser — updated for edge-computing (SSH/scp) pipeline stages
+// ═════════════════════════════════════════════════════════════════════════════
+/**
+ * Parse Snakemake stdout/stderr chunks and update the analysis state to
+ * reflect edge-computing pipeline stages for the Electron UI.
+ *
+ * The Snakefile emits [EDGE] markers at each stage which this function
+ * matches, along with standard Snakemake rule-start and scp/ssh patterns.
+ */
 function parseSnakemakeProgress(chunk, analysis) {
     const s = chunk.toString();
-    if (/clark_lite_classify|CLARK-l|Running job/.test(s)) {
+
+    // ── Stage 1: Preparing remote workspace / rule start ──────────────────
+    if (/\[EDGE\] Preparing remote|clark_lite_classify|Running job/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 12);
+        analysis.status = 'connecting';
+        analysis.message = 'Connecting to Jetson Nano...';
+    }
+
+    // ── Stage 2: Uploading FASTQ to the Jetson Nano via scp ──────────────
+    if (/\[EDGE\] Uploading FASTQ|scp.*\.fastq/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 18);
+        analysis.status = 'uploading';
+        analysis.message = 'Uploading FASTQ to Jetson Nano...';
+    }
+
+    // ── Stage 3: GPU classification running on the Nano ──────────────────
+    if (/\[EDGE\] Running CU-CLARK|CU-CLARK-L|GPU classification/.test(s)) {
         analysis.progress = Math.max(analysis.progress, 35);
         analysis.status = 'classifying';
-        analysis.message = 'Running CLARK-l classification...';
+        analysis.message = 'Running CU-CLARK-L GPU classification on Jetson Nano...';
     }
-    if (/clark_abundance|estimate_abundance/.test(s)) {
-        analysis.progress = Math.max(analysis.progress, 70);
+
+    // ── Stage 4: Downloading classification results ──────────────────────
+    if (/\[EDGE\] Downloading classification|scp.*clark\.csv/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 52);
+        analysis.status = 'downloading';
+        analysis.message = 'Downloading classification results from Jetson Nano...';
+    }
+
+    // ── Stage 5: Remote FASTQ cleanup ────────────────────────────────────
+    if (/\[EDGE\] Cleaning up FASTQ/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 58);
         analysis.status = 'processing';
-        analysis.message = 'Estimating abundance...';
+        analysis.message = 'Cleaning up remote files...';
     }
+
+    // ── Stage 6: Abundance estimation on the Nano ────────────────────────
+    if (/\[EDGE\] Running abundance|clark_abundance|estimate_abundance/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 65);
+        analysis.status = 'processing';
+        analysis.message = 'Estimating abundance on Jetson Nano...';
+    }
+
+    // ── Stage 7: Downloading abundance results ──────────────────────────
+    if (/\[EDGE\] Downloading abundance|scp.*abundance\.csv/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 78);
+        analysis.status = 'downloading';
+        analysis.message = 'Downloading abundance results from Jetson Nano...';
+    }
+
+    // ── Stage 8: Final remote cleanup ───────────────────────────────────
+    if (/\[EDGE\] Cleaning up remote workspace/.test(s)) {
+        analysis.progress = Math.max(analysis.progress, 83);
+        analysis.status = 'processing';
+        analysis.message = 'Cleaning up Jetson Nano workspace...';
+    }
+
+    // ── Stage 9: Local JSON conversion ──────────────────────────────────
     if (/clark_to_json|Finished job/.test(s)) {
-        analysis.progress = Math.max(analysis.progress, 90);
+        analysis.progress = Math.max(analysis.progress, 92);
         analysis.status = 'finalizing';
-        analysis.message = 'Writing results...';
+        analysis.message = 'Converting results to JSON...';
     }
 }
 
@@ -226,7 +296,7 @@ function runSnakemakeWorkflow(analysisId, config) {
 
     analysis.status = 'running';
     analysis.progress = 10;
-    analysis.message = 'Starting workflow...';
+    analysis.message = 'Starting edge-computing workflow...';
     emitProgress(analysisId, {
         progress: analysis.progress,
         status: analysis.status,
@@ -262,7 +332,8 @@ function runSnakemakeWorkflow(analysisId, config) {
             completeAnalysis(
                 analysisId,
                 false,
-                'Could not start Snakemake. Install Python 3, run `pip install snakemake`, ensure Docker is running, and verify the Patho-genius workflow folder exists.'
+                'Could not start Snakemake. Ensure Python 3 and Snakemake are installed, '
+                + 'Tailscale is connected, and SSH access to the Jetson Nano is configured.'
             );
             return;
         }
@@ -354,15 +425,21 @@ function finishFromClarkJson(analysisId) {
     completeAnalysis(analysisId, true);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// Mock workflow — updated stages to reflect edge-computing pipeline
+// ═════════════════════════════════════════════════════════════════════════════
 function simulateWorkflow(analysisId) {
     const analysis = activeAnalyses.get(analysisId);
     if (!analysis) return;
 
     const stages = [
-        { progress: 25, status: 'preprocessing', message: 'Preparing FASTQ...' },
-        { progress: 45, status: 'classifying', message: 'Running CLARK-l classification...' },
-        { progress: 75, status: 'processing', message: 'Processing classification results...' },
-        { progress: 95, status: 'finalizing', message: 'Generating reports...' },
+        { progress: 15, status: 'connecting',   message: 'Connecting to Jetson Nano...' },
+        { progress: 20, status: 'uploading',    message: 'Uploading FASTQ to Jetson Nano...' },
+        { progress: 45, status: 'classifying',  message: 'Running CU-CLARK-L GPU classification on Jetson Nano...' },
+        { progress: 55, status: 'downloading',  message: 'Downloading classification results...' },
+        { progress: 70, status: 'processing',   message: 'Estimating abundance on Jetson Nano...' },
+        { progress: 80, status: 'downloading',  message: 'Downloading abundance results...' },
+        { progress: 95, status: 'finalizing',   message: 'Converting results to JSON...' },
     ];
 
     let stageIndex = 0;
@@ -447,7 +524,7 @@ function generateMockResults(cfg) {
         completed_at: new Date().toISOString(),
         sample_id: 'mock',
         processed_date: new Date().toISOString().slice(0, 19).replace('T', ' '),
-        classifier: 'mock',
+        classifier: 'CU-CLARK-L',
         summary: {
             total_reads: 11890000,
             classified_reads: 7560000,
@@ -593,7 +670,7 @@ function pauseAnalysis(analysisId) {
     const analysis = activeAnalyses.get(analysisId);
     if (!analysis) return { success: false, error: 'Analysis not found' };
     if (analysis.snakemakeProc) {
-        return { success: false, error: 'Pause is not supported while CLARK-l is running' };
+        return { success: false, error: 'Pause is not supported while CU-CLARK-L is running on Jetson Nano' };
     }
     analysis.status = 'paused';
     analysis.pausedAt = Date.now();

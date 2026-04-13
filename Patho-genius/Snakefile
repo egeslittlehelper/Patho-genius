@@ -1,3 +1,15 @@
+"""
+Pathogenius – Edge-Computing Snakemake Pipeline
+================================================
+Dispatches GPU-accelerated metagenomic classification to a Jetson Nano
+over Tailscale SSH, then converts results locally for the Electron frontend.
+
+Workflow:
+  1. clark_lite_classify  – scp FASTQ → Nano, run CU-CLARK-L (GPU), scp results back
+  2. clark_abundance_report – ssh estimate_abundance on Nano, scp results back
+  3. clark_to_json         – local JSON conversion for the Electron UI
+"""
+
 import os
 import csv
 import json
@@ -6,28 +18,43 @@ from datetime import datetime
 configfile: "config.yaml"
 
 SAMPLE = config.get("sample", "SRR7497167_1-001")
-# Convert relative paths to absolute for Docker volume mounts.
-# IMPORTANT: resolve relative to the workflow base directory (directory containing this Snakefile),
-# because the Electron app may launch Snakemake from a different working directory.
+# Resolve relative paths from the Snakefile directory (not the cwd of the caller).
 BASEDIR = workflow.basedir
 
-DB_HOST = os.path.abspath(os.path.join(BASEDIR, config["paths"]["db_host_windows"])).replace("\\", "/")
-DATA_HOST = os.path.abspath(os.path.join(BASEDIR, config["paths"]["data_host_windows"])).replace("\\", "/")
+# ─── Local paths ───────────────────────────────────────────────────────────────
+DATA_HOST    = os.path.abspath(os.path.join(BASEDIR, config["paths"]["data_host_windows"])).replace("\\", "/")
 RESULTS_HOST = os.path.abspath(os.path.join(BASEDIR, "results", "clark")).replace("\\", "/")
-IMAGE      = config["clark"]["image"]
-CLARK_DIR  = "/usr/local/opt/clark"   # CLARK install path inside the container
 
+# ─── Jetson Nano (edge device) connection ──────────────────────────────────────
+JETSON_HOST  = config["jetson_nano"]["host"]
+JETSON_USER  = config["jetson_nano"]["user"]
+REMOTE_DB    = config["jetson_nano"]["remote_db"]
+REMOTE_WS    = config["jetson_nano"]["remote_workspace"]
+CUCLARK_DIR  = config["jetson_nano"]["cuclark_dir"]
+SSH_TARGET   = f"{JETSON_USER}@{JETSON_HOST}"
+
+# ─── DAG target ────────────────────────────────────────────────────────────────
 rule all:
     input:
         f"results/clark/{SAMPLE}.json"
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# RULE 1 – GPU-accelerated classification on the Jetson Nano
+# ═══════════════════════════════════════════════════════════════════════════════
 rule clark_lite_classify:
     """
-    Run CLARK-l classification directly (bypasses classify_metagenome.sh
-    which requires a .settings file that does not persist between Docker runs).
+    Remote GPU classification via Jetson Nano over Tailscale SSH.
 
-    CLARK-l output CSV columns:
+    Steps:
+      1. Create the remote workspace directory on the Nano.
+      2. Upload the local FASTQ file to the Nano via scp.
+      3. Execute CU-CLARK-L (GPU-accelerated) natively on the Nano.
+      4. Download the classification .clark.csv back to the local machine.
+      5. Cleanup: delete the massive FASTQ from the Nano to reclaim space.
+         (The .clark.csv is intentionally left for the abundance step.)
+
+    CU-CLARK-L output CSV columns:
       Object_ID, Length, 1st_assignment (taxid), hit_count_1,
       2nd_assignment, hit_count_2, confidence_score
     """
@@ -36,78 +63,194 @@ rule clark_lite_classify:
     output:
         clark_csv=f"results/clark/{SAMPLE}.clark.csv"
     params:
-        db=DB_HOST,
-        data=DATA_HOST,
-        out=RESULTS_HOST,
-        image=IMAGE,
-        sample=SAMPLE,
-        threads=config["clark"]["threads"],
-        kmer=config["clark"].get("kmer_length", 27),
+        sample     = SAMPLE,
+        threads    = config["clark"]["threads"],
+        kmer       = config["clark"].get("kmer_length", 27),
+        ssh_target = SSH_TARGET,
+        remote_db  = REMOTE_DB,
+        remote_ws  = REMOTE_WS,
+        cuclark    = CUCLARK_DIR,
+        results    = RESULTS_HOST,
     run:
         os.makedirs(RESULTS_HOST, exist_ok=True)
-        # -T  targets definition built by build_clark_db.py (set_targets.sh)
-        # -D  database directory (k-mer index is built/cached here on first run)
-        # -m 2  express mode (fastest; default=1, full=0)
-        # -k  k-mer length (must match what was used when building targets)
+
+        # ── 1. Ensure remote workspace exists ──────────────────────────────
         shell(
-            'docker run --rm '
-            '-v "{params.db}:/db" '
-            '-v "{params.data}:/data" '
-            '-v "{params.out}:/out" '
-            '{params.image} '
-            'sh -c "'
-            'CLARK-l '
-            '-T /db/targets.txt '
-            '-D /db/ '
-            '-O /data/{params.sample}.fastq '
-            '-R /out/{params.sample}.clark '
+            'echo [EDGE] Preparing remote workspace on Jetson Nano... && '
+            'ssh -o StrictHostKeyChecking=no {params.ssh_target} '
+            '"mkdir -p {params.remote_ws}"'
+        )
+
+        # ── 2. Upload FASTQ to Jetson Nano ─────────────────────────────────
+        shell(
+            'echo [EDGE] Uploading FASTQ to Jetson Nano... && '
+            'scp -o StrictHostKeyChecking=no '
+            '"{input.fastq}" '
+            '{params.ssh_target}:{params.remote_ws}/{params.sample}.fastq'
+        )
+
+        # ── 3. Run CU-CLARK-L on the Nano (GPU classification) ────────────
+        shell(
+            'echo [EDGE] Running CU-CLARK-L GPU classification on Jetson Nano... && '
+            'ssh -o StrictHostKeyChecking=no {params.ssh_target} '
+            '"{params.cuclark}/exe/cuCLARK-l '
+            '-T {params.remote_db}/targets.txt '
+            '-D {params.remote_db}/ '
+            '-O {params.remote_ws}/{params.sample}.fastq '
+            '-R {params.remote_ws}/{params.sample}.clark '
             '-n {params.threads} '
             '-k {params.kmer} '
-            '-m 2'
-            '"'
+            '-m 2"'
+        )
+
+        # ── 4. Download classification CSV back to local machine ───────────
+        shell(
+            'echo [EDGE] Downloading classification results from Jetson Nano... && '
+            'scp -o StrictHostKeyChecking=no '
+            '{params.ssh_target}:{params.remote_ws}/{params.sample}.clark.csv '
+            '"{params.results}/{params.sample}.clark.csv"'
+        )
+
+        # ── 5. Cleanup: remove FASTQ and .clark.csv from the Nano ─────────
+        #    Abundance estimation runs locally, so nothing needs to stay.
+        shell(
+            'echo [EDGE] Cleaning up remote files on Jetson Nano... && '
+            'ssh -o StrictHostKeyChecking=no {params.ssh_target} '
+            '"rm -f {params.remote_ws}/{params.sample}.fastq '
+            '{params.remote_ws}/{params.sample}.clark.csv"'
         )
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# RULE 2 – Abundance estimation (LOCAL Python)
+# ═══════════════════════════════════════════════════════════════════════════════
 rule clark_abundance_report:
     """
-    Estimate species-level abundance from the CLARK-l CSV output.
+    Estimate species-level abundance from the CU-CLARK-L classification CSV.
 
-    estimate_abundance.sh wraps getAbundance which reads:
-      -D  database directory (for targets.txt / taxonomy names)
-      -F  CLARK result CSV
+    Runs LOCALLY — no GPU needed.  On first run, downloads NCBI taxonomy
+    files (names.dmp, nodes.dmp) from the Jetson Nano's database directory
+    and caches them so subsequent runs are instant.
 
-    Output CSV columns: Name, TaxID, Lineage, Count, Proportion(%)
+    Reads the .clark.csv (already downloaded by clark_lite_classify), counts
+    reads per taxid, resolves scientific names and lineages from the NCBI
+    taxonomy, and writes the abundance CSV.
+
+    Output CSV columns: Name, TaxID, Lineage, Count, Proportion_All(%), Proportion_Classified(%)
     """
     input:
         clark_csv=f"results/clark/{SAMPLE}.clark.csv"
     output:
         abundance=f"results/clark/{SAMPLE}.abundance.csv"
     params:
-        db=DB_HOST,
-        out=RESULTS_HOST,
-        image=IMAGE,
-        sample=SAMPLE,
-        clark_dir=CLARK_DIR,
+        ssh_target = SSH_TARGET,
+        remote_db  = REMOTE_DB,
+        tax_cache  = os.path.join(RESULTS_HOST, ".taxonomy").replace("\\", "/"),
     run:
-        shell(
-            'docker run --rm '
-            '-v "{params.db}:/db" '
-            '-v "{params.out}:/out" '
-            '-w {params.clark_dir} '
-            '{params.image} '
-            'sh -c "'
-            './estimate_abundance.sh '
-            '-D /db/ '
-            '-F /out/{params.sample}.clark.csv '
-            '> /out/{params.sample}.abundance.csv'
-            '"'
-        )
+        from collections import defaultdict
+
+        tax_dir = params.tax_cache
+        os.makedirs(tax_dir, exist_ok=True)
+
+        names_path = os.path.join(tax_dir, "names.dmp")
+        nodes_path = os.path.join(tax_dir, "nodes.dmp")
+
+        # ── 1. Download NCBI taxonomy from Nano (cached after first run) ──
+        if not os.path.exists(names_path) or not os.path.exists(nodes_path):
+            shell(
+                'echo [EDGE] Downloading taxonomy data from Jetson Nano... && '
+                'scp -o StrictHostKeyChecking=no '
+                '{params.ssh_target}:{params.remote_db}/taxonomy/names.dmp '
+                '"{params.tax_cache}/names.dmp" && '
+                'scp -o StrictHostKeyChecking=no '
+                '{params.ssh_target}:{params.remote_db}/taxonomy/nodes.dmp '
+                '"{params.tax_cache}/nodes.dmp"'
+            )
+
+        # ── 2. Parse NCBI taxonomy ────────────────────────────────────────
+        print("[LOCAL] Parsing NCBI taxonomy...")
+        taxid_to_name = {}
+        with open(names_path) as f:
+            for line in f:
+                parts = line.strip().split("\t|\t")
+                if len(parts) >= 4 and "scientific name" in parts[3]:
+                    tid = int(parts[0].strip())
+                    taxid_to_name[tid] = parts[1].strip()
+
+        taxid_to_parent = {}
+        with open(nodes_path) as f:
+            for line in f:
+                parts = line.strip().split("\t|\t")
+                if len(parts) >= 3:
+                    tid = int(parts[0].strip())
+                    parent = int(parts[1].strip())
+                    taxid_to_parent[tid] = parent
+
+        def build_lineage(tid):
+            """Build semicolon-separated lineage string from leaf to root."""
+            names = []
+            current = tid
+            seen = set()
+            while current and current != 1 and current not in seen:
+                seen.add(current)
+                name = taxid_to_name.get(current, f"taxid_{current}")
+                names.append(name)
+                current = taxid_to_parent.get(current)
+            names.reverse()
+            return "; ".join(names)
+
+        # ── 3. Parse CLARK CSV and count reads per taxid ──────────────────
+        print("[LOCAL] Computing abundance from classification results...")
+        taxid_counts = defaultdict(int)
+        total_objects = 0
+
+        with open(input.clark_csv, newline="") as f:
+            reader = csv.reader(f)
+            for row in reader:
+                if not row or row[0].startswith("Object"):
+                    continue
+                total_objects += 1
+                try:
+                    taxid = int(row[2].strip())
+                    if taxid > 0:
+                        taxid_counts[taxid] += 1
+                except (ValueError, IndexError):
+                    pass
+
+        classified = sum(taxid_counts.values())
+        unknown = total_objects - classified
+
+        # ── 4. Write abundance CSV ────────────────────────────────────────
+        with open(output.abundance, "w", newline="") as f:
+            writer = csv.writer(f)
+            writer.writerow(["Name", "TaxID", "Lineage", "Count",
+                             "Proportion_All(%)", "Proportion_Classified(%)"])
+
+            for tid, cnt in sorted(taxid_counts.items(), key=lambda x: -x[1]):
+                name = taxid_to_name.get(tid, f"Unknown (taxid {tid})")
+                lineage = build_lineage(tid)
+                p_all = round(100.0 * cnt / total_objects, 6) if total_objects > 0 else 0
+                p_cls = round(100.0 * cnt / classified, 6) if classified > 0 else 0
+                writer.writerow([name, tid, lineage, cnt, p_all, p_cls])
+
+            if unknown > 0:
+                p_all = round(100.0 * unknown / total_objects, 6) if total_objects > 0 else 0
+                writer.writerow(["UNKNOWN", "NA", "", unknown, p_all, 0])
+
+        print(f"[LOCAL] Abundance report complete: {len(taxid_counts)} taxa, "
+              f"{classified}/{total_objects} classified")
 
 
+# ═══════════════════════════════════════════════════════════════════════════════
+# RULE 3 – JSON conversion (LOCAL – no change from original)
+# ═══════════════════════════════════════════════════════════════════════════════
 rule clark_to_json:
     """
     Convert CLARK abundance CSV to JSON matching the Pathogenius Electron UI
     (same shape as frontend mock results.json), plus legacy fields for scripts.
+
+    This rule runs LOCALLY – no SSH involved. It reads the abundance CSV that
+    was downloaded from the Jetson Nano and produces the final JSON for the UI.
 
     Input CSV columns (estimate_abundance.sh):
       Name, TaxID, Lineage, Count, Proportion_All(%), Proportion_Classified(%)
@@ -251,7 +394,7 @@ rule clark_to_json:
             "completed_at": completed_iso,
             "sample_id": wildcards.sample,
             "processed_date": now.strftime("%Y-%m-%d %H:%M:%S"),
-            "classifier": "CLARK-l",
+            "classifier": "CU-CLARK-L",
             "summary": {
                 "total_reads": total_reads,
                 "classified_reads": classified_reads,
@@ -264,7 +407,7 @@ rule clark_to_json:
                 "average_quality": None,
                 "high_quality_rate": None,
                 "mean_coverage": None,
-                "note": "Not computed by CLARK-l pipeline",
+                "note": "Not computed by CU-CLARK-L edge pipeline",
             },
             "pathogens": pathogens_ui,
             "pathogens_detected": pathogens_min,

@@ -1,1 +1,4 @@
 .idea/
+# Ignore large taxonomy files
+*.dmp
+Patho-genius/results/
