@@ -1,4 +1,5 @@
 .idea/
 # Ignore large taxonomy files
 *.dmp
-Patho-genius/results/
+Patho-genius/results/clark
+Patho-genius/fastQ_reads

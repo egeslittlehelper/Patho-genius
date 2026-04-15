@@ -14,6 +14,7 @@ const AnalysisPage = {
         sampleType: 'clinical',
         database: 'ncbi-refseq',
         confidenceThreshold: 0.7,
+        engine: 'cpu',
         inputFiles: []
     },
     
@@ -51,6 +52,21 @@ const AnalysisPage = {
         if (startBtn) {
             startBtn.addEventListener('click', () => this.startAnalysis());
         }
+
+        // Engine selector cards
+        document.addEventListener('click', (e) => {
+            const card = e.target.closest('.engine-card');
+            if (!card) return;
+            const engine = card.dataset.engine;
+            if (!engine) return;
+            // Update radio
+            const radio = card.querySelector('input[type="radio"]');
+            if (radio) radio.checked = true;
+            // Update visual state
+            document.querySelectorAll('.engine-card').forEach(c => c.classList.remove('selected'));
+            card.classList.add('selected');
+            this.config.engine = engine;
+        });
 
         // Upload zone drag-drop
         const uploadZone = document.getElementById('upload-zone');
@@ -164,6 +180,9 @@ const AnalysisPage = {
         this.config.sampleType = document.getElementById('sample-type')?.value || 'clinical';
         this.config.database = document.getElementById('database-select')?.value || 'ncbi-refseq';
         this.config.confidenceThreshold = parseFloat(document.getElementById('confidence-threshold')?.value || '0.7');
+        // Read engine from radio buttons
+        const engineRadio = document.querySelector('input[name="engine"]:checked');
+        if (engineRadio) this.config.engine = engineRadio.value;
     },
 
     /**
@@ -176,6 +195,7 @@ const AnalysisPage = {
         document.getElementById('review-files').textContent = `${this.config.inputFiles.length} file(s) selected`;
         document.getElementById('review-sample').textContent = this.getSampleTypeLabel(this.config.sampleType);
         document.getElementById('review-database').textContent = this.getDatabaseLabel(this.config.database);
+        document.getElementById('review-engine').textContent = this.getEngineLabel(this.config.engine);
     },
 
     /**
@@ -200,6 +220,17 @@ const AnalysisPage = {
             'bacteria': 'Bacteria Only',
             'viral': 'Viral Only',
             'custom': 'Custom Database'
+        };
+        return labels[value] || value;
+    },
+
+    /**
+     * Get engine display label
+     */
+    getEngineLabel(value) {
+        const labels = {
+            'cpu': '🖥️ CPU — CLARK-l (Docker, local)',
+            'gpu': '⚡ GPU — CU-CLARK-L (Jetson Nano, edge)'
         };
         return labels[value] || value;
     },
@@ -314,6 +345,7 @@ const AnalysisPage = {
             input_files: this.config.inputFiles,
             database: this.config.database,
             confidence_threshold: this.config.confidenceThreshold,
+            engine: this.config.engine,
             timestamp: new Date().toISOString(),
             // Snakemake-specific settings
             threads: 4,  // Will be determined by system
@@ -358,6 +390,7 @@ const AnalysisPage = {
             sampleType: 'clinical',
             database: 'ncbi-refseq',
             confidenceThreshold: 0.7,
+            engine: 'cpu',
             inputFiles: []
         };
         this.isAnalyzing = false;

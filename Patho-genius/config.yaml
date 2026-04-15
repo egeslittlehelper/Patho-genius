@@ -1,30 +1,38 @@
 # ─────────────────────────────────────────────────────────────────────────────
-# Pathogenius Edge-Computing Pipeline Configuration
+# Pathogenius Dual-Engine Pipeline Configuration
 # ─────────────────────────────────────────────────────────────────────────────
-# Classification runs on a Jetson Nano (CU-CLARK-L, GPU-accelerated)
-# over Tailscale SSH.  JSON conversion runs locally for the Electron frontend.
+# Supports two classification engines:
+#   cpu  →  CLARK-l via Docker (runs locally)
+#   gpu  →  CU-CLARK-L on Jetson Nano via Tailscale SSH (GPU-accelerated)
+#
+# The engine is selected from the Electron UI and passed to Snakemake
+# via --config engine=cpu|gpu. Default is "cpu".
 # ─────────────────────────────────────────────────────────────────────────────
+
+# Classification engine: "cpu" (Docker CLARK-l) or "gpu" (Jetson Nano CU-CLARK-L)
+engine: "cpu"
 
 paths:
   # Relative paths (workspace-relative, portable across machines)
-  db_host_windows: "./clark_db"           # Local reference DB (used by build_clark_db.py)
+  db_host_windows: "./clark_db"           # Local reference DB (CPU mode + build_clark_db.py)
   data_host_windows: "./fastQ_reads"      # Local FASTQ input directory
 
 # Sample basename for inputs: fastQ_reads/{sample}.fastq and results/clark/{sample}.json
 sample: "SRR7497167_1"
 
-# ─── CU-CLARK-L Classification Parameters ─────────────────────────────────────
+# ─── CLARK-l / CU-CLARK-L Classification Parameters ───────────────────────────
 clark:
+  image: "quay.io/biocontainers/clark:1.2.6.1--h4ac6f70_3"  # Docker image (CPU mode only)
   threads: 8
-  kmer_length: 27   # Default k-mer length for CLARK-L
-  sampling_factor: 2  # Sampling factor for CLARK-L (higher = faster, less sensitive)
+  kmer_length: 27   # Default k-mer length for CLARK-l
+  sampling_factor: 2  # Sampling factor for CLARK-l (higher = faster, less sensitive)
 
-# ─── Jetson Nano Edge Device (Tailscale SSH) ──────────────────────────────────
+# ─── Jetson Nano Edge Device (GPU mode only, Tailscale SSH) ───────────────────
 # The Jetson Nano runs CU-CLARK-L natively with GPU acceleration.
 # The reference database is already stored on the device.
 jetson_nano:
   host: "100.71.242.74"                            # Tailscale IP of the Jetson Nano
   user: "pathogen"                                  # SSH username
-  remote_db: "/home/pathogen/cuclark_db"             # CLARK reference database on the Nano
+  remote_db: "/home/pathogen/cuclark_db"            # CLARK reference database on the Nano
   remote_workspace: "/home/pathogen/pathogenius_ws" # Temp workspace for FASTQ & results
-  cuclark_dir: "/home/pathogen/cuclark"              # CU-CLARK installation directory
+  cuclark_dir: "/home/pathogen/cuclark"             # CU-CLARK installation directory
