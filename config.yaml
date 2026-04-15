@@ -1,10 +1,23 @@
 paths:
-  # Relative paths (workspace-relative, portable across machines)
   db_host_windows: "./clark_db"
-  data_host_windows: "./fastQ_reads"
+  data_host_windows: "./marmgCAMI2_sample_0_reads/simulation_short_read/2018.08.15_09.49.32_sample_0/reads"
+
+sample: "anonymous_reads"
+fastq_ext: "fq"
 
 clark:
   image: "quay.io/biocontainers/clark:1.2.6.1--h4ac6f70_3"
   threads: 8
-  kmer_length: 27   # Default k-mer length for CLARK-l
-  sampling_factor: 2  # Sampling factor for CLARK-l (higher = faster, less sensitive)
+  kmer_length: 27
+  sampling_factor: 2
+
+# ── Genome sources ────────────────────────────────────────────────────────────
+# Each entry is a directory of FASTA files (.fna / .fasta / .fa).
+# If a reads_mapping (.tsv or .tsv.gz) is supplied, contig-based taxid lookup
+# is used for any file whose headers look like SPAdes NODE contigs.
+# All other files fall back to NCBI organism-name / accession lookup.
+genome_sources:
+  - path: "./clark_db"          # existing named-pathogen genomes (.fna)
+
+  - path: "./marmgCAMI2_genomes/simulation_short_read/genomes"
+    reads_mapping: "./marmgCAMI2_sample_0_reads/simulation_short_read/2018.08.15_09.49.32_sample_0/reads/reads_mapping.tsv.gz"

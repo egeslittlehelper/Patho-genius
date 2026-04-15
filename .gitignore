@@ -3,6 +3,8 @@
 venv/
 ENV/
 
+marmgCAMI2_genomes/
+marmgCAMI2_sample_0_reads/
 # PyCharm / JetBrains IDE
 .idea/
 

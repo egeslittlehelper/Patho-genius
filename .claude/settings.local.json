@@ -6,7 +6,13 @@
       "Bash(docker run:*)",
       "Bash(python -c ':*)",
       "Bash(.venv/Scripts/python.exe -m snakemake --version)",
-      "Bash(.venv/Scripts/pip.exe show:*)"
+      "Bash(.venv/Scripts/pip.exe show:*)",
+      "Bash(zcat marmgCAMI2_sample_0_reads/simulation_short_read/2018.08.15_09.49.32_sample_0/reads/reads_mapping.tsv.gz)",
+      "Bash(awk -F'\\\\t' 'NR>1 {print $2\"\\\\t\"$3}')",
+      "Bash(awk -F'\\\\t' 'NR>1 {print $2}')",
+      "Bash(ls marmgCAMI2_genomes/simulation_short_read/genomes/*.fasta)",
+      "Bash(xargs -I{} basename {})",
+      "Bash(python -c \"import yaml; print\\('pyyaml ok'\\)\")"
     ]
   }
 }

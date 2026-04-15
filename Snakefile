@@ -5,13 +5,13 @@ from datetime import datetime
 
 configfile: "config.yaml"
 
-SAMPLE = "SRR7497167_1-001"
-# Convert relative paths to absolute for Docker volume mounts
+SAMPLE     = config.get("sample", "sample")
+FASTQ_EXT  = config.get("fastq_ext", "fastq")
 DB_HOST    = os.path.abspath(config["paths"]["db_host_windows"]).replace("\\", "/")
 DATA_HOST  = os.path.abspath(config["paths"]["data_host_windows"]).replace("\\", "/")
 RESULTS_HOST = os.path.abspath(os.path.join("results", "clark")).replace("\\", "/")
 IMAGE      = config["clark"]["image"]
-CLARK_DIR  = "/usr/local/opt/clark"   # CLARK install path inside the container
+CLARK_DIR  = "/usr/local/opt/clark"
 
 rule all:
     input:
@@ -28,7 +28,7 @@ rule clark_lite_classify:
       2nd_assignment, hit_count_2, confidence_score
     """
     input:
-        fastq=os.path.join(DATA_HOST, f"{SAMPLE}.fastq")
+        fastq=os.path.join(DATA_HOST, f"{SAMPLE}.{FASTQ_EXT}")
     output:
         clark_csv=f"results/clark/{SAMPLE}.clark.csv"
     params:
@@ -37,6 +37,7 @@ rule clark_lite_classify:
         out=RESULTS_HOST,
         image=IMAGE,
         sample=SAMPLE,
+        ext=FASTQ_EXT,
         threads=config["clark"]["threads"],
         kmer=config["clark"].get("kmer_length", 27),
     run:
@@ -55,7 +56,7 @@ rule clark_lite_classify:
             'CLARK-l '
             '-T /db/targets.txt '
             '-D /db/ '
-            '-O /data/{params.sample}.fastq '
+            '-O /data/{params.sample}.{params.ext} '
             '-R /out/{params.sample}.clark '
             '-n {params.threads} '
             '-k {params.kmer} '
