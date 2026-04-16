@@ -7,3 +7,4 @@ dist/
 *results.json
 *.fastq
 *.fasta
+*.gguf
