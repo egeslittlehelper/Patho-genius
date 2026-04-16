@@ -365,6 +365,179 @@ const ResultsPage = {
         
         // Render charts
         this.renderCharts(result);
+
+        // Reset AI summary section
+        this.resetAISummary();
+
+        // Check LLM status
+        this.updateLLMStatus();
+    },
+
+    /**
+     * Reset AI summary content when switching analyses
+     */
+    resetAISummary() {
+        const content = document.getElementById('ai-summary-content');
+        const btn = document.getElementById('generate-summary-btn');
+        if (content) {
+            content.innerHTML = '<p class="text-muted" style="font-style: italic;">Click "Generate Summary" to analyze results with the local MedGemma AI model.</p>';
+        }
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg> Generate Summary`;
+        }
+    },
+
+    /**
+     * Check and display LLM model status
+     */
+    async updateLLMStatus() {
+        const indicator = document.getElementById('llm-status-indicator');
+        if (!indicator) return;
+
+        try {
+            if (!window.api?.llm?.getStatus) {
+                indicator.textContent = 'LLM API unavailable';
+                indicator.style.color = 'var(--danger)';
+                return;
+            }
+            const status = await window.api.llm.getStatus();
+            if (status.isLoaded) {
+                indicator.textContent = 'Model ready';
+                indicator.style.color = 'var(--success)';
+            } else if (status.isLoading) {
+                indicator.textContent = 'Model loading...';
+                indicator.style.color = 'var(--warning)';
+            } else if (status.loadError) {
+                indicator.textContent = 'Model error';
+                indicator.style.color = 'var(--danger)';
+            } else {
+                indicator.textContent = 'Model not loaded';
+                indicator.style.color = 'var(--text-muted)';
+            }
+        } catch {
+            indicator.textContent = '';
+        }
+    },
+
+    /**
+     * Generate AI clinical summary using the local LLM
+     */
+    async generateAISummary() {
+        const result = this.state.currentResult;
+        if (!result) return;
+
+        const content = document.getElementById('ai-summary-content');
+        const btn = document.getElementById('generate-summary-btn');
+        if (!content || !btn) return;
+
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="icon-spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Generating...`;
+
+        content.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 16px 0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" width="24" height="24" class="icon-spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                <span class="text-muted">Generating clinical summary — this may take a moment...</span>
+            </div>
+            <div id="ai-summary-stream" class="summary-text" style="white-space: pre-wrap; min-height: 60px;"></div>
+        `;
+
+        const streamEl = document.getElementById('ai-summary-stream');
+
+        try {
+            // Check LLM status first
+            if (!window.api?.llm) {
+                throw new Error('LLM service is not available.');
+            }
+
+            const status = await window.api.llm.getStatus();
+
+            // If model isn't loaded, try loading it
+            if (!status.isLoaded && !status.isLoading) {
+                content.querySelector('.text-muted').textContent = 'Loading AI model into memory — first run may take a minute...';
+                await window.api.llm.loadModel();
+            } else if (status.isLoading) {
+                content.querySelector('.text-muted').textContent = 'AI model is loading, please wait...';
+                // Poll until loaded
+                await new Promise((resolve, reject) => {
+                    const poll = setInterval(async () => {
+                        const s = await window.api.llm.getStatus();
+                        if (s.isLoaded) { clearInterval(poll); resolve(); }
+                        if (s.loadError) { clearInterval(poll); reject(new Error(s.loadError)); }
+                    }, 1000);
+                });
+            } else if (status.loadError) {
+                throw new Error(`Model failed to load: ${status.loadError}`);
+            }
+
+            // Set up streaming token listener
+            let fullText = '';
+            window.api.llm.removeTokenListener();
+            window.api.llm.onToken((chunk) => {
+                fullText += chunk;
+                if (streamEl) {
+                    streamEl.textContent = fullText;
+                    // Auto-scroll parent if needed
+                    streamEl.scrollTop = streamEl.scrollHeight;
+                }
+            });
+
+            // Hide the loading spinner once streaming starts
+            const loadingMsg = content.querySelector('.text-muted');
+
+            // Call generate summary
+            const response = await window.api.llm.generateSummary(result);
+
+            // Clean up token listener
+            window.api.llm.removeTokenListener();
+
+            if (!response.success) {
+                throw new Error(response.error || 'Summary generation failed.');
+            }
+
+            // Render final formatted summary
+            const finalText = response.response || fullText;
+            content.innerHTML = `
+                <div class="summary-text" style="white-space: pre-wrap; line-height: 1.7;">${this.escapeHtml(finalText)}</div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+                    <span class="text-muted" style="font-size: 0.8rem;">Generated by MedGemma (local model) — not a clinical diagnosis</span>
+                    <button class="btn btn-outline btn-sm" onclick="ResultsPage.generateAISummary()">Regenerate</button>
+                </div>
+            `;
+
+            // Update button
+            btn.disabled = false;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg> Regenerate`;
+
+            this.updateLLMStatus();
+
+        } catch (error) {
+            console.error('AI Summary generation failed:', error);
+            window.api?.llm?.removeTokenListener?.();
+
+            content.innerHTML = `
+                <div class="alert alert-danger" style="margin: 0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    <div>
+                        <strong>Failed to generate summary</strong>
+                        <p style="margin: 4px 0 0;">${this.escapeHtml(error.message)}</p>
+                    </div>
+                </div>
+            `;
+
+            btn.disabled = false;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg> Retry`;
+        }
+    },
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     },
 
     /**

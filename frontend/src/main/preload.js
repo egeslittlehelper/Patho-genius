@@ -318,6 +318,29 @@ contextBridge.exposeInMainWorld('api', {
          */
         deleteUser: (userId) => 
             ipcRenderer.invoke('admin:delete-user', userId)
+    },
+
+    /* LLM (Local Model) */
+    llm: {
+        getStatus: () =>
+            ipcRenderer.invoke('llm:get-status'),
+
+        loadModel: () =>
+            ipcRenderer.invoke('llm:load-model'),
+
+        chat: (prompt) =>
+            ipcRenderer.invoke('llm:chat', prompt),
+
+        generateSummary: (resultData) =>
+            ipcRenderer.invoke('llm:generate-summary', resultData),
+
+        onToken: (callback) => {
+            ipcRenderer.on('llm:token', (_event, chunk) => callback(chunk));
+        },
+
+        removeTokenListener: () => {
+            ipcRenderer.removeAllListeners('llm:token');
+        }
     }
 });
 

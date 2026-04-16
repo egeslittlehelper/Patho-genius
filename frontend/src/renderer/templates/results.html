@@ -179,18 +179,23 @@
 
         <!-- Tab: Overview -->
         <div class="tab-content active" id="tab-overview">
-            <div class="card">
-                <div class="card-header-icon">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
-                    <h3>AI-Powered Clinical Summary</h3>
+            <div class="card" id="ai-summary-card">
+                <div class="card-header-icon" style="display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+                        <h3 style="margin: 0;">AI-Powered Clinical Summary</h3>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span id="llm-status-indicator" class="text-muted" style="font-size: 0.8rem;"></span>
+                        <button class="btn btn-primary btn-sm" id="generate-summary-btn" onclick="ResultsPage.generateAISummary()">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg>
+                            Generate Summary
+                        </button>
+                    </div>
                 </div>
-                <p class="summary-text">Metagenomic analysis of the blood sample reveals a <strong>polymicrobial infection</strong> dominated by <strong>Escherichia coli O157:H7</strong> (95% confidence, 45.2% relative abundance, 3.42M reads). This highly pathogenic strain carries 12 virulence genes and 5 antimicrobial resistance genes.</p>
-                <p class="summary-text">Co-detection of <strong>Staphylococcus aureus MRSA USA300</strong> (87% confidence, 18.6% abundance) with 7 AMR genes suggests methicillin-resistant co-infection.</p>
-                <div class="alert alert-danger">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
-                    <strong>CRITICAL ALERT:</strong> Multiple MDR (multidrug-resistant) pathogens detected. Immediate infectious disease consultation required.
+                <div id="ai-summary-content">
+                    <p class="text-muted" style="font-style: italic;">Click "Generate Summary" to analyze results with the local MedGemma AI model.</p>
                 </div>
-                <div class="alert alert-info"><strong>Clinical Recommendation:</strong> Initiate broad-spectrum IV antibiotics pending susceptibility testing. Consider vancomycin + meropenem combination therapy.</div>
             </div>
 
             <div class="stats-cards-grid">
