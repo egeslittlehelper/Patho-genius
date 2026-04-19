@@ -181,7 +181,13 @@ contextBridge.exposeInMainWorld('api', {
          * @param {object} metadata - Updated metadata
          */
         updateSpecies: (speciesId, metadata) => 
-            ipcRenderer.invoke('app:update-species', speciesId, metadata)
+            ipcRenderer.invoke('app:update-species', speciesId, metadata),
+        
+        /**
+         * Clear custom database path
+         */
+        clearCustomDb: () => 
+            ipcRenderer.invoke('app:clear-custom-db')
     },
 
     /* SYSTEM INFORMATION */

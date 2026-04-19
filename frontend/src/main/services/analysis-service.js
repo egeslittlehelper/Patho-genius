@@ -11,10 +11,11 @@
  * ═══════════════════════════════════════════════════════════════════════════════
  */
 
-const { spawn } = require('child_process');
+const { spawn, spawnSync } = require('child_process');
 const path = require('path');
 const fs = require('fs');
 const zlib = require('zlib');
+const yaml = require('js-yaml');
 
 const REPO_ROOT = path.join(__dirname, '..', '..', '..', '..');
 
@@ -27,6 +28,13 @@ const ANALYSIS_CONFIG = {
 
 const activeAnalyses = new Map();
 const analysisHistory = [];
+
+// Lazy-load db-settings (avoids circular require issues)
+let _dbSettings = null;
+function getDbSettings() {
+    if (!_dbSettings) _dbSettings = require('./db-settings');
+    return _dbSettings;
+}
 
 function workflowFastqDir() {
     return path.join(ANALYSIS_CONFIG.WORKFLOW_DIR, 'fastQ_reads');
@@ -70,6 +78,96 @@ function prepareFastqForWorkflow(sourcePath, sampleBase) {
             }
         }
     });
+}
+
+/**
+ * Update config.yaml genome_sources to use the custom DB path,
+ * then run build_clark_db.py to build the CLARK index.
+ */
+async function prepareCustomDatabase() {
+    const dbSettings = getDbSettings();
+    const customPath = dbSettings.getCustomDbPath();
+
+    if (!customPath) {
+        return { success: false, error: 'No custom database folder configured. Go to Database Management to set one.' };
+    }
+
+    if (!fs.existsSync(customPath)) {
+        return { success: false, error: `Custom database folder not found: ${customPath}` };
+    }
+
+    // Read current config.yaml
+    const configPath = path.join(ANALYSIS_CONFIG.WORKFLOW_DIR, 'config.yaml');
+    let configContent;
+    try {
+        configContent = fs.readFileSync(configPath, 'utf-8');
+    } catch (e) {
+        return { success: false, error: `Cannot read config.yaml: ${e.message}` };
+    }
+
+    let cfg;
+    try {
+        cfg = yaml.load(configContent);
+    } catch (e) {
+        return { success: false, error: `Invalid config.yaml: ${e.message}` };
+    }
+
+    // Update genome_sources to point to the custom folder
+    const normalizedPath = customPath.replace(/\\/g, '/');
+    cfg.genome_sources = [{ path: normalizedPath }];
+
+    // Write updated config.yaml
+    try {
+        fs.writeFileSync(configPath, yaml.dump(cfg, { lineWidth: -1 }));
+        console.log(`[CustomDB] Updated config.yaml genome_sources to: ${normalizedPath}`);
+    } catch (e) {
+        return { success: false, error: `Cannot write config.yaml: ${e.message}` };
+    }
+
+    // Run build_clark_db.py to build the CLARK index
+    console.log('[CustomDB] Running build_clark_db.py...');
+    const pythonCandidates = ['python', 'py', 'python3'];
+    let buildSuccess = false;
+    let buildError = '';
+
+    for (const cmd of pythonCandidates) {
+        try {
+            const result = spawnSync(cmd, ['build_clark_db.py'], {
+                cwd: ANALYSIS_CONFIG.WORKFLOW_DIR,
+                env: { ...process.env },
+                timeout: 600000, // 10 minute timeout
+                stdio: ['pipe', 'pipe', 'pipe'],
+            });
+
+            if (result.error && result.error.code === 'ENOENT') {
+                continue; // Try next python candidate
+            }
+
+            const stdout = result.stdout ? result.stdout.toString() : '';
+            const stderr = result.stderr ? result.stderr.toString() : '';
+            console.log('[CustomDB] build_clark_db.py output:', stdout);
+            if (stderr) console.error('[CustomDB] build_clark_db.py stderr:', stderr);
+
+            if (result.status === 0) {
+                buildSuccess = true;
+                console.log('[CustomDB] Database build completed successfully');
+            } else {
+                buildError = `build_clark_db.py exited with code ${result.status}. ${stderr.slice(-500)}`;
+            }
+            break;
+        } catch (e) {
+            buildError = e.message;
+        }
+    }
+
+    if (!buildSuccess) {
+        // Restore default genome_sources
+        cfg.genome_sources = [{ path: './Default_References/reference' }];
+        try { fs.writeFileSync(configPath, yaml.dump(cfg, { lineWidth: -1 })); } catch { /* ignore */ }
+        return { success: false, error: `Failed to build custom database: ${buildError}` };
+    }
+
+    return { success: true };
 }
 
 function mergeFrontendMetadata(clarkJson, userConfig) {
@@ -273,6 +371,15 @@ async function startAnalysis(config) {
                 };
             }
             await prepareFastqForWorkflow(primaryFastq, sampleBase);
+
+            // If custom database selected, update config.yaml and build CLARK DB
+            const dbType = config.database || 'default';
+            if (dbType === 'custom') {
+                const dbResult = await prepareCustomDatabase();
+                if (!dbResult.success) {
+                    return { success: false, error: dbResult.error };
+                }
+            }
         }
 
         const analysisState = {
@@ -451,19 +558,19 @@ function simulateWorkflow(analysisId) {
 
     const stages = isGpu
         ? [
-            { progress: 15, status: 'connecting',   message: 'Connecting to Jetson Nano...' },
-            { progress: 20, status: 'uploading',    message: 'Uploading FASTQ to Jetson Nano...' },
-            { progress: 45, status: 'classifying',  message: 'Running CU-CLARK-L GPU classification on Jetson Nano...' },
-            { progress: 55, status: 'downloading',  message: 'Downloading classification results...' },
-            { progress: 70, status: 'processing',   message: 'Computing abundance (local)...' },
-            { progress: 85, status: 'processing',   message: 'Abundance estimation complete...' },
-            { progress: 95, status: 'finalizing',   message: 'Converting results to JSON...' },
+            { progress: 15, status: 'connecting', message: 'Connecting to Jetson Nano...' },
+            { progress: 20, status: 'uploading', message: 'Uploading FASTQ to Jetson Nano...' },
+            { progress: 45, status: 'classifying', message: 'Running CU-CLARK-L GPU classification on Jetson Nano...' },
+            { progress: 55, status: 'downloading', message: 'Downloading classification results...' },
+            { progress: 70, status: 'processing', message: 'Computing abundance (local)...' },
+            { progress: 85, status: 'processing', message: 'Abundance estimation complete...' },
+            { progress: 95, status: 'finalizing', message: 'Converting results to JSON...' },
         ]
         : [
             { progress: 25, status: 'preprocessing', message: 'Preparing FASTQ...' },
-            { progress: 45, status: 'classifying',   message: 'Running CLARK-l classification (Docker)...' },
-            { progress: 75, status: 'processing',    message: 'Estimating abundance...' },
-            { progress: 95, status: 'finalizing',    message: 'Converting results to JSON...' },
+            { progress: 45, status: 'classifying', message: 'Running CLARK-l classification (Docker)...' },
+            { progress: 75, status: 'processing', message: 'Estimating abundance...' },
+            { progress: 95, status: 'finalizing', message: 'Converting results to JSON...' },
         ];
 
     let stageIndex = 0;

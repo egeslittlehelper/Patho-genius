@@ -1,13 +1,13 @@
 /**
  * DATABASE.JS - Database Management Controller
- * Purpose: Manage Kraken2 reference databases
+ * Purpose: Manage CLARK reference databases (default + custom genome folders)
  */
 
 const DatabasePage = {
-    // Current database info
+    // Current database info from backend
     databaseInfo: null,
-    customSpecies: [], // User-added species
-    isEventsBound: false, // Prevent duplicate event binding
+    customSpecies: [],
+    isEventsBound: false,
 
     /**
      * Initialize database page
@@ -15,7 +15,6 @@ const DatabasePage = {
     init() {
         console.log('DatabasePage initializing...');
         
-        // Only bind events once to prevent duplicate listeners
         if (!this.isEventsBound) {
             this.bindEvents();
             this.isEventsBound = true;
@@ -30,11 +29,25 @@ const DatabasePage = {
      * Bind event listeners
      */
     bindEvents() {
+        // Import / select genome folder
         const importBtn = document.getElementById('import-db-btn');
         if (importBtn) {
             importBtn.addEventListener('click', () => this.importDatabase());
         }
 
+        // Change custom DB folder
+        const changeBtn = document.getElementById('change-db-btn');
+        if (changeBtn) {
+            changeBtn.addEventListener('click', () => this.importDatabase());
+        }
+
+        // Clear custom DB
+        const clearBtn = document.getElementById('clear-db-btn');
+        if (clearBtn) {
+            clearBtn.addEventListener('click', () => this.clearCustomDatabase());
+        }
+
+        // Add individual FASTA
         const addFastaBtn = document.getElementById('add-fasta-btn');
         if (addFastaBtn) {
             addFastaBtn.addEventListener('click', () => this.addFastaFile());
@@ -62,15 +75,86 @@ const DatabasePage = {
     },
 
     /**
-     * Update display with database info
+     * Update display with real database info
      */
     updateDisplay() {
-        // Database info is pre-rendered in HTML
-        // In production, dynamically update from this.databaseInfo
+        if (!this.databaseInfo) return;
+        const info = this.databaseInfo;
+
+        // --- Default DB section ---
+        const statusEl = document.getElementById('default-db-status');
+        const statusText = document.getElementById('default-db-status-text');
+        const genomesEl = document.getElementById('default-db-genomes');
+        const indexEl = document.getElementById('default-db-index');
+        const subtitleEl = document.getElementById('default-db-subtitle');
+
+        if (info.defaultDb) {
+            if (genomesEl) genomesEl.textContent = info.defaultDb.genomeCount || '0';
+            
+            if (info.defaultDb.isBuilt) {
+                if (statusEl) statusEl.className = 'status-badge status-active';
+                if (statusText) statusText.textContent = 'Built';
+                if (indexEl) indexEl.textContent = 'Ready';
+                if (subtitleEl) subtitleEl.textContent = `${info.defaultDb.genomeCount} pathogen genomes indexed`;
+            } else {
+                if (statusEl) statusEl.className = 'status-badge status-pending';
+                if (statusText) statusText.textContent = 'Not Built';
+                if (indexEl) indexEl.textContent = 'Not built';
+                if (subtitleEl) subtitleEl.textContent = 'Run build_clark_db.py to build the index';
+            }
+        }
+
+        // --- Custom DB section ---
+        const emptyEl = document.getElementById('custom-db-empty');
+        const infoEl = document.getElementById('custom-db-info');
+
+        if (info.customDb && info.customDb.path) {
+            // Show custom DB info
+            if (emptyEl) emptyEl.classList.add('hidden');
+            if (infoEl) infoEl.classList.remove('hidden');
+
+            const pathEl = document.getElementById('custom-db-path-display');
+            const countEl = document.getElementById('custom-db-file-count');
+            const sizeEl = document.getElementById('custom-db-total-size');
+            const listEl = document.getElementById('custom-db-file-list');
+
+            if (pathEl) {
+                pathEl.textContent = info.customDb.path;
+                pathEl.title = info.customDb.path;
+            }
+
+            const files = info.customDb.files || [];
+            if (countEl) countEl.textContent = `${files.length} genome file${files.length !== 1 ? 's' : ''}`;
+            if (sizeEl) sizeEl.textContent = this.formatSize(info.customDb.totalSize || 0);
+
+            if (listEl) {
+                if (files.length === 0) {
+                    listEl.innerHTML = '<p class="text-muted">No FASTA files found in this folder.</p>';
+                } else {
+                    listEl.innerHTML = files.slice(0, 50).map(f => `
+                        <div class="custom-db-file-entry">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;flex-shrink:0;">
+                                <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                <polyline points="14 2 14 8 20 8"></polyline>
+                            </svg>
+                            <span class="custom-db-file-name">${f.name}</span>
+                            <span class="custom-db-file-size">${this.formatSize(f.size)}</span>
+                        </div>
+                    `).join('');
+                    if (files.length > 50) {
+                        listEl.innerHTML += `<p class="text-muted" style="margin-top:8px;">...and ${files.length - 50} more files</p>`;
+                    }
+                }
+            }
+        } else {
+            // Show empty state
+            if (emptyEl) emptyEl.classList.remove('hidden');
+            if (infoEl) infoEl.classList.add('hidden');
+        }
     },
 
     /**
-     * Import custom database files
+     * Import / select custom database folder
      */
     async importDatabase() {
         try {
@@ -90,17 +174,49 @@ const DatabasePage = {
             if (window.api?.database?.import) {
                 const result = await window.api.database.import(folder);
                 if (result.success) {
-                    alert('Database import started. This may take several minutes.');
+                    // Reload info to show the new files
+                    await this.loadDatabaseInfo();
                 } else {
-                    alert('Import failed: ' + result.error);
+                    alert('Import failed: ' + (result.error || 'Unknown error'));
                 }
             } else {
-                alert('Import feature requires backend integration');
+                alert('Import feature requires Electron backend');
             }
         } catch (error) {
             console.error('Import error:', error);
-            alert('Failed to import database');
+            alert('Failed to import database: ' + error.message);
         }
+    },
+
+    /**
+     * Clear custom database path
+     */
+    async clearCustomDatabase() {
+        if (!confirm('Clear the custom database folder? This will not delete any files.')) return;
+
+        try {
+            if (window.api?.database?.clearCustomDb) {
+                await window.api.database.clearCustomDb();
+                await this.loadDatabaseInfo();
+            }
+        } catch (error) {
+            console.error('Failed to clear custom DB:', error);
+        }
+    },
+
+    /**
+     * Format file size for display
+     */
+    formatSize(bytes) {
+        if (!bytes || bytes === 0) return '0 B';
+        const units = ['B', 'KB', 'MB', 'GB'];
+        let i = 0;
+        let size = bytes;
+        while (size >= 1024 && i < units.length - 1) {
+            size /= 1024;
+            i++;
+        }
+        return `${size.toFixed(i > 0 ? 1 : 0)} ${units[i]}`;
     },
 
     /**
@@ -121,13 +237,6 @@ const DatabasePage = {
     },
 
     /**
-     * Export database
-     */
-    async exportDatabase() {
-        alert('Export feature - Coming soon');
-    },
-
-    /**
      * Load custom species from storage
      */
     loadCustomSpecies() {
@@ -136,27 +245,7 @@ const DatabasePage = {
             if (saved) {
                 this.customSpecies = JSON.parse(saved);
             } else {
-                // Mock data for development
-                this.customSpecies = [
-                    {
-                        id: 'sp_001',
-                        name: 'Custom Pathogen A',
-                        taxId: 'CUSTOM001',
-                        type: 'bacteria',
-                        source: 'custom_pathogen_a.fasta',
-                        addedAt: '2025-12-10T10:30:00Z',
-                        sequences: 15
-                    },
-                    {
-                        id: 'sp_002',
-                        name: 'Local Strain XYZ',
-                        taxId: 'CUSTOM002',
-                        type: 'bacteria',
-                        source: 'local_strain_xyz.fasta',
-                        addedAt: '2025-12-08T14:20:00Z',
-                        sequences: 8
-                    }
-                ];
+                this.customSpecies = [];
             }
             this.renderCustomSpecies();
         } catch (error) {
@@ -186,7 +275,6 @@ const DatabasePage = {
             if (window.api?.files?.selectFiles) {
                 files = await window.api.files.selectFiles();
             } else {
-                // Mock for development - show dialog
                 const fileName = prompt('Enter FASTA file name (mock):', 'new_species.fasta');
                 if (fileName) {
                     files = [fileName];
@@ -194,7 +282,6 @@ const DatabasePage = {
             }
 
             if (files && files.length > 0) {
-                // Show metadata dialog
                 this.showAddSpeciesDialog(files[0]);
             }
         } catch (error) {
@@ -208,14 +295,13 @@ const DatabasePage = {
      */
     showAddSpeciesDialog(filePath) {
         const fileName = filePath.split(/[\\/]/).pop();
-        const speciesName = prompt('Enter species/organism name:', fileName.replace('.fasta', '').replace('.fa', ''));
+        const speciesName = prompt('Enter species/organism name:', fileName.replace(/\.(fasta|fna|fa|fsa)(\.gz)?$/i, ''));
         
         if (!speciesName) return;
 
         const taxId = prompt('Enter taxonomic ID (optional):', 'CUSTOM' + Date.now().toString().slice(-6));
         const type = prompt('Enter type (bacteria/viral/fungal/other):', 'bacteria');
 
-        // Create new species entry
         const newSpecies = {
             id: 'sp_' + Date.now().toString(36),
             name: speciesName,
@@ -223,16 +309,13 @@ const DatabasePage = {
             type: type || 'bacteria',
             source: fileName,
             addedAt: new Date().toISOString(),
-            sequences: Math.floor(Math.random() * 20) + 1 // Mock sequence count
+            sequences: 1
         };
 
         this.customSpecies.unshift(newSpecies);
         this.saveCustomSpecies();
         this.renderCustomSpecies();
 
-        console.log('Species added:', newSpecies.name);
-        
-        // Would call backend to index the FASTA file
         if (window.api?.database?.addFasta) {
             window.api.database.addFasta(filePath, newSpecies);
         }
@@ -252,8 +335,6 @@ const DatabasePage = {
             this.customSpecies = this.customSpecies.filter(s => s.id !== speciesId);
             this.saveCustomSpecies();
             this.renderCustomSpecies();
-
-            console.log('Species removed:', speciesId);
         } catch (error) {
             console.error('Failed to remove species:', error);
             alert('Failed to remove species');
@@ -276,7 +357,6 @@ const DatabasePage = {
         const newType = prompt('Edit type (bacteria/viral/fungal/other):', species.type);
         if (newType === null) return;
 
-        // Update species
         species.name = newName || species.name;
         species.taxId = newTaxId || species.taxId;
         species.type = newType || species.type;
@@ -285,9 +365,6 @@ const DatabasePage = {
         this.saveCustomSpecies();
         this.renderCustomSpecies();
 
-        console.log('Species updated:', species.name);
-
-        // Would call backend to update metadata
         if (window.api?.database?.updateSpecies) {
             window.api.database.updateSpecies(speciesId, species);
         }
@@ -351,7 +428,7 @@ const DatabasePage = {
     },
 
     /**
-     * Format date for display (delegating to Utils)
+     * Format date for display
      */
     formatDate(dateStr) {
         return Utils.formatDate(dateStr);

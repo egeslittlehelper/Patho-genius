@@ -1,0 +1,3915 @@
+{
+  "customDbPath": "C:\\Users\\egeni\\OneDrive\\Desktop\\Eges_Codes\\CS_491\\example data\\marmgCAMI2_genomes\\simulation_short_read\\genomes",
+  "customDbFiles": [
+    {
+      "name": "10_S10_contigs.fasta",
+      "size": 4517083
+    },
+    {
+      "name": "10_S9_contigs.fasta",
+      "size": 3523106
+    },
+    {
+      "name": "11_S11_contigs.fasta",
+      "size": 5717162
+    },
+    {
+      "name": "12_S12_contigs.fasta",
+      "size": 3395904
+    },
+    {
+      "name": "12_S1_contigs.fasta",
+      "size": 4648078
+    },
+    {
+      "name": "13_S13_contigs.fasta",
+      "size": 3251042
+    },
+    {
+      "name": "14_S2_contigs.fasta",
+      "size": 4645687
+    },
+    {
+      "name": "15_S3_contigs.fasta",
+      "size": 4553723
+    },
+    {
+      "name": "18_S4_contigs.fasta",
+      "size": 5516413
+    },
+    {
+      "name": "19_S5_contigs.fasta",
+      "size": 5522916
+    },
+    {
+      "name": "1_S1_contigs.fasta",
+      "size": 4226259
+    },
+    {
+      "name": "20_S10_contigs.fasta",
+      "size": 3467333
+    },
+    {
+      "name": "26_S2_contigs.fasta",
+      "size": 4117449
+    },
+    {
+      "name": "2_S2_contigs.fasta",
+      "size": 4224840
+    },
+    {
+      "name": "2_S8_contigs.fasta",
+      "size": 4568093
+    },
+    {
+      "name": "33_S3_contigs.fasta",
+      "size": 3070620
+    },
+    {
+      "name": "35_S4_contigs.fasta",
+      "size": 3262526
+    },
+    {
+      "name": "38_S5_contigs.fasta",
+      "size": 3683792
+    },
+    {
+      "name": "3_S3_contigs.fasta",
+      "size": 4223280
+    },
+    {
+      "name": "4_S4_contigs.fasta",
+      "size": 4106759
+    },
+    {
+      "name": "5_S5_contigs.fasta",
+      "size": 3984024
+    },
+    {
+      "name": "6_S6_contigs.fasta",
+      "size": 4101816
+    },
+    {
+      "name": "8_S8_contigs.fasta",
+      "size": 4513054
+    },
+    {
+      "name": "9_S9_contigs.fasta",
+      "size": 5162378
+    },
+    {
+      "name": "A-2013-70-F524-1_S1_contigs.fasta",
+      "size": 4435930
+    },
+    {
+      "name": "A-2013-70-F524-2_S2_contigs.fasta",
+      "size": 4447913
+    },
+    {
+      "name": "A-2014-70-F537_S3_contigs.fasta",
+      "size": 4357040
+    },
+    {
+      "name": "A-H-1309-4-4_S6_contigs.fasta",
+      "size": 4587120
+    },
+    {
+      "name": "A-H-1309-5-2_S7_contigs.fasta",
+      "size": 5017844
+    },
+    {
+      "name": "A-H130426-2_S6_contigs.fasta",
+      "size": 3906480
+    },
+    {
+      "name": "A-H1309-1-3_S8_contigs.fasta",
+      "size": 4445761
+    },
+    {
+      "name": "A-H1309-4-1_S7_contigs.fasta",
+      "size": 4454924
+    },
+    {
+      "name": "A-H1309-4-3_S10_contigs.fasta",
+      "size": 4582297
+    },
+    {
+      "name": "A-H1309-5II_S9_contigs.fasta",
+      "size": 4587840
+    },
+    {
+      "name": "A-Hdes-10_S9_contigs.fasta",
+      "size": 4653523
+    },
+    {
+      "name": "A-Hdes-11_S10_contigs.fasta",
+      "size": 4901645
+    },
+    {
+      "name": "A-Hdes-12_S11_contigs.fasta",
+      "size": 4663607
+    },
+    {
+      "name": "A-Hdes-19_S12_contigs.fasta",
+      "size": 4683076
+    },
+    {
+      "name": "A-Hdes-20-1_S13_contigs.fasta",
+      "size": 4672935
+    },
+    {
+      "name": "A-Hdes-3_S8_contigs.fasta",
+      "size": 3868896
+    },
+    {
+      "name": "A15_S15_contigs.fasta",
+      "size": 4599210
+    },
+    {
+      "name": "A16_S16_contigs.fasta",
+      "size": 4405560
+    },
+    {
+      "name": "A1_S1_contigs.fasta",
+      "size": 4030291
+    },
+    {
+      "name": "A22_S22_contigs.fasta",
+      "size": 4592833
+    },
+    {
+      "name": "A25_S9_contigs.fasta",
+      "size": 4329503
+    },
+    {
+      "name": "A2_S2_contigs.fasta",
+      "size": 3849044
+    },
+    {
+      "name": "A3_S3_contigs.fasta",
+      "size": 4256572
+    },
+    {
+      "name": "A4_S4_contigs.fasta",
+      "size": 3897012
+    },
+    {
+      "name": "A5_S5_contigs.fasta",
+      "size": 4069437
+    },
+    {
+      "name": "A6_S6_contigs.fasta",
+      "size": 4099601
+    },
+    {
+      "name": "A7_S7_contigs.fasta",
+      "size": 4080664
+    },
+    {
+      "name": "A8_S8_contigs.fasta",
+      "size": 4090274
+    },
+    {
+      "name": "A9-2_S2_contigs.fasta",
+      "size": 4330090
+    },
+    {
+      "name": "Acidobacteria_bacterium_Mor1_genomic.fasta",
+      "size": 5989634
+    },
+    {
+      "name": "Aciduliprofundum_boonei_T469_genomic.fasta",
+      "size": 1486874
+    },
+    {
+      "name": "Aciduliprofundum_sp_MAR08-339_genomic.fasta",
+      "size": 1437188
+    },
+    {
+      "name": "Acinetobacter_venetianus_VE-C3_genomic.fasta",
+      "size": 3544783
+    },
+    {
+      "name": "Actinoalloteichus_hymeniacidonis_strain_HPA177_DSM_45092_genomic.fasta",
+      "size": 6306522
+    },
+    {
+      "name": "Actinoalloteichus_sp_ADI127-7_genomic.fasta",
+      "size": 7120955
+    },
+    {
+      "name": "Actinoalloteichus_sp_GBA129-24_genomic.fasta",
+      "size": 7275610
+    },
+    {
+      "name": "Aeromonas_salmonicida_subsp_salmonicida_A449_genomic.fasta",
+      "size": 5041302
+    },
+    {
+      "name": "Aeropyrum_camini_SY1_JCM_12091_genomic.fasta",
+      "size": 1596098
+    },
+    {
+      "name": "Aeropyrum_pernix_K1_genomic.fasta",
+      "size": 1669787
+    },
+    {
+      "name": "Agarivorans_gilvus_strain_WH0801_genomic.fasta",
+      "size": 4416703
+    },
+    {
+      "name": "Agrococcus_jejuensis_strain_DSM_22002_genomic.fasta",
+      "size": 3400297
+    },
+    {
+      "name": "Alcanivorax_borkumensis_SK2_genomic.fasta",
+      "size": 3120237
+    },
+    {
+      "name": "Alcanivorax_dieselolei_B5_genomic.fasta",
+      "size": 4928316
+    },
+    {
+      "name": "Alcanivorax_sp_W11-5_genomic.fasta",
+      "size": 4168522
+    },
+    {
+      "name": "Algibacter_sp_HZ22_genomic.fasta",
+      "size": 3994860
+    },
+    {
+      "name": "Aliivibrio_salmonicida_LFI1238_genomic.fasta",
+      "size": 4656329
+    },
+    {
+      "name": "Aliivibrio_wodanis_genomic.fasta",
+      "size": 4635789
+    },
+    {
+      "name": "alpha_proteobacterium_HIMB59_genomic.fasta",
+      "size": 1410223
+    },
+    {
+      "name": "alpha_proteobacterium_HIMB5_genomic.fasta",
+      "size": 1343297
+    },
+    {
+      "name": "Altererythrobacter_atlanticus_strain_26DY36_genomic.fasta",
+      "size": 3475343
+    },
+    {
+      "name": "Altererythrobacter_dongtanensis_strain_KCTC_22672_genomic.fasta",
+      "size": 3009615
+    },
+    {
+      "name": "Altererythrobacter_epoxidivorans_CGMCC_17731_genomic.fasta",
+      "size": 2786376
+    },
+    {
+      "name": "Altererythrobacter_ishigakiensis_strain_NBRC_107699_genomic.fasta",
+      "size": 2674100
+    },
+    {
+      "name": "Altererythrobacter_marensis_strain_KCTC_22370_genomic.fasta",
+      "size": 2885149
+    },
+    {
+      "name": "Altererythrobacter_namhicola_strain_JCM_16345_genomic.fasta",
+      "size": 2591795
+    },
+    {
+      "name": "Alteromonas_australica_DE170_genomic.fasta",
+      "size": 4457578
+    },
+    {
+      "name": "Alteromonas_australica_H_17_genomic.fasta",
+      "size": 4308935
+    },
+    {
+      "name": "Alteromonas_macleodii_AltDE1_genomic.fasta",
+      "size": 4947334
+    },
+    {
+      "name": "Alteromonas_macleodii_ATCC_27126_genomic.fasta",
+      "size": 4653952
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Aegean_Sea_MED64_genomic.fasta",
+      "size": 4397650
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Balearic_Sea_AD45_genomic.fasta",
+      "size": 4675131
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Black_Sea_11_genomic.fasta",
+      "size": 4480616
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Deep_ecotype_genomic.fasta",
+      "size": 4481046
+    },
+    {
+      "name": "Alteromonas_macleodii_str_English_Channel_615_genomic.fasta",
+      "size": 4582593
+    },
+    {
+      "name": "Alteromonas_macleodii_str_English_Channel_673_genomic.fasta",
+      "size": 4601901
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Ionian_Sea_U4_genomic.fasta",
+      "size": 4624807
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Ionian_Sea_U7_genomic.fasta",
+      "size": 4443046
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Ionian_Sea_U8_genomic.fasta",
+      "size": 4395145
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Ionian_Sea_UM4b_genomic.fasta",
+      "size": 4438879
+    },
+    {
+      "name": "Alteromonas_macleodii_str_Ionian_Sea_UM7_genomic.fasta",
+      "size": 4931891
+    },
+    {
+      "name": "Alteromonas_mediterranea_strain_AR43_genomic.fasta",
+      "size": 4344546
+    },
+    {
+      "name": "Alteromonas_mediterranea_strain_CP48_genomic.fasta",
+      "size": 4928182
+    },
+    {
+      "name": "Alteromonas_mediterranea_strain_CP49_genomic.fasta",
+      "size": 4971614
+    },
+    {
+      "name": "Alteromonas_mediterranea_strain_RG65_genomic.fasta",
+      "size": 4652447
+    },
+    {
+      "name": "Alteromonas_sp_Mex14_genomic.fasta",
+      "size": 4489544
+    },
+    {
+      "name": "Alteromonas_sp_RW2A1_genomic.fasta",
+      "size": 4143907
+    },
+    {
+      "name": "Alteromonas_sp_SN2_genomic.fasta",
+      "size": 4972235
+    },
+    {
+      "name": "Alteromonas_stellipolaris_LMG_21856_genomic.fasta",
+      "size": 4686306
+    },
+    {
+      "name": "Alteromonas_stellipolaris_strain_PQQ-42_genomic.fasta",
+      "size": 4755850
+    },
+    {
+      "name": "Alteromonas_stellipolaris_strain_PQQ-44_genomic.fasta",
+      "size": 4721971
+    },
+    {
+      "name": "Arcanobacterium_phocae_strain_DSM_10002_genomic.fasta",
+      "size": 1998463
+    },
+    {
+      "name": "Archaeoglobus_fulgidus_DSM_4304_genomic.fasta",
+      "size": 2178499
+    },
+    {
+      "name": "Archaeoglobus_fulgidus_DSM_8774_genomic.fasta",
+      "size": 2316386
+    },
+    {
+      "name": "Archaeoglobus_profundus_DSM_5631_genomic.fasta",
+      "size": 1563641
+    },
+    {
+      "name": "Archaeoglobus_veneficus_SNP6_genomic.fasta",
+      "size": 1902039
+    },
+    {
+      "name": "Arthrobacter_sp_PAMC25486_genomic.fasta",
+      "size": 4593673
+    },
+    {
+      "name": "AW02J18_S11_contigs.fasta",
+      "size": 3603681
+    },
+    {
+      "name": "AW19M33_S12_contigs.fasta",
+      "size": 4808651
+    },
+    {
+      "name": "B9-25K2_S3_contigs.fasta",
+      "size": 5340646
+    },
+    {
+      "name": "Bacillus_infantis_NRRL_B-14911_genomic.fasta",
+      "size": 4884811
+    },
+    {
+      "name": "Bacillus_safensis_strain_KCTC_12796BP_genomic.fasta",
+      "size": 3972797
+    },
+    {
+      "name": "Bacillus_sp_Alg07_genomic.fasta",
+      "size": 4361463
+    },
+    {
+      "name": "Bacillus_sp_Pc3_genomic.fasta",
+      "size": 3982252
+    },
+    {
+      "name": "Bacillus_velezensis_strain_9912D_genomic.fasta",
+      "size": 4241798
+    },
+    {
+      "name": "Bacteriovorax_marinus_SJ_genomic.fasta",
+      "size": 3438094
+    },
+    {
+      "name": "bacterium_AB1_strain_AB1-8_genomic.fasta",
+      "size": 593447
+    },
+    {
+      "name": "Bdellovibrio_bacteriovorus_strain_109J_genomic.fasta",
+      "size": 3830533
+    },
+    {
+      "name": "Belliella_baltica_DSM_15883_genomic.fasta",
+      "size": 4196690
+    },
+    {
+      "name": "Brucella_ceti_TE10759-12_genomic.fasta",
+      "size": 3278247
+    },
+    {
+      "name": "Brucella_ceti_TE28753-12_genomic.fasta",
+      "size": 3277758
+    },
+    {
+      "name": "Brucella_pinnipedialis_B2_94_genomic.fasta",
+      "size": 3399489
+    },
+    {
+      "name": "Brucella_sp_141012304_genomic.fasta",
+      "size": 3442592
+    },
+    {
+      "name": "Caldithrix_abyssi_DSM_13497_genomic.fasta",
+      "size": 4978639
+    },
+    {
+      "name": "Campylobacter_lari_strain_Slaughter_Beach_genomic.fasta",
+      "size": 1563144
+    },
+    {
+      "name": "Campylobacter_peloridis_LMG_23910_genomic.fasta",
+      "size": 1763126
+    },
+    {
+      "name": "Candidatus_Aquiluna_sp_UB-MaderosW2red_genomic.fasta",
+      "size": 1664025
+    },
+    {
+      "name": "Candidatus_Atelocyanobacterium_thalassa_isolate_ALOHA_genomic.fasta",
+      "size": 1443929
+    },
+    {
+      "name": "Candidatus_Endolissoclinum_faulkneri_L5_genomic.fasta",
+      "size": 1518743
+    },
+    {
+      "name": "Candidatus_Endolissoclinum_patella_L2_genomic.fasta",
+      "size": 1481298
+    },
+    {
+      "name": "Candidatus_Gloeomargarita_lithophora_D10_genomic.fasta",
+      "size": 3049391
+    },
+    {
+      "name": "Candidatus_Nitrosoarchaeum_limnia_SFB1_genomic.fasta",
+      "size": 1772852
+    },
+    {
+      "name": "Candidatus_Nitrosopelagicus_brevis_CN25_genomic.fasta",
+      "size": 1232242
+    },
+    {
+      "name": "Candidatus_Nitrosopumilus_koreensis_AR1_genomic.fasta",
+      "size": 1640071
+    },
+    {
+      "name": "Candidatus_Nitrosopumilus_sp_AR2_genomic.fasta",
+      "size": 1691006
+    },
+    {
+      "name": "Candidatus_Nitrosopumilus_sp_D3C_genomic.fasta",
+      "size": 1713193
+    },
+    {
+      "name": "Candidatus_Nitrosopumilus_sp_NF5_genomic.fasta",
+      "size": 1803194
+    },
+    {
+      "name": "Candidatus_Pelagibacter_sp_IMCC9063_genomic.fasta",
+      "size": 1284831
+    },
+    {
+      "name": "Candidatus_Pelagibacter_ubique_HTCC1062_genomic.fasta",
+      "size": 1308866
+    },
+    {
+      "name": "Candidatus_Puniceispirillum_marinum_IMCC1322_genomic.fasta",
+      "size": 2753639
+    },
+    {
+      "name": "Candidatus_Ruthia_magnifica_str_Cm_Calyptogena_magnifica_genomic.fasta",
+      "size": 1160909
+    },
+    {
+      "name": "Candidatus_Thioglobus_singularis_PS1_genomic.fasta",
+      "size": 1714255
+    },
+    {
+      "name": "Candidatus_Thioglobus_singularis_strain_GG2_genomic.fasta",
+      "size": 1714254
+    },
+    {
+      "name": "Candidatus_Thioglobus_sp_EF1_genomic.fasta",
+      "size": 1512551
+    },
+    {
+      "name": "Candidatus_Vesicomyosocius_okutanii_HA_genomic.fasta",
+      "size": 1022264
+    },
+    {
+      "name": "Carnobacterium_sp_17-4_genomic.fasta",
+      "size": 2685597
+    },
+    {
+      "name": "Celeribacter_indicus_P73_genomic.fasta",
+      "size": 4970057
+    },
+    {
+      "name": "Celeribacter_marinus_strain_IMCC12053_genomic.fasta",
+      "size": 3096811
+    },
+    {
+      "name": "Cellulophaga_algicola_DSM_14237_genomic.fasta",
+      "size": 4888452
+    },
+    {
+      "name": "Cellulophaga_baltica_18_genomic.fasta",
+      "size": 4635196
+    },
+    {
+      "name": "Cellulophaga_baltica_NN016038_genomic.fasta",
+      "size": 4560637
+    },
+    {
+      "name": "Cellulophaga_lytica_DSM_7489_genomic.fasta",
+      "size": 3766032
+    },
+    {
+      "name": "Cellulophaga_lytica_strain_DAU203_genomic.fasta",
+      "size": 3953061
+    },
+    {
+      "name": "Cellulophaga_lytica_strain_HI1_genomic.fasta",
+      "size": 3824294
+    },
+    {
+      "name": "Cenarchaeum_symbiosum_A_genomic.fasta",
+      "size": 2045177
+    },
+    {
+      "name": "Chlorobium_phaeobacteroides_BS1_genomic.fasta",
+      "size": 2736502
+    },
+    {
+      "name": "Chlorobium_phaeovibrioides_DSM_265_genomic.fasta",
+      "size": 1966960
+    },
+    {
+      "name": "Chloroherpeton_thalassium_ATCC_35110_genomic.fasta",
+      "size": 3293560
+    },
+    {
+      "name": "Chromohalobacter_salexigens_DSM_3043_genomic.fasta",
+      "size": 3696753
+    },
+    {
+      "name": "Citromicrobium_sp_JL477_genomic.fasta",
+      "size": 3258591
+    },
+    {
+      "name": "Clostridium_botulinum_202F_genomic.fasta",
+      "size": 3914806
+    },
+    {
+      "name": "Clostridium_stercorarium_subsp_thermolacticum_DSM_2910_genomic.fasta",
+      "size": 3035750
+    },
+    {
+      "name": "Colwellia_psychrerythraea_34H_genomic.fasta",
+      "size": 5373277
+    },
+    {
+      "name": "Colwellia_sp_MT41_genomic.fasta",
+      "size": 4338034
+    },
+    {
+      "name": "Colwellia_sp_PAMC_20917_genomic.fasta",
+      "size": 4683409
+    },
+    {
+      "name": "Confluentimicrobium_sp_EMB200-NS6_genomic.fasta",
+      "size": 4147897
+    },
+    {
+      "name": "Coraliomargarita_akajimensis_DSM_45221_genomic.fasta",
+      "size": 3750877
+    },
+    {
+      "name": "Corynebacterium_marinum_DSM_44953_genomic.fasta",
+      "size": 2729562
+    },
+    {
+      "name": "Corynebacterium_maris_DSM_45190_genomic.fasta",
+      "size": 2833763
+    },
+    {
+      "name": "Corynebacterium_phocae_strain_M408_89_1_genomic.fasta",
+      "size": 2792118
+    },
+    {
+      "name": "Corynebacterium_sphenisci_DSM_44792_genomic.fasta",
+      "size": 2594905
+    },
+    {
+      "name": "Corynebacterium_stationis_strain_622_DSM_20302_genomic.fasta",
+      "size": 2862484
+    },
+    {
+      "name": "Croceibacter_atlanticus_HTCC2559_genomic.fasta",
+      "size": 2953062
+    },
+    {
+      "name": "Croceicoccus_naphthovorans_strain_PQ-2_genomic.fasta",
+      "size": 3863913
+    },
+    {
+      "name": "Cupriavidus_sp_USMAA1020_genomic.fasta",
+      "size": 7949784
+    },
+    {
+      "name": "Cyanothece_sp_ATCC_51142_genomic.fasta",
+      "size": 5461020
+    },
+    {
+      "name": "Cyclobacterium_amurskyense_strain_KCTC_12363_genomic.fasta",
+      "size": 6158944
+    },
+    {
+      "name": "Cyclobacterium_marinum_DSM_745_genomic.fasta",
+      "size": 6221371
+    },
+    {
+      "name": "Cycloclasticus_sp_P1_genomic.fasta",
+      "size": 2363304
+    },
+    {
+      "name": "Cycloclasticus_zancles_78-ME_genomic.fasta",
+      "size": 2655633
+    },
+    {
+      "name": "Deferribacter_desulfuricans_SSM1_genomic.fasta",
+      "size": 2543167
+    },
+    {
+      "name": "Denitrovibrio_acetiphilus_DSM_12809_genomic.fasta",
+      "size": 3222180
+    },
+    {
+      "name": "Desulfobacterium_autotrophicum_HRM2_genomic.fasta",
+      "size": 5658004
+    },
+    {
+      "name": "Desulfobacula_toluolica_Tol2_genomic.fasta",
+      "size": 5198000
+    },
+    {
+      "name": "Desulfocapsa_sulfexigens_DSM_10523_genomic.fasta",
+      "size": 4023725
+    },
+    {
+      "name": "Desulfococcus_multivorans_strain_DSM_2059_genomic.fasta",
+      "size": 4455511
+    },
+    {
+      "name": "Desulfotalea_psychrophila_LSv54_genomic.fasta",
+      "size": 3659917
+    },
+    {
+      "name": "Desulfotomaculum_reducens_MI-1_genomic.fasta",
+      "size": 3608202
+    },
+    {
+      "name": "Desulfovibrio_africanus_str_Walvis_Bay_genomic.fasta",
+      "size": 4200641
+    },
+    {
+      "name": "Desulfovibrio_desulfuricans_ND132_genomic.fasta",
+      "size": 3858681
+    },
+    {
+      "name": "Desulfovibrio_hydrothermalis_AM13_genomic.fasta",
+      "size": 3708612
+    },
+    {
+      "name": "Desulfovibrio_piezophilus_strain_C1TLV30_genomic.fasta",
+      "size": 3646198
+    },
+    {
+      "name": "Desulfovibrio_salexigens_DSM_2638_genomic.fasta",
+      "size": 4289948
+    },
+    {
+      "name": "Desulfurobacterium_thermolithotrophum_DSM_11699_genomic.fasta",
+      "size": 1542083
+    },
+    {
+      "name": "Dinoroseobacter_shibae_DFL_12_genomic.fasta",
+      "size": 4418535
+    },
+    {
+      "name": "Dokdonia_donghaensis_DSW-1_genomic.fasta",
+      "size": 3294041
+    },
+    {
+      "name": "Dokdonia_sp_MED134_genomic.fasta",
+      "size": 3302635
+    },
+    {
+      "name": "Dokdonia_sp_PRO95_genomic.fasta",
+      "size": 3305307
+    },
+    {
+      "name": "Donghicola_sp_JLT3646_genomic.fasta",
+      "size": 3147414
+    },
+    {
+      "name": "Draconibacterium_orientale_strain_FH5_genomic.fasta",
+      "size": 5132181
+    },
+    {
+      "name": "Echinicola_vietnamensis_DSM_17526_genomic.fasta",
+      "size": 5608141
+    },
+    {
+      "name": "Edwardsiella_piscicida_strain_S11-285_genomic.fasta",
+      "size": 3927001
+    },
+    {
+      "name": "Edwardsiella_tarda_080813_genomic.fasta",
+      "size": 4329953
+    },
+    {
+      "name": "Edwardsiella_tarda_EIB202_genomic.fasta",
+      "size": 3804369
+    },
+    {
+      "name": "endosymbiont_of_unidentified_scaly_snail_isolate_Monju_genomic.fasta",
+      "size": 2597885
+    },
+    {
+      "name": "Erythrobacter_gangjinensis_strain_JCM_15420_genomic.fasta",
+      "size": 2725209
+    },
+    {
+      "name": "Erythrobacter_litoralis_HTCC2594_genomic.fasta",
+      "size": 3052498
+    },
+    {
+      "name": "Erythrobacter_litoralis_strain_DSM_8509_genomic.fasta",
+      "size": 3251463
+    },
+    {
+      "name": "Erythrobacter_sp_s21-N3_genomic.fasta",
+      "size": 3226586
+    },
+    {
+      "name": "Ferrimonas_balearica_DSM_9799_genomic.fasta",
+      "size": 4279256
+    },
+    {
+      "name": "Ferroglobus_placidus_DSM_10642_genomic.fasta",
+      "size": 2196364
+    },
+    {
+      "name": "Fervidobacterium_pennivorans_strain_DYC_genomic.fasta",
+      "size": 2061962
+    },
+    {
+      "name": "Fibrella_aestuarina_strain_BUZ_2_genomic.fasta",
+      "size": 6937460
+    },
+    {
+      "name": "Filomicrobium_sp_W1_genomic.fasta",
+      "size": 3970048
+    },
+    {
+      "name": "Flammeovirga_sp_MY04_genomic.fasta",
+      "size": 7327928
+    },
+    {
+      "name": "Flavobacteriaceae_bacterium_MAR_2010_188_genomic.fasta",
+      "size": 3817784
+    },
+    {
+      "name": "Flavobacteriaceae_bacterium_UJ101_genomic.fasta",
+      "size": 3074313
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_FPG101_genomic.fasta",
+      "size": 2835233
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_FPG3_genomic.fasta",
+      "size": 2716010
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_strain_CSF259-93_genomic.fasta",
+      "size": 2900851
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_strain_MH1_genomic.fasta",
+      "size": 2883603
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_strain_PG2_genomic.fasta",
+      "size": 2850820
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_strain_VQ50_genomic.fasta",
+      "size": 2806972
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_V3-5_genomic.fasta",
+      "size": 2698128
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_V4-24_genomic.fasta",
+      "size": 2684694
+    },
+    {
+      "name": "Flavobacterium_psychrophilum_v4-33_genomic.fasta",
+      "size": 2699495
+    },
+    {
+      "name": "Flavobacterium_sp_LPB0076_genomic.fasta",
+      "size": 3027412
+    },
+    {
+      "name": "Flexibacter_litoralis_DSM_6794_genomic.fasta",
+      "size": 4919435
+    },
+    {
+      "name": "Flexistipes_sinusarabici_DSM_4947_genomic.fasta",
+      "size": 2526691
+    },
+    {
+      "name": "Formosa_agariphila_KMM_3901_genomic.fasta",
+      "size": 4228444
+    },
+    {
+      "name": "Formosa_haliotis_strain_LMG_28520_genomic.fasta",
+      "size": 4305923
+    },
+    {
+      "name": "Formosa_sp_Hel1_33_131_genomic.fasta",
+      "size": 2735252
+    },
+    {
+      "name": "Formosa_sp_Hel3_A1_48_genomic.fasta",
+      "size": 2016547
+    },
+    {
+      "name": "Francisella_noatunensis_subsp_orientalis_FNO12_genomic.fasta",
+      "size": 1859838
+    },
+    {
+      "name": "Francisella_noatunensis_subsp_orientalis_FNO24_genomic.fasta",
+      "size": 1862440
+    },
+    {
+      "name": "Francisella_noatunensis_subsp_orientalis_LADL-07-285A_genomic.fasta",
+      "size": 1859110
+    },
+    {
+      "name": "Francisella_noatunensis_subsp_orientalis_strain_FNO01_genomic.fasta",
+      "size": 1859955
+    },
+    {
+      "name": "Francisella_noatunensis_subsp_orientalis_strain_FNO190_genomic.fasta",
+      "size": 1859721
+    },
+    {
+      "name": "Francisella_sp_FSC1006_genomic.fasta",
+      "size": 2016078
+    },
+    {
+      "name": "Francisella_sp_TX077310_genomic.fasta",
+      "size": 2237474
+    },
+    {
+      "name": "GB02J24_S7_contigs.fasta",
+      "size": 4865300
+    },
+    {
+      "name": "GB02J33_S8_contigs.fasta",
+      "size": 4347841
+    },
+    {
+      "name": "GB02J45_S9_contigs.fasta",
+      "size": 5385556
+    },
+    {
+      "name": "GB02J46_S10_contigs.fasta",
+      "size": 3632246
+    },
+    {
+      "name": "GB04J27_S10_contigs.fasta",
+      "size": 5125603
+    },
+    {
+      "name": "Geobacillus_kaustophilus_HTA426_genomic.fasta",
+      "size": 3592887
+    },
+    {
+      "name": "Geobacillus_sp_12AMOR1_genomic.fasta",
+      "size": 3442928
+    },
+    {
+      "name": "Geoglobus_acetivorans_SBH6_genomic.fasta",
+      "size": 1860916
+    },
+    {
+      "name": "Geoglobus_ahangari_strain_234_genomic.fasta",
+      "size": 1770193
+    },
+    {
+      "name": "Gillisia_sp_Hel1_33_143_genomic.fasta",
+      "size": 3476167
+    },
+    {
+      "name": "Glaciecola_nitratireducens_FR1064_genomic.fasta",
+      "size": 4134330
+    },
+    {
+      "name": "Glaciecola_sp_4H-3-7+YE-5_genomic.fasta",
+      "size": 5393797
+    },
+    {
+      "name": "Gramella_forsetii_KT0803_genomic.fasta",
+      "size": 3798565
+    },
+    {
+      "name": "Gramella_sp_LPB0144_genomic.fasta",
+      "size": 2978980
+    },
+    {
+      "name": "Gramella_sp_MAR_2010_102_genomic.fasta",
+      "size": 3545288
+    },
+    {
+      "name": "Gramella_sp_MAR_2010_147_genomic.fasta",
+      "size": 3158690
+    },
+    {
+      "name": "Hahella_chejuensis_KCTC_2396_genomic.fasta",
+      "size": 7215363
+    },
+    {
+      "name": "Halanaeroarchaeum_sulfurireducens_strain_M27-SA2_genomic.fasta",
+      "size": 2253759
+    },
+    {
+      "name": "Haliangium_ochraceum_DSM_14365_genomic.fasta",
+      "size": 9446412
+    },
+    {
+      "name": "haloarchaeon_HSR6_genomic.fasta",
+      "size": 2086034
+    },
+    {
+      "name": "Haloarcula_hispanica_ATCC_33960_genomic.fasta",
+      "size": 3890348
+    },
+    {
+      "name": "Haloarcula_sp_CBA1115_genomic.fasta",
+      "size": 4225676
+    },
+    {
+      "name": "Haloferax_gibbonsii_strain_ARA6_genomic.fasta",
+      "size": 3919020
+    },
+    {
+      "name": "Haloferax_mediterranei_ATCC_33500_genomic.fasta",
+      "size": 3905159
+    },
+    {
+      "name": "Halogeometricum_borinquense_DSM_11551_genomic.fasta",
+      "size": 3945182
+    },
+    {
+      "name": "Halolamina_sediminis_strain_halo7_genomic.fasta",
+      "size": 2836010
+    },
+    {
+      "name": "Halolamina_sediminis_strain_Hb3_genomic.fasta",
+      "size": 3543993
+    },
+    {
+      "name": "Halomonas_elongata_DSM_2581_genomic.fasta",
+      "size": 4061390
+    },
+    {
+      "name": "Halomonas_spR57-5_genomic.fasta",
+      "size": 5031625
+    },
+    {
+      "name": "Halomonas_sp_A3H3_genomic.fasta",
+      "size": 5644134
+    },
+    {
+      "name": "Haloquadratum_walsbyi_C23_genomic.fasta",
+      "size": 3260881
+    },
+    {
+      "name": "Haloquadratum_walsbyi_DSM_16790_genomic.fasta",
+      "size": 3179569
+    },
+    {
+      "name": "Halorhabdus_tiamatea_SARL4B_genomic.fasta",
+      "size": 3146363
+    },
+    {
+      "name": "Helicobacter_cetorum_MIT_00-7128_genomic.fasta",
+      "size": 1960325
+    },
+    {
+      "name": "Helicobacter_cetorum_MIT_99-5656_genomic.fasta",
+      "size": 1848004
+    },
+    {
+      "name": "Helicobacter_sp_MIT_01-6242_genomic.fasta",
+      "size": 1594889
+    },
+    {
+      "name": "hermovibrio_ammonificans_HB-1_genomic.fasta",
+      "size": 1759740
+    },
+    {
+      "name": "Hippea_maritima_DSM_10411_genomic.fasta",
+      "size": 1694523
+    },
+    {
+      "name": "Hirschia_baltica_ATCC_49814_genomic.fasta",
+      "size": 3540321
+    },
+    {
+      "name": "Hoeflea_sp_IMCC20628_genomic.fasta",
+      "size": 5120107
+    },
+    {
+      "name": "Hydrogenophaga_sp_LPB0072_genomic.fasta",
+      "size": 4944229
+    },
+    {
+      "name": "Hyperthermus_butylicus_DSM_5456_genomic.fasta",
+      "size": 1667262
+    },
+    {
+      "name": "Hyphomicrobium_nitrativorans_NL23_genomic.fasta",
+      "size": 3653939
+    },
+    {
+      "name": "Hyphomonas_neptunium_ATCC_15444_genomic.fasta",
+      "size": 3705120
+    },
+    {
+      "name": "Hyphomonas_sp_Mor2_genomic.fasta",
+      "size": 3628172
+    },
+    {
+      "name": "Idiomarina_loihiensis_L2TR_genomic.fasta",
+      "size": 2839412
+    },
+    {
+      "name": "Ignicoccus_hospitalis_KIN4_I_genomic.fasta",
+      "size": 1297634
+    },
+    {
+      "name": "Ignicoccus_islandicus_DSM_13165_genomic.fasta",
+      "size": 1394763
+    },
+    {
+      "name": "Ilumatobacter_coccineum_YM16-304_genomic.fasta",
+      "size": 4830285
+    },
+    {
+      "name": "Ilyobacter_polytropus_DSM_2926_genomic.fasta",
+      "size": 3132644
+    },
+    {
+      "name": "Jannaschia_sp_CCS1_genomic.fasta",
+      "size": 4404233
+    },
+    {
+      "name": "Kangiella_geojedonensis_strain_YCS-5_genomic.fasta",
+      "size": 2495349
+    },
+    {
+      "name": "Kangiella_koreensis_DSM_16069_genomic.fasta",
+      "size": 2852170
+    },
+    {
+      "name": "Kangiella_sediminilitoris_strain_KCTC_23892_genomic.fasta",
+      "size": 2496254
+    },
+    {
+      "name": "KCH3_S1_contigs.fasta",
+      "size": 4762305
+    },
+    {
+      "name": "KH11J01_S12_contigs.fasta",
+      "size": 4004834
+    },
+    {
+      "name": "Kosmotoga_olearia_TBF_1951_genomic.fasta",
+      "size": 2302222
+    },
+    {
+      "name": "Kosmotoga_pacifica_strain_SLHLJ1_genomic.fasta",
+      "size": 2169273
+    },
+    {
+      "name": "Krokinobacter_sp_4H-3-7-5_genomic.fasta",
+      "size": 3390087
+    },
+    {
+      "name": "Kytococcus_sedentarius_DSM_20547_genomic.fasta",
+      "size": 2785124
+    },
+    {
+      "name": "LAB19_S8_contigs.fasta",
+      "size": 2534099
+    },
+    {
+      "name": "Lacimicrobium_alkaliphilum_strain_KCTC_32984_genomic.fasta",
+      "size": 4378944
+    },
+    {
+      "name": "Lacinutrix_sp_5H-3-7-4_genomic.fasta",
+      "size": 3296259
+    },
+    {
+      "name": "Lactococcus_garvieae_ATCC_49156_genomic.fasta",
+      "size": 1950238
+    },
+    {
+      "name": "Lactococcus_garvieae_Lg2_genomic.fasta",
+      "size": 1964060
+    },
+    {
+      "name": "Leisingera_methylohalidivorans_DSM_14336_genomic.fasta",
+      "size": 4651417
+    },
+    {
+      "name": "Leuconostoc_lactis_strain_WiKim40_genomic.fasta",
+      "size": 1788536
+    },
+    {
+      "name": "LF22_S6_contigs.fasta",
+      "size": 7113492
+    },
+    {
+      "name": "Luteimonas_sp_JM171_genomic.fasta",
+      "size": 2992432
+    },
+    {
+      "name": "Magnetococcus_marinus_MC-1_genomic.fasta",
+      "size": 4719675
+    },
+    {
+      "name": "Magnetospira_sp_QH-2_genomic.fasta",
+      "size": 4052578
+    },
+    {
+      "name": "Maribacter_sp_1_2014MBL_MicDiv_genomic.fasta",
+      "size": 4399713
+    },
+    {
+      "name": "Maribacter_sp_HTCC2170_genomic.fasta",
+      "size": 3868395
+    },
+    {
+      "name": "Maribacter_sp_MAR_2009_60_genomic.fasta",
+      "size": 4505908
+    },
+    {
+      "name": "Maricaulis_maris_MCS10_genomic.fasta",
+      "size": 3368870
+    },
+    {
+      "name": "Marinithermus_hydrothermalis_DSM_14884_genomic.fasta",
+      "size": 2269273
+    },
+    {
+      "name": "Marinitoga_piezophila_KA3_genomic.fasta",
+      "size": 2244997
+    },
+    {
+      "name": "Marinitoga_sp_1137_genomic.fasta",
+      "size": 2290271
+    },
+    {
+      "name": "Marinobacterium_sp_ST58-10_genomic.fasta",
+      "size": 5191703
+    },
+    {
+      "name": "Marinobacter_adhaerens_HP15_genomic.fasta",
+      "size": 4652043
+    },
+    {
+      "name": "Marinobacter_aquaeolei_VT8_genomic.fasta",
+      "size": 4780078
+    },
+    {
+      "name": "Marinobacter_hydrocarbonoclasticus_ATCC_49840_genomic.fasta",
+      "size": 3989608
+    },
+    {
+      "name": "Marinobacter_psychrophilus_strain_20041_genomic.fasta",
+      "size": 3998707
+    },
+    {
+      "name": "Marinobacter_salarius_R9SW1_genomic.fasta",
+      "size": 4616634
+    },
+    {
+      "name": "Marinobacter_similis_A3d10_genomic.fasta",
+      "size": 3975997
+    },
+    {
+      "name": "Marinobacter_sp_BSs20148_genomic.fasta",
+      "size": 4063957
+    },
+    {
+      "name": "Marinobacter_sp_CP1_genomic.fasta",
+      "size": 4768513
+    },
+    {
+      "name": "Marinobacter_sp_Hb8_genomic.fasta",
+      "size": 4121096
+    },
+    {
+      "name": "Marinomonas_mediterranea_MMB-1_genomic.fasta",
+      "size": 4684414
+    },
+    {
+      "name": "Marinomonas_posidonica_IVIA-Po-181_genomic.fasta",
+      "size": 3900042
+    },
+    {
+      "name": "Marinomonas_sp_MWYL1_genomic.fasta",
+      "size": 5100433
+    },
+    {
+      "name": "Marinovum_algicola_DG_898_genomic.fasta",
+      "size": 5253707
+    },
+    {
+      "name": "Marivirga_tractuosa_DSM_4126_genomic.fasta",
+      "size": 4516700
+    },
+    {
+      "name": "MC2_S1_contigs.fasta",
+      "size": 6493358
+    },
+    {
+      "name": "MC4_S2_contigs.fasta",
+      "size": 5011839
+    },
+    {
+      "name": "MC7_S3_contigs.fasta",
+      "size": 5113688
+    },
+    {
+      "name": "MC8_S4_contigs.fasta",
+      "size": 6084399
+    },
+    {
+      "name": "Mehyloceanibacter_caenitepidi_Gela4_genomic.fasta",
+      "size": 3425080
+    },
+    {
+      "name": "Mesorhizobium_sp_B7_genomic.fasta",
+      "size": 5324761
+    },
+    {
+      "name": "Methanocaldococcus_fervens_AG86_genomic.fasta",
+      "size": 1507467
+    },
+    {
+      "name": "Methanocaldococcus_infernus_ME_genomic.fasta",
+      "size": 1328292
+    },
+    {
+      "name": "Methanocaldococcus_jannaschii_DSM_2661_genomic.fasta",
+      "size": 1740279
+    },
+    {
+      "name": "Methanocaldococcus_sp_FS406-22_genomic.fasta",
+      "size": 1773349
+    },
+    {
+      "name": "Methanocaldococcus_sp_JH146_genomic.fasta",
+      "size": 1607670
+    },
+    {
+      "name": "Methanocaldococcus_vulcanius_M7_genomic.fasta",
+      "size": 1762070
+    },
+    {
+      "name": "Methanococcoides_methylutens_MM1_genomic.fasta",
+      "size": 2394739
+    },
+    {
+      "name": "Methanococcus_aeolicus_Nankai-3_genomic.fasta",
+      "size": 1569599
+    },
+    {
+      "name": "Methanococcus_maripaludis_C6_genomic.fasta",
+      "size": 1744289
+    },
+    {
+      "name": "Methanococcus_maripaludis_C7_genomic.fasta",
+      "size": 1772790
+    },
+    {
+      "name": "Methanococcus_maripaludis_S2_genomic.fasta",
+      "size": 1661241
+    },
+    {
+      "name": "Methanococcus_maripaludis_X1_genomic.fasta",
+      "size": 1746793
+    },
+    {
+      "name": "Methanococcus_vannielii_SB_genomic.fasta",
+      "size": 1720142
+    },
+    {
+      "name": "Methanococcus_voltae_A3_genomic.fasta",
+      "size": 1936478
+    },
+    {
+      "name": "Methanoculleus_marisnigri_JR1_genomic.fasta",
+      "size": 2478198
+    },
+    {
+      "name": "Methanohalobium_evestigatum_Z-7303_genomic.fasta",
+      "size": 2406454
+    },
+    {
+      "name": "Methanohalophilus_halophilus_strain_Z-7982_genomic.fasta",
+      "size": 2023072
+    },
+    {
+      "name": "Methanoplanus_petrolearius_DSM_11571_genomic.fasta",
+      "size": 2843394
+    },
+    {
+      "name": "Methanopyrus_kandleri_AV19_genomic.fasta",
+      "size": 1695063
+    },
+    {
+      "name": "Methanosarcina_acetivorans_C2A_genomic.fasta",
+      "size": 5751595
+    },
+    {
+      "name": "Methanosarcina_siciliae_C2J_genomic.fasta",
+      "size": 5427988
+    },
+    {
+      "name": "Methanosarcina_siciliae_HI350_genomic.fasta",
+      "size": 4941212
+    },
+    {
+      "name": "Methanosarcina_siciliae_T4_M_genomic.fasta",
+      "size": 5017657
+    },
+    {
+      "name": "Methanosarcina_sp_MTP4_genomic.fasta",
+      "size": 4211562
+    },
+    {
+      "name": "Methanosarcina_sp_WH1_genomic.fasta",
+      "size": 3914184
+    },
+    {
+      "name": "Methanothermococcus_okinawensis_IH1_genomic.fasta",
+      "size": 1677679
+    },
+    {
+      "name": "Methanotorris_igneus_Kol_5_genomic.fasta",
+      "size": 1854291
+    },
+    {
+      "name": "Methylomonas_methanica_MC09_genomic.fasta",
+      "size": 5051776
+    },
+    {
+      "name": "Methylophaga_sp_JAM1_genomic.fasta",
+      "size": 3137308
+    },
+    {
+      "name": "Methylophaga_sp_JAM7_genomic.fasta",
+      "size": 2745503
+    },
+    {
+      "name": "Methylophilales_bacterium_MBRSF5_genomic.fasta",
+      "size": 1353008
+    },
+    {
+      "name": "Methylophilales_bacterium_MBRSG12_genomic.fasta",
+      "size": 1352926
+    },
+    {
+      "name": "Methylophilales_bacterium_MBRSH7_genomic.fasta",
+      "size": 1352979
+    },
+    {
+      "name": "Microbacterium_sp_LKL04_genomic.fasta",
+      "size": 2922229
+    },
+    {
+      "name": "Micromonospora_krabiensis_strain_DSM_45344_genomic.fasta",
+      "size": 7074962
+    },
+    {
+      "name": "Mollicutes_bacterium_Candidatus_Izimaplasma_HR1_genomic.fasta",
+      "size": 1878827
+    },
+    {
+      "name": "Moorea_producens_JHB_genomic.fasta",
+      "size": 9385065
+    },
+    {
+      "name": "Moorea_producens_PAL-8-15-08-1_genomic.fasta",
+      "size": 9708896
+    },
+    {
+      "name": "Moritella_viscosa_06_09_139_genomic.fasta",
+      "size": 5094317
+    },
+    {
+      "name": "MR17-77_S9_contigs.fasta",
+      "size": 4614185
+    },
+    {
+      "name": "MR4-25-1B_S2_contigs.fasta",
+      "size": 6426136
+    },
+    {
+      "name": "MR4-25-2A-1A_S4_contigs.fasta",
+      "size": 6426933
+    },
+    {
+      "name": "MR4-25-2B_S6_contigs.fasta",
+      "size": 6427078
+    },
+    {
+      "name": "MR4-64-2_S7_contigs.fasta",
+      "size": 6425891
+    },
+    {
+      "name": "MR4-96-1_S3_contigs.fasta",
+      "size": 6427868
+    },
+    {
+      "name": "MR4-96-2A_S5_contigs.fasta",
+      "size": 6428113
+    },
+    {
+      "name": "Muricauda_lutaonensis_strain_CC-HSB-11_genomic.fasta",
+      "size": 3274368
+    },
+    {
+      "name": "Muricauda_ruestringensis_DSM_13258_genomic.fasta",
+      "size": 3842524
+    },
+    {
+      "name": "Mv130624_S1_contigs.fasta",
+      "size": 5138645
+    },
+    {
+      "name": "Mv2528_S2_contigs.fasta",
+      "size": 5216122
+    },
+    {
+      "name": "Mv3632_S3_contigs.fasta",
+      "size": 5178279
+    },
+    {
+      "name": "Mv5450_S4_contigs.fasta",
+      "size": 5308297
+    },
+    {
+      "name": "MvHd14_S5_contigs.fasta",
+      "size": 5171180
+    },
+    {
+      "name": "MvHd15_S6_contigs.fasta",
+      "size": 5234532
+    },
+    {
+      "name": "MvHd17_S7_contigs.fasta",
+      "size": 5111709
+    },
+    {
+      "name": "Mycobacterium_chelonae_CCUG_47445_genomic.fasta",
+      "size": 5029921
+    },
+    {
+      "name": "Mycobacterium_chubuense_NBB4_genomic.fasta",
+      "size": 6342950
+    },
+    {
+      "name": "Mycobacterium_rhodesiae_NBB3_genomic.fasta",
+      "size": 6415835
+    },
+    {
+      "name": "Myroides_profundi_D25_genomic.fasta",
+      "size": 4064630
+    },
+    {
+      "name": "Myxococcus_fulvus_HW-1_genomic.fasta",
+      "size": 9003683
+    },
+    {
+      "name": "Nanoarchaeum_equitans_Kin4-M_genomic.fasta",
+      "size": 490981
+    },
+    {
+      "name": "Nanohaloarchaea_archaeon_SG9_genomic.fasta",
+      "size": 1118670
+    },
+    {
+      "name": "Nautilia_profundicola_AmH_genomic.fasta",
+      "size": 1676537
+    },
+    {
+      "name": "Neorickettsia_helminthoeca_str_Oregon_genomic.fasta",
+      "size": 884338
+    },
+    {
+      "name": "Nitratifractor_salsuginis_DSM_16511_genomic.fasta",
+      "size": 2101388
+    },
+    {
+      "name": "Nitratiruptor_sp_SB155-2_genomic.fasta",
+      "size": 1878036
+    },
+    {
+      "name": "Nitrosococcus_halophilus_Nc_4_genomic.fasta",
+      "size": 4145469
+    },
+    {
+      "name": "Nitrosococcus_oceani_ATCC_19707_genomic.fasta",
+      "size": 3522320
+    },
+    {
+      "name": "Nitrosopumilus_maritimus_SCM1_genomic.fasta",
+      "size": 1645356
+    },
+    {
+      "name": "NML_S2_contigs.fasta",
+      "size": 4682897
+    },
+    {
+      "name": "Nocardia_seriolae_strain_EM150506_genomic.fasta",
+      "size": 8304622
+    },
+    {
+      "name": "Nocardiopsis_dassonvillei_strain_NOCA502F_genomic.fasta",
+      "size": 6585553
+    },
+    {
+      "name": "Nodularia_spumigena_CCY9414_genomic.fasta",
+      "size": 5462360
+    },
+    {
+      "name": "Nonlabens_dokdonensis_DSW-6_genomic.fasta",
+      "size": 3914727
+    },
+    {
+      "name": "Nonlabens_marinus_S1-08_genomic.fasta",
+      "size": 2916022
+    },
+    {
+      "name": "Nonlabens_sp_Hel1_33_55_genomic.fasta",
+      "size": 3254065
+    },
+    {
+      "name": "Nonlabens_sp_MIC269_genomic.fasta",
+      "size": 2884381
+    },
+    {
+      "name": "Novosphingobium_pentaromativorans_US6-1_genomic.fasta",
+      "size": 5458308
+    },
+    {
+      "name": "Novosphingobium_sp_PP1Y_genomic.fasta",
+      "size": 5314342
+    },
+    {
+      "name": "Oceanithermus_profundus_DSM_14977_genomic.fasta",
+      "size": 2439511
+    },
+    {
+      "name": "Oceanobacillus_iheyensis_HTE831_genomic.fasta",
+      "size": 3630631
+    },
+    {
+      "name": "Octadecabacter_antarcticus_307_genomic.fasta",
+      "size": 4875696
+    },
+    {
+      "name": "Octadecabacter_arcticus_238_genomic.fasta",
+      "size": 5478574
+    },
+    {
+      "name": "Octadecabacter_temperatus_strain_SB1_genomic.fasta",
+      "size": 3264858
+    },
+    {
+      "name": "Oleispira_antarctica_RB-8_genomic.fasta",
+      "size": 4406494
+    },
+    {
+      "name": "Oscillibacter_valericigenes_Sjm18-20_genomic.fasta",
+      "size": 4470856
+    },
+    {
+      "name": "Owenweeksia_hongkongensis_DSM_17368_genomic.fasta",
+      "size": 4000160
+    },
+    {
+      "name": "Paenibacillus_durus_DSM_1735_genomic.fasta",
+      "size": 6053713
+    },
+    {
+      "name": "Paenibacillus_sp_LPB0068_genomic.fasta",
+      "size": 4757610
+    },
+    {
+      "name": "Palaeococcus_pacificus_DY20341_genomic.fasta",
+      "size": 1859468
+    },
+    {
+      "name": "Paraglaciecola_psychrophila_170_genomic.fasta",
+      "size": 5413787
+    },
+    {
+      "name": "Paraoerskovia_marina_strain_DSM_22126_genomic.fasta",
+      "size": 2987062
+    },
+    {
+      "name": "Parvularcula_bermudensis_HTCC2503_genomic.fasta",
+      "size": 2902760
+    },
+    {
+      "name": "Pelagibacterium_halotolerans_B2_genomic.fasta",
+      "size": 3949100
+    },
+    {
+      "name": "Pelobacter_acetylenicus_strain_DSM_3247_genomic.fasta",
+      "size": 3176464
+    },
+    {
+      "name": "Pelobacter_carbinolicus_DSM_2380_genomic.fasta",
+      "size": 3665993
+    },
+    {
+      "name": "Persephonella_marina_EX-H1_genomic.fasta",
+      "size": 1984163
+    },
+    {
+      "name": "Phaeobacter_gallaeciensis_210_Roseobacter_gallaeciensis_genomic.fasta",
+      "size": 4161365
+    },
+    {
+      "name": "Phaeobacter_gallaeciensis_DSM_26640_genomic.fasta",
+      "size": 4541108
+    },
+    {
+      "name": "Phaeobacter_gallaeciensis_strain_JL2886_genomic.fasta",
+      "size": 4061835
+    },
+    {
+      "name": "Photobacterium_gaetbulicola_Gung47_genomic.fasta",
+      "size": 5909652
+    },
+    {
+      "name": "Photobacterium_profundum_SS9_genomic.fasta",
+      "size": 6403538
+    },
+    {
+      "name": "Phycisphaera_mikurensis_NBRC_102666_genomic.fasta",
+      "size": 3884612
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_AY3800B_genomic.fasta",
+      "size": 3516211
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_AY6297B_genomic.fasta",
+      "size": 3516148
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_AY6492A_genomic.fasta",
+      "size": 3355079
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_AY6532B_genomic.fasta",
+      "size": 3489662
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_CGR02_genomic.fasta",
+      "size": 3424015
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM21567A_genomic.fasta",
+      "size": 3349840
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM22180B_genomic.fasta",
+      "size": 3510347
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM23019A_genomic.fasta",
+      "size": 3308814
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM25344B_genomic.fasta",
+      "size": 3511848
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM31429B_genomic.fasta",
+      "size": 3516387
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM37984A_genomic.fasta",
+      "size": 3286072
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM49811B_genomic.fasta",
+      "size": 3516229
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM51819A_genomic.fasta",
+      "size": 3430082
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PM58386B_genomic.fasta",
+      "size": 3516998
+    },
+    {
+      "name": "Piscirickettsia_salmonis_strain_PSCGR01_genomic.fasta",
+      "size": 3490359
+    },
+    {
+      "name": "Planktomarina_temperata_RCA23_genomic.fasta",
+      "size": 3288219
+    },
+    {
+      "name": "Planococcus_antarcticus_DSM_14505_genomic.fasta",
+      "size": 3830404
+    },
+    {
+      "name": "Planococcus_donghaensis_strain_DSM_22276_genomic.fasta",
+      "size": 3319562
+    },
+    {
+      "name": "Planococcus_kocurii_strain_ATCC_43650_genomic.fasta",
+      "size": 3529375
+    },
+    {
+      "name": "Planococcus_maritimus_strain_DSM_17275_genomic.fasta",
+      "size": 3294690
+    },
+    {
+      "name": "Planococcus_plakortidis_strain_DSM_23997_genomic.fasta",
+      "size": 3275954
+    },
+    {
+      "name": "Polaribacter_sp_Hel1_33_78_genomic.fasta",
+      "size": 3228032
+    },
+    {
+      "name": "Polaribacter_sp_LPB0003_genomic.fasta",
+      "size": 3809417
+    },
+    {
+      "name": "Polaribacter_sp_MED152_genomic.fasta",
+      "size": 2961565
+    },
+    {
+      "name": "Prochlorococcus_marinus_AS9601_genomic.fasta",
+      "size": 1669989
+    },
+    {
+      "name": "Prochlorococcus_marinus_bv_HNLC1_genomic.fasta",
+      "size": 1569678
+    },
+    {
+      "name": "Prochlorococcus_marinus_bv_HNLC2_genomic.fasta",
+      "size": 1484549
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9211_genomic.fasta",
+      "size": 1689059
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9215_genomic.fasta",
+      "size": 1738895
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9301_genomic.fasta",
+      "size": 1641984
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9303_genomic.fasta",
+      "size": 2682780
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9312_genomic.fasta",
+      "size": 1709309
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9313_genomic.fasta",
+      "size": 2410971
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_MIT_9515_genomic.fasta",
+      "size": 1704281
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_NATL1A_genomic.fasta",
+      "size": 1864834
+    },
+    {
+      "name": "Prochlorococcus_marinus_str_NATL2A_genomic.fasta",
+      "size": 1843002
+    },
+    {
+      "name": "Prochlorococcus_marinus_subsp_marinus_str_CCMP1375_genomic.fasta",
+      "size": 1751200
+    },
+    {
+      "name": "Prochlorococcus_marinus_subsp_pastoris_str_CCMP1986_genomic.fasta",
+      "size": 1658085
+    },
+    {
+      "name": "Prochlorococcus_sp_MIT_0604_genomic.fasta",
+      "size": 1780157
+    },
+    {
+      "name": "Prochlorococcus_sp_MIT_0801_genomic.fasta",
+      "size": 1929299
+    },
+    {
+      "name": "Prosthecochloris_sp_CIB_2401_genomic.fasta",
+      "size": 2399949
+    },
+    {
+      "name": "Pseudanabaena_sp_PCC_7367_genomic.fasta",
+      "size": 4885889
+    },
+    {
+      "name": "Pseudoalteromonas_atlantica_T6c_genomic.fasta",
+      "size": 5187104
+    },
+    {
+      "name": "Pseudoalteromonas_haloplanktis_TAC125_genomic.fasta",
+      "size": 3850520
+    },
+    {
+      "name": "Pseudoalteromonas_issachenkonii_strain_KCTC_12958_genomic.fasta",
+      "size": 4131811
+    },
+    {
+      "name": "Pseudoalteromonas_luteoviolacea_strain_S4054_genomic.fasta",
+      "size": 6221507
+    },
+    {
+      "name": "Pseudoalteromonas_phenolica_strain_KCTC_12086_genomic.fasta",
+      "size": 4869255
+    },
+    {
+      "name": "Pseudoalteromonas_rubra_strain_SCSIO_6842_genomic.fasta",
+      "size": 5914163
+    },
+    {
+      "name": "Pseudoalteromonas_sp_OCN003_genomic.fasta",
+      "size": 4816208
+    },
+    {
+      "name": "Pseudoalteromonas_sp_SM9913_genomic.fasta",
+      "size": 4037893
+    },
+    {
+      "name": "Pseudoalteromonas_translucida_KMM_520_genomic.fasta",
+      "size": 4147839
+    },
+    {
+      "name": "Pseudomonas_balearica_DSM_6083_genomic.fasta",
+      "size": 4383578
+    },
+    {
+      "name": "Pseudomonas_litoralis_strain_2SM5_genomic.fasta",
+      "size": 3988057
+    },
+    {
+      "name": "Pseudomonas_pohangensis_strain_DSM_17875_genomic.fasta",
+      "size": 3769811
+    },
+    {
+      "name": "Pseudomonas_sp_MT-1_genomic.fasta",
+      "size": 4861357
+    },
+    {
+      "name": "Pseudomonas_stutzeri_CCUG_29243_genomic.fasta",
+      "size": 4709163
+    },
+    {
+      "name": "Pseudomonas_stutzeri_strain_19SMN4_genomic.fasta",
+      "size": 4833621
+    },
+    {
+      "name": "Pseudomonas_stutzeri_strain_273_genomic.fasta",
+      "size": 5031042
+    },
+    {
+      "name": "Pseudomonas_xanthomarina_strain_LMG_23572_genomic.fasta",
+      "size": 4332412
+    },
+    {
+      "name": "Pseudovibrio_sp_FO-BEG1_genomic.fasta",
+      "size": 5916967
+    },
+    {
+      "name": "Psychrobacter_sp_AntiMn-1_genomic.fasta",
+      "size": 3138217
+    },
+    {
+      "name": "Psychrobacter_sp_G_genomic.fasta",
+      "size": 3114396
+    },
+    {
+      "name": "Psychrobacter_sp_P11F6_genomic.fasta",
+      "size": 3515255
+    },
+    {
+      "name": "Psychrobacter_sp_P11G3_genomic.fasta",
+      "size": 3283551
+    },
+    {
+      "name": "Psychrobacter_sp_PRwf-1_genomic.fasta",
+      "size": 2995359
+    },
+    {
+      "name": "Psychroflexus_torquis_ATCC_700755_genomic.fasta",
+      "size": 4321933
+    },
+    {
+      "name": "Psychromonas_ingrahamii_37_genomic.fasta",
+      "size": 4559692
+    },
+    {
+      "name": "Psychromonas_sp_CNPT3_genomic.fasta",
+      "size": 3052500
+    },
+    {
+      "name": "Pusillimonas_sp_T7-7_genomic.fasta",
+      "size": 3924997
+    },
+    {
+      "name": "Pyrobaculum_aerophilum_str_IM2_genomic.fasta",
+      "size": 2222529
+    },
+    {
+      "name": "Pyrococcus_abyssi_GE5_genomic.fasta",
+      "size": 1768746
+    },
+    {
+      "name": "Pyrococcus_furiosus_DSM_3638_genomic.fasta",
+      "size": 1908352
+    },
+    {
+      "name": "Pyrococcus_horikoshii_OT3_genomic.fasta",
+      "size": 1738602
+    },
+    {
+      "name": "Pyrococcus_sp_NA2_genomic.fasta",
+      "size": 1861406
+    },
+    {
+      "name": "Pyrococcus_sp_ST04_genomic.fasta",
+      "size": 1736972
+    },
+    {
+      "name": "Pyrococcus_yayanosii_CH1_genomic.fasta",
+      "size": 1716910
+    },
+    {
+      "name": "Pyrodictium_delaneyi_strain_Su06_genomic.fasta",
+      "size": 2023939
+    },
+    {
+      "name": "Pyrolobus_fumarii_1A_genomic.fasta",
+      "size": 1843355
+    },
+    {
+      "name": "R2A19_S7_contigs.fasta",
+      "size": 3481125
+    },
+    {
+      "name": "R2A29_S8_contigs.fasta",
+      "size": 3086424
+    },
+    {
+      "name": "R2A2_S5_contigs.fasta",
+      "size": 3686416
+    },
+    {
+      "name": "R8-63_S2_contigs.fasta",
+      "size": 4221958
+    },
+    {
+      "name": "Renibacterium_salmoninarum_ATCC_33209_genomic.fasta",
+      "size": 3155355
+    },
+    {
+      "name": "Rhodobacter_sphaeroides_strain_MBTLJ-13_genomic.fasta",
+      "size": 4649908
+    },
+    {
+      "name": "Rhodobacter_sp_LPB0142_genomic.fasta",
+      "size": 3781250
+    },
+    {
+      "name": "Rhodococcus_erythropolis_PR4_genomic.fasta",
+      "size": 6895977
+    },
+    {
+      "name": "Rhodococcus_sp_008_genomic.fasta",
+      "size": 7438729
+    },
+    {
+      "name": "Rhodococcus_sp_B7740_genomic.fasta",
+      "size": 5341649
+    },
+    {
+      "name": "Rhodococcus_sp_WMMA185_genomic.fasta",
+      "size": 4444542
+    },
+    {
+      "name": "Rhodoferax_ferrireducens_T118_genomic.fasta",
+      "size": 4969988
+    },
+    {
+      "name": "Rhodothermus_marinus_DSM_4252_genomic.fasta",
+      "size": 3386948
+    },
+    {
+      "name": "Rhodothermus_marinus_SG05JP17-172_genomic.fasta",
+      "size": 3334468
+    },
+    {
+      "name": "Rhodovulum_sulfidophilum_DSM_1374_genomic.fasta",
+      "size": 4346701
+    },
+    {
+      "name": "Rivularia_sp_PCC_7116_genomic.fasta",
+      "size": 8729085
+    },
+    {
+      "name": "RNODE_100_length_1999_cov_6.33080.fasta",
+      "size": 20140
+    },
+    {
+      "name": "RNODE_107_length_1496_cov_161.33989.fasta",
+      "size": 15130
+    },
+    {
+      "name": "RNODE_108_length_2015_cov_7.02007.fasta",
+      "size": 20300
+    },
+    {
+      "name": "RNODE_109_length_1521_cov_3.43229.fasta",
+      "size": 15360
+    },
+    {
+      "name": "RNODE_10_length_6468_cov_8.06035.fasta",
+      "size": 64820
+    },
+    {
+      "name": "RNODE_110_length_1672_cov_10.73939.fasta",
+      "size": 16880
+    },
+    {
+      "name": "RNODE_114_length_10406_cov_5.47746.fasta",
+      "size": 104220
+    },
+    {
+      "name": "RNODE_116_length_4192_cov_3.28201.fasta",
+      "size": 42070
+    },
+    {
+      "name": "RNODE_122_length_6709_cov_4.03320.fasta",
+      "size": 67240
+    },
+    {
+      "name": "RNODE_125_length_3363_cov_4.82640.fasta",
+      "size": 33780
+    },
+    {
+      "name": "RNODE_126_length_3157_cov_3.75885.fasta",
+      "size": 31720
+    },
+    {
+      "name": "RNODE_127_length_1885_cov_8.56361.fasta",
+      "size": 19000
+    },
+    {
+      "name": "RNODE_133_length_1956_cov_5.95398.fasta",
+      "size": 19710
+    },
+    {
+      "name": "RNODE_134_length_2327_cov_32.11800.fasta",
+      "size": 23430
+    },
+    {
+      "name": "RNODE_137_length_1431_cov_4.57559.fasta",
+      "size": 14460
+    },
+    {
+      "name": "RNODE_139_length_3589_cov_11.15335.fasta",
+      "size": 36050
+    },
+    {
+      "name": "RNODE_142_length_2406_cov_5.09941.fasta",
+      "size": 24210
+    },
+    {
+      "name": "RNODE_146_length_5606_cov_4.42067.fasta",
+      "size": 56210
+    },
+    {
+      "name": "RNODE_147_length_1816_cov_3.48216.fasta",
+      "size": 18310
+    },
+    {
+      "name": "RNODE_149_length_1949_cov_4.19357.fasta",
+      "size": 19640
+    },
+    {
+      "name": "RNODE_14_length_1961_cov_5.54358.fasta",
+      "size": 19750
+    },
+    {
+      "name": "RNODE_150_length_1379_cov_3.97642.fasta",
+      "size": 13940
+    },
+    {
+      "name": "RNODE_154_length_1869_cov_12.27991.fasta",
+      "size": 18850
+    },
+    {
+      "name": "RNODE_156_length_3948_cov_63.43887.fasta",
+      "size": 39640
+    },
+    {
+      "name": "RNODE_158_length_1640_cov_4.51607.fasta",
+      "size": 16550
+    },
+    {
+      "name": "RNODE_159_length_3592_cov_2.43025.fasta",
+      "size": 36070
+    },
+    {
+      "name": "RNODE_166_length_2298_cov_14.88049.fasta",
+      "size": 23140
+    },
+    {
+      "name": "RNODE_171_length_3474_cov_9.39716.fasta",
+      "size": 34890
+    },
+    {
+      "name": "RNODE_173_length_1764_cov_3.34845.fasta",
+      "size": 17790
+    },
+    {
+      "name": "RNODE_17_length_1254_cov_4.43994.fasta",
+      "size": 12680
+    },
+    {
+      "name": "RNODE_180_length_2647_cov_2.76800.fasta",
+      "size": 26620
+    },
+    {
+      "name": "RNODE_18_length_1746_cov_2.65719.fasta",
+      "size": 17600
+    },
+    {
+      "name": "RNODE_193_length_1789_cov_7.19864.fasta",
+      "size": 18040
+    },
+    {
+      "name": "RNODE_200_length_4574_cov_2.94178.fasta",
+      "size": 45890
+    },
+    {
+      "name": "RNODE_205_length_1591_cov_9.63735.fasta",
+      "size": 16060
+    },
+    {
+      "name": "RNODE_207_length_2195_cov_3.75886.fasta",
+      "size": 22100
+    },
+    {
+      "name": "RNODE_218_length_1465_cov_7.29868.fasta",
+      "size": 14800
+    },
+    {
+      "name": "RNODE_220_length_2011_cov_9.40825.fasta",
+      "size": 20260
+    },
+    {
+      "name": "RNODE_224_length_2083_cov_4.45463.fasta",
+      "size": 20980
+    },
+    {
+      "name": "RNODE_225_length_25884_cov_6.69550.fasta",
+      "size": 259000
+    },
+    {
+      "name": "RNODE_227_length_4381_cov_5.48337.fasta",
+      "size": 43960
+    },
+    {
+      "name": "RNODE_228_length_3093_cov_6.42006.fasta",
+      "size": 31080
+    },
+    {
+      "name": "RNODE_229_length_2135_cov_3.06673.fasta",
+      "size": 21500
+    },
+    {
+      "name": "RNODE_234_length_1595_cov_9.13223.fasta",
+      "size": 16100
+    },
+    {
+      "name": "RNODE_235_length_2608_cov_55.03480.fasta",
+      "size": 26240
+    },
+    {
+      "name": "RNODE_243_length_1453_cov_2.63382.fasta",
+      "size": 14680
+    },
+    {
+      "name": "RNODE_248_length_5318_cov_4.74604.fasta",
+      "size": 53330
+    },
+    {
+      "name": "RNODE_24_length_2639_cov_14.02331.fasta",
+      "size": 26540
+    },
+    {
+      "name": "RNODE_251_length_2763_cov_28.99562.fasta",
+      "size": 27790
+    },
+    {
+      "name": "RNODE_254_length_2341_cov_33.31005.fasta",
+      "size": 23570
+    },
+    {
+      "name": "RNODE_258_length_1627_cov_2.34517.fasta",
+      "size": 16420
+    },
+    {
+      "name": "RNODE_259_length_1574_cov_100.84149.fasta",
+      "size": 15910
+    },
+    {
+      "name": "RNODE_25_length_1750_cov_3.28993.fasta",
+      "size": 17640
+    },
+    {
+      "name": "RNODE_263_length_2277_cov_8.44168.fasta",
+      "size": 22920
+    },
+    {
+      "name": "RNODE_265_length_1287_cov_4.20553.fasta",
+      "size": 13020
+    },
+    {
+      "name": "RNODE_266_length_6653_cov_7.97753.fasta",
+      "size": 66680
+    },
+    {
+      "name": "RNODE_277_length_1592_cov_15.82548.fasta",
+      "size": 16080
+    },
+    {
+      "name": "RNODE_279_length_3658_cov_27.56711.fasta",
+      "size": 36740
+    },
+    {
+      "name": "RNODE_283_length_5699_cov_25.39792.fasta",
+      "size": 57150
+    },
+    {
+      "name": "RNODE_290_length_1262_cov_19.53548.fasta",
+      "size": 12780
+    },
+    {
+      "name": "RNODE_291_length_2033_cov_2.59025.fasta",
+      "size": 20480
+    },
+    {
+      "name": "RNODE_294_length_6942_cov_7.24595.fasta",
+      "size": 69570
+    },
+    {
+      "name": "RNODE_307_length_2104_cov_13.21902.fasta",
+      "size": 21200
+    },
+    {
+      "name": "RNODE_308_length_1875_cov_5.96654.fasta",
+      "size": 18900
+    },
+    {
+      "name": "RNODE_309_length_1659_cov_3.16188.fasta",
+      "size": 16740
+    },
+    {
+      "name": "RNODE_311_length_2760_cov_6.45983.fasta",
+      "size": 27750
+    },
+    {
+      "name": "RNODE_314_length_6164_cov_50.81211.fasta",
+      "size": 61800
+    },
+    {
+      "name": "RNODE_315_length_1516_cov_8.44846.fasta",
+      "size": 15310
+    },
+    {
+      "name": "RNODE_318_length_3470_cov_3.16589.fasta",
+      "size": 34850
+    },
+    {
+      "name": "RNODE_31_length_1357_cov_12.09363.fasta",
+      "size": 13720
+    },
+    {
+      "name": "RNODE_320_length_4859_cov_4.38495.fasta",
+      "size": 48740
+    },
+    {
+      "name": "RNODE_322_length_4175_cov_18.22923.fasta",
+      "size": 41910
+    },
+    {
+      "name": "RNODE_323_length_1696_cov_4.05556.fasta",
+      "size": 17110
+    },
+    {
+      "name": "RNODE_324_length_1537_cov_10.20528.fasta",
+      "size": 15530
+    },
+    {
+      "name": "RNODE_32_length_11742_cov_6.79514.fasta",
+      "size": 117570
+    },
+    {
+      "name": "RNODE_336_length_3563_cov_7.20249.fasta",
+      "size": 35780
+    },
+    {
+      "name": "RNODE_337_length_8771_cov_5.18162.fasta",
+      "size": 87860
+    },
+    {
+      "name": "RNODE_338_length_1509_cov_4.27236.fasta",
+      "size": 15240
+    },
+    {
+      "name": "RNODE_339_length_1478_cov_5.31250.fasta",
+      "size": 14930
+    },
+    {
+      "name": "RNODE_33_length_1778_cov_2.60592.fasta",
+      "size": 17920
+    },
+    {
+      "name": "RNODE_341_length_3219_cov_3.63466.fasta",
+      "size": 32340
+    },
+    {
+      "name": "RNODE_342_length_1543_cov_10.88823.fasta",
+      "size": 15590
+    },
+    {
+      "name": "RNODE_343_length_2376_cov_8.77188.fasta",
+      "size": 23910
+    },
+    {
+      "name": "RNODE_346_length_1757_cov_2.65187.fasta",
+      "size": 17720
+    },
+    {
+      "name": "RNODE_350_length_2314_cov_37.19546.fasta",
+      "size": 23300
+    },
+    {
+      "name": "RNODE_355_length_1663_cov_6.12066.fasta",
+      "size": 16780
+    },
+    {
+      "name": "RNODE_359_length_13543_cov_22.66711.fasta",
+      "size": 135600
+    },
+    {
+      "name": "RNODE_360_length_7414_cov_9.06737.fasta",
+      "size": 74290
+    },
+    {
+      "name": "RNODE_361_length_3164_cov_8.88447.fasta",
+      "size": 31790
+    },
+    {
+      "name": "RNODE_362_length_3387_cov_8.21902.fasta",
+      "size": 34020
+    },
+    {
+      "name": "RNODE_364_length_1571_cov_3.81278.fasta",
+      "size": 15860
+    },
+    {
+      "name": "RNODE_366_length_2053_cov_8.47415.fasta",
+      "size": 20680
+    },
+    {
+      "name": "RNODE_367_length_2322_cov_4.57652.fasta",
+      "size": 23370
+    },
+    {
+      "name": "RNODE_368_length_1901_cov_5.06386.fasta",
+      "size": 19160
+    },
+    {
+      "name": "RNODE_36_length_1303_cov_4.84934.fasta",
+      "size": 13170
+    },
+    {
+      "name": "RNODE_372_length_2448_cov_3.45466.fasta",
+      "size": 24630
+    },
+    {
+      "name": "RNODE_374_length_1862_cov_9.75489.fasta",
+      "size": 18770
+    },
+    {
+      "name": "RNODE_381_length_1819_cov_13.04118.fasta",
+      "size": 18350
+    },
+    {
+      "name": "RNODE_383_length_2253_cov_7.64097.fasta",
+      "size": 22680
+    },
+    {
+      "name": "RNODE_386_length_2437_cov_8.66377.fasta",
+      "size": 24520
+    },
+    {
+      "name": "RNODE_38_length_1552_cov_8.47059.fasta",
+      "size": 15660
+    },
+    {
+      "name": "RNODE_390_length_5825_cov_8.78167.fasta",
+      "size": 58400
+    },
+    {
+      "name": "RNODE_392_length_2136_cov_7.00284.fasta",
+      "size": 21510
+    },
+    {
+      "name": "RNODE_393_length_3465_cov_6.98635.fasta",
+      "size": 34800
+    },
+    {
+      "name": "RNODE_394_length_3642_cov_5.12873.fasta",
+      "size": 36570
+    },
+    {
+      "name": "RNODE_396_length_4766_cov_5.16589.fasta",
+      "size": 47810
+    },
+    {
+      "name": "RNODE_400_length_5708_cov_9.81991.fasta",
+      "size": 57230
+    },
+    {
+      "name": "RNODE_404_length_3462_cov_2.92616.fasta",
+      "size": 34770
+    },
+    {
+      "name": "RNODE_407_length_46658_cov_49.66972.fasta",
+      "size": 466750
+    },
+    {
+      "name": "RNODE_408_length_3585_cov_3.79764.fasta",
+      "size": 36000
+    },
+    {
+      "name": "RNODE_40_length_6491_cov_8.96924.fasta",
+      "size": 65050
+    },
+    {
+      "name": "RNODE_411_length_4317_cov_4.49267.fasta",
+      "size": 43320
+    },
+    {
+      "name": "RNODE_415_length_2147_cov_6.45506.fasta",
+      "size": 21620
+    },
+    {
+      "name": "RNODE_417_length_2670_cov_14.84403.fasta",
+      "size": 26860
+    },
+    {
+      "name": "RNODE_418_length_1505_cov_4.15172.fasta",
+      "size": 15200
+    },
+    {
+      "name": "RNODE_420_length_1334_cov_5.52134.fasta",
+      "size": 13490
+    },
+    {
+      "name": "RNODE_423_length_1943_cov_28.57781.fasta",
+      "size": 18930
+    },
+    {
+      "name": "RNODE_428_length_4686_cov_43.92415.fasta",
+      "size": 46800
+    },
+    {
+      "name": "RNODE_429_length_2129_cov_51.99106.fasta",
+      "size": 20350
+    },
+    {
+      "name": "RNODE_431_length_1803_cov_5.36772.fasta",
+      "size": 17960
+    },
+    {
+      "name": "RNODE_432_length_14865_cov_28.53268.fasta",
+      "size": 147500
+    },
+    {
+      "name": "RNODE_434_length_14801_cov_23.79494.fasta",
+      "size": 147960
+    },
+    {
+      "name": "RNODE_435_length_5602_cov_25.16136.fasta",
+      "size": 54420
+    },
+    {
+      "name": "RNODE_436_length_6429_cov_48.44919.fasta",
+      "size": 64230
+    },
+    {
+      "name": "RNODE_439_length_4196_cov_56.49278.fasta",
+      "size": 41900
+    },
+    {
+      "name": "RNODE_440_length_3551_cov_9.74435.fasta",
+      "size": 35440
+    },
+    {
+      "name": "RNODE_442_length_4465_cov_7.11694.fasta",
+      "size": 44140
+    },
+    {
+      "name": "RNODE_443_length_1591_cov_6.87251.fasta",
+      "size": 15840
+    },
+    {
+      "name": "RNODE_444_length_4937_cov_48.00188.fasta",
+      "size": 49310
+    },
+    {
+      "name": "RNODE_451_length_4052_cov_6.62773.fasta",
+      "size": 39570
+    },
+    {
+      "name": "RNODE_455_length_4124_cov_9.17267.fasta",
+      "size": 40730
+    },
+    {
+      "name": "RNODE_456_length_1695_cov_36.79753.fasta",
+      "size": 16450
+    },
+    {
+      "name": "RNODE_459_length_2383_cov_4.68776.fasta",
+      "size": 23320
+    },
+    {
+      "name": "RNODE_462_length_1528_cov_6.07822.fasta",
+      "size": 15210
+    },
+    {
+      "name": "RNODE_464_length_2364_cov_17.83117.fasta",
+      "size": 23360
+    },
+    {
+      "name": "RNODE_468_length_1541_cov_8.66960.fasta",
+      "size": 15340
+    },
+    {
+      "name": "RNODE_470_length_2095_cov_7.42232.fasta",
+      "size": 20880
+    },
+    {
+      "name": "RNODE_474_length_1569_cov_5.24895.fasta",
+      "size": 15620
+    },
+    {
+      "name": "RNODE_476_length_1618_cov_4.36943.fasta",
+      "size": 16110
+    },
+    {
+      "name": "RNODE_479_length_5023_cov_17.63107.fasta",
+      "size": 50170
+    },
+    {
+      "name": "RNODE_481_length_3960_cov_68.08874.fasta",
+      "size": 39100
+    },
+    {
+      "name": "RNODE_485_length_1877_cov_10.53943.fasta",
+      "size": 18710
+    },
+    {
+      "name": "RNODE_487_length_5196_cov_22.71473.fasta",
+      "size": 51900
+    },
+    {
+      "name": "RNODE_48_length_3658_cov_14.59323.fasta",
+      "size": 36730
+    },
+    {
+      "name": "RNODE_491_length_3124_cov_17.57383.fasta",
+      "size": 31180
+    },
+    {
+      "name": "RNODE_493_length_3152_cov_5.77526.fasta",
+      "size": 31010
+    },
+    {
+      "name": "RNODE_496_length_8599_cov_9.53327.fasta",
+      "size": 85920
+    },
+    {
+      "name": "RNODE_497_length_1925_cov_6.51336.fasta",
+      "size": 19180
+    },
+    {
+      "name": "RNODE_498_length_2044_cov_7.98216.fasta",
+      "size": 19930
+    },
+    {
+      "name": "RNODE_509_length_6803_cov_457.59293.fasta",
+      "size": 67100
+    },
+    {
+      "name": "RNODE_50_length_1796_cov_6.24352.fasta",
+      "size": 18100
+    },
+    {
+      "name": "RNODE_512_length_1592_cov_43.29688.fasta",
+      "size": 15860
+    },
+    {
+      "name": "RNODE_513_length_2330_cov_8.01964.fasta",
+      "size": 23230
+    },
+    {
+      "name": "RNODE_515_length_1754_cov_11.73892.fasta",
+      "size": 17480
+    },
+    {
+      "name": "RNODE_518_length_1369_cov_4.72490.fasta",
+      "size": 13620
+    },
+    {
+      "name": "RNODE_521_length_36130_cov_13.94678.fasta",
+      "size": 361250
+    },
+    {
+      "name": "RNODE_522_length_1263_cov_12.38809.fasta",
+      "size": 12570
+    },
+    {
+      "name": "RNODE_523_length_7269_cov_4.49610.fasta",
+      "size": 72620
+    },
+    {
+      "name": "RNODE_524_length_1679_cov_2.99128.fasta",
+      "size": 16720
+    },
+    {
+      "name": "RNODE_527_length_1767_cov_4.22840.fasta",
+      "size": 17600
+    },
+    {
+      "name": "RNODE_528_length_4221_cov_4.74329.fasta",
+      "size": 42140
+    },
+    {
+      "name": "RNODE_530_length_2571_cov_32.65278.fasta",
+      "size": 25430
+    },
+    {
+      "name": "RNODE_531_length_9868_cov_8.44904.fasta",
+      "size": 98610
+    },
+    {
+      "name": "RNODE_532_length_1573_cov_5.21419.fasta",
+      "size": 15440
+    },
+    {
+      "name": "RNODE_534_length_10183_cov_8.47628.fasta",
+      "size": 101770
+    },
+    {
+      "name": "RNODE_537_length_3389_cov_22.49108.fasta",
+      "size": 33390
+    },
+    {
+      "name": "RNODE_539_length_1827_cov_6.73752.fasta",
+      "size": 18200
+    },
+    {
+      "name": "RNODE_540_length_1564_cov_3.03735.fasta",
+      "size": 15570
+    },
+    {
+      "name": "RNODE_544_length_1578_cov_361.93923.fasta",
+      "size": 15510
+    },
+    {
+      "name": "RNODE_54_length_5865_cov_60.48297.fasta",
+      "size": 58800
+    },
+    {
+      "name": "RNODE_551_length_4193_cov_74.72016.fasta",
+      "size": 41870
+    },
+    {
+      "name": "RNODE_557_length_1525_cov_6.72562.fasta",
+      "size": 14960
+    },
+    {
+      "name": "RNODE_559_length_3361_cov_13.97064.fasta",
+      "size": 33550
+    },
+    {
+      "name": "RNODE_55_length_2901_cov_27.42654.fasta",
+      "size": 29160
+    },
+    {
+      "name": "RNODE_560_length_3911_cov_3.86563.fasta",
+      "size": 39040
+    },
+    {
+      "name": "RNODE_562_length_2033_cov_5.34232.fasta",
+      "size": 20260
+    },
+    {
+      "name": "RNODE_563_length_5038_cov_7.26694.fasta",
+      "size": 50310
+    },
+    {
+      "name": "RNODE_564_length_8758_cov_6.46781.fasta",
+      "size": 87510
+    },
+    {
+      "name": "RNODE_565_length_1563_cov_11.71995.fasta",
+      "size": 15570
+    },
+    {
+      "name": "RNODE_56_length_2028_cov_4.74177.fasta",
+      "size": 20420
+    },
+    {
+      "name": "RNODE_576_length_3043_cov_26.79081.fasta",
+      "size": 30370
+    },
+    {
+      "name": "RNODE_583_length_3095_cov_44.70980.fasta",
+      "size": 30890
+    },
+    {
+      "name": "RNODE_584_length_2761_cov_46.10439.fasta",
+      "size": 27550
+    },
+    {
+      "name": "RNODE_585_length_3212_cov_16.01628.fasta",
+      "size": 32060
+    },
+    {
+      "name": "RNODE_587_length_4088_cov_9.08425.fasta",
+      "size": 40370
+    },
+    {
+      "name": "RNODE_5_length_4125_cov_14.53571.fasta",
+      "size": 41390
+    },
+    {
+      "name": "RNODE_60_length_1811_cov_3.41811.fasta",
+      "size": 18250
+    },
+    {
+      "name": "RNODE_62_length_3589_cov_56.75862.fasta",
+      "size": 36040
+    },
+    {
+      "name": "RNODE_65_length_5443_cov_3.51540.fasta",
+      "size": 54570
+    },
+    {
+      "name": "RNODE_67_length_1419_cov_2.86686.fasta",
+      "size": 14330
+    },
+    {
+      "name": "RNODE_68_length_2493_cov_6.03116.fasta",
+      "size": 25070
+    },
+    {
+      "name": "RNODE_73_length_2194_cov_7.49125.fasta",
+      "size": 22080
+    },
+    {
+      "name": "RNODE_74_length_1811_cov_7.67971.fasta",
+      "size": 18250
+    },
+    {
+      "name": "RNODE_78_length_5103_cov_8.24306.fasta",
+      "size": 51170
+    },
+    {
+      "name": "RNODE_89_length_4251_cov_3.70418.fasta",
+      "size": 42650
+    },
+    {
+      "name": "RNODE_90_length_1469_cov_9.25017.fasta",
+      "size": 14830
+    },
+    {
+      "name": "RNODE_91_length_2298_cov_6.78822.fasta",
+      "size": 23120
+    },
+    {
+      "name": "RNODE_93_length_1501_cov_3.34415.fasta",
+      "size": 15150
+    },
+    {
+      "name": "RNODE_94_length_3002_cov_6.48725.fasta",
+      "size": 30160
+    },
+    {
+      "name": "RNODE_98_length_2627_cov_21.08829.fasta",
+      "size": 26420
+    },
+    {
+      "name": "Robiginitalea_biformata_HTCC2501_genomic.fasta",
+      "size": 3530483
+    },
+    {
+      "name": "Roseibacterium_elongatum_DSM_19469_genomic.fasta",
+      "size": 3555211
+    },
+    {
+      "name": "Roseobacter_denitrificans_OCh_114_genomic.fasta",
+      "size": 4331795
+    },
+    {
+      "name": "Roseobacter_litoralis_Och_149_genomic.fasta",
+      "size": 4745898
+    },
+    {
+      "name": "Ruegeria_pomeroyi_DSS-3_genomic.fasta",
+      "size": 4601243
+    },
+    {
+      "name": "Ruegeria_sp_TM1040_genomic.fasta",
+      "size": 4153995
+    },
+    {
+      "name": "Ruminiclostridium_thermocellum_DSM_2360_strain_LQRI_genomic.fasta",
+      "size": 3577689
+    },
+    {
+      "name": "S04_S1_contigs.fasta",
+      "size": 3272359
+    },
+    {
+      "name": "S06_S2_contigs.fasta",
+      "size": 3350483
+    },
+    {
+      "name": "S13_S3_contigs.fasta",
+      "size": 2468385
+    },
+    {
+      "name": "S17_S4_contigs.fasta",
+      "size": 3396763
+    },
+    {
+      "name": "S18_S5_contigs.fasta",
+      "size": 4548234
+    },
+    {
+      "name": "S19_S6_contigs.fasta",
+      "size": 4502453
+    },
+    {
+      "name": "S21_S7_contigs.fasta",
+      "size": 2465954
+    },
+    {
+      "name": "S26_S8_contigs.fasta",
+      "size": 2594136
+    },
+    {
+      "name": "S28_S9_contigs.fasta",
+      "size": 3350456
+    },
+    {
+      "name": "Saccharophagus_degradans_2-40_genomic.fasta",
+      "size": 5057628
+    },
+    {
+      "name": "Salegentibacter_sp_T436_genomic.fasta",
+      "size": 4086645
+    },
+    {
+      "name": "Salinibacter_ruber_DSM_13855_genomic.fasta",
+      "size": 3587533
+    },
+    {
+      "name": "Salinibacter_ruber_M8_genomic.fasta",
+      "size": 3833434
+    },
+    {
+      "name": "Salinispora_arenicola_CNS-205_genomic.fasta",
+      "size": 5786458
+    },
+    {
+      "name": "Salinispora_tropica_CNB-440_genomic.fasta",
+      "size": 5183426
+    },
+    {
+      "name": "Salmonella_enterica_subsp_enterica_serovar_Typhimurium_22495_genomic.fasta",
+      "size": 4913012
+    },
+    {
+      "name": "Salmonella_enterica_subsp_enterica_serovar_Typhimurium_22792_genomic.fasta",
+      "size": 4900855
+    },
+    {
+      "name": "Saprospira_grandis_str_Lewin_genomic.fasta",
+      "size": 4400388
+    },
+    {
+      "name": "Sedimenticola_sp_SIP-G1_genomic.fasta",
+      "size": 3962513
+    },
+    {
+      "name": "Sediminicola_sp_YIK13_genomic.fasta",
+      "size": 3569897
+    },
+    {
+      "name": "Serinicoccus_sp_JLT9_genomic.fasta",
+      "size": 3597486
+    },
+    {
+      "name": "Shewanella_amazonensis_SB2B_genomic.fasta",
+      "size": 4306237
+    },
+    {
+      "name": "Shewanella_baltica_BA175_genomic.fasta",
+      "size": 5199717
+    },
+    {
+      "name": "Shewanella_baltica_OS117_genomic.fasta",
+      "size": 5526446
+    },
+    {
+      "name": "Shewanella_baltica_OS155_genomic.fasta",
+      "size": 5343424
+    },
+    {
+      "name": "Shewanella_baltica_OS185_genomic.fasta",
+      "size": 5313111
+    },
+    {
+      "name": "Shewanella_baltica_OS195_genomic.fasta",
+      "size": 5547963
+    },
+    {
+      "name": "Shewanella_baltica_OS223_genomic.fasta",
+      "size": 5359303
+    },
+    {
+      "name": "Shewanella_baltica_OS678_genomic.fasta",
+      "size": 5368971
+    },
+    {
+      "name": "Shewanella_denitrificans_OS217_genomic.fasta",
+      "size": 4546004
+    },
+    {
+      "name": "Shewanella_frigidimarina_NCIMB_400_genomic.fasta",
+      "size": 4845359
+    },
+    {
+      "name": "Shewanella_halifaxensis_HAW-EB4_genomic.fasta",
+      "size": 5227016
+    },
+    {
+      "name": "Shewanella_loihica_PV-4_genomic.fasta",
+      "size": 4602685
+    },
+    {
+      "name": "Shewanella_pealeana_ATCC_700345_genomic.fasta",
+      "size": 5174680
+    },
+    {
+      "name": "Shewanella_piezotolerans_WP3_genomic.fasta",
+      "size": 5396572
+    },
+    {
+      "name": "Shewanella_sediminis_HAW-EB3_genomic.fasta",
+      "size": 5517770
+    },
+    {
+      "name": "Shewanella_sp_ANA-3_genomic.fasta",
+      "size": 5251348
+    },
+    {
+      "name": "Shewanella_sp_MR-4_genomic.fasta",
+      "size": 4706374
+    },
+    {
+      "name": "Shewanella_sp_MR-7_genomic.fasta",
+      "size": 4799284
+    },
+    {
+      "name": "Shewanella_sp_W3-18-1_genomic.fasta",
+      "size": 4708470
+    },
+    {
+      "name": "Shewanella_violacea_DSS12_genomic.fasta",
+      "size": 4962200
+    },
+    {
+      "name": "Shewanella_woodyi_ATCC_51908_genomic.fasta",
+      "size": 5935499
+    },
+    {
+      "name": "Siansivirga_zeaxanthinifaciens_CC-SAMT-1_genomic.fasta",
+      "size": 3304097
+    },
+    {
+      "name": "Simiduia_agarivorans_SA1_genomic.fasta",
+      "size": 4300331
+    },
+    {
+      "name": "SP005_S3_contigs.fasta",
+      "size": 4440667
+    },
+    {
+      "name": "SP010_S4_contigs.fasta",
+      "size": 4973534
+    },
+    {
+      "name": "Sphingopyxis_alaskensis_RB2256_genomic.fasta",
+      "size": 3373920
+    },
+    {
+      "name": "Sphingopyxis_sp_LPB0140_genomic.fasta",
+      "size": 2533136
+    },
+    {
+      "name": "Spiribacter_salinus_M19-40_genomic.fasta",
+      "size": 1739581
+    },
+    {
+      "name": "Spiribacter_sp_UAH-SP71_genomic.fasta",
+      "size": 1926723
+    },
+    {
+      "name": "Spirochaeta_sp_L21-RPul-D2_genomic.fasta",
+      "size": 3782905
+    },
+    {
+      "name": "Spirochaeta_thermophila_DSM_6578_genomic.fasta",
+      "size": 2560322
+    },
+    {
+      "name": "Spongiibacter_sp_IMCC21906_genomic.fasta",
+      "size": 3481874
+    },
+    {
+      "name": "Staphylothermus_hellenicus_DSM_12710_genomic.fasta",
+      "size": 1580451
+    },
+    {
+      "name": "Staphylothermus_marinus_F1_genomic.fasta",
+      "size": 1570579
+    },
+    {
+      "name": "Stappia_sp_ES058_genomic.fasta",
+      "size": 4626354
+    },
+    {
+      "name": "Streptococcus_agalactiae_strain_GX026_genomic.fasta",
+      "size": 1840754
+    },
+    {
+      "name": "Streptococcus_agalactiae_strain_GX064_genomic.fasta",
+      "size": 2064449
+    },
+    {
+      "name": "Streptococcus_agalactiae_strain_HN016_genomic.fasta",
+      "size": 2064830
+    },
+    {
+      "name": "Streptococcus_iniae_SF1_genomic.fasta",
+      "size": 2149935
+    },
+    {
+      "name": "Streptococcus_iniae_strain_ISET0901_genomic.fasta",
+      "size": 2070925
+    },
+    {
+      "name": "Streptococcus_iniae_strain_YSFST01-82_genomic.fasta",
+      "size": 2087067
+    },
+    {
+      "name": "Streptococcus_parauberis_KCTC_11537_genomic.fasta",
+      "size": 2143990
+    },
+    {
+      "name": "Streptomyces_pactum_strain_KLBMP_5084_genomic.fasta",
+      "size": 8180368
+    },
+    {
+      "name": "Streptomyces_sp_CNQ-509_genomic.fasta",
+      "size": 8039428
+    },
+    {
+      "name": "Streptomyces_sp_GBA_94-10_genomic.fasta",
+      "size": 7224739
+    },
+    {
+      "name": "Streptomyces_sp_PVA_94-07_genomic.fasta",
+      "size": 7106555
+    },
+    {
+      "name": "Sulfitobacter_sp_AM1-D1_genomic.fasta",
+      "size": 4691670
+    },
+    {
+      "name": "Sulfobacillus_acidophilus_TPY_genomic.fasta",
+      "size": 3551303
+    },
+    {
+      "name": "Sulfurimonas_autotrophica_DSM_16294_genomic.fasta",
+      "size": 2153301
+    },
+    {
+      "name": "Sulfurimonas_denitrificans_DSM_1251_genomic.fasta",
+      "size": 2201664
+    },
+    {
+      "name": "Sulfurovum_sp_NBC37-1_genomic.fasta",
+      "size": 2562379
+    },
+    {
+      "name": "Synechococcus_sp_CC9311_genomic.fasta",
+      "size": 2606840
+    },
+    {
+      "name": "Synechococcus_sp_CC9605_genomic.fasta",
+      "size": 2510751
+    },
+    {
+      "name": "Synechococcus_sp_CC9902_genomic.fasta",
+      "size": 2234920
+    },
+    {
+      "name": "Synechococcus_sp_KORDI-100_genomic.fasta",
+      "size": 2789095
+    },
+    {
+      "name": "Synechococcus_sp_KORDI-49_genomic.fasta",
+      "size": 2585907
+    },
+    {
+      "name": "Synechococcus_sp_KORDI_52_genomic.fasta",
+      "size": 2572163
+    },
+    {
+      "name": "Synechococcus_sp_PCC_7002_genomic.fasta",
+      "size": 3410677
+    },
+    {
+      "name": "Synechococcus_sp_RCC307_genomic.fasta",
+      "size": 2225010
+    },
+    {
+      "name": "Synechococcus_sp_WH_7803_genomic.fasta",
+      "size": 2367076
+    },
+    {
+      "name": "Synechococcus_sp_WH_8020_genomic.fasta",
+      "size": 2661253
+    },
+    {
+      "name": "Synechococcus_sp_WH_8102_genomic.fasta",
+      "size": 2434520
+    },
+    {
+      "name": "Synechococcus_sp_WH_8103_genomic.fasta",
+      "size": 2429807
+    },
+    {
+      "name": "Synechococcus_sp_WH_8109_genomic.fasta",
+      "size": 2111608
+    },
+    {
+      "name": "T-2016-70-F4-1_S12_contigs.fasta",
+      "size": 2881167
+    },
+    {
+      "name": "T-2016-70-F4-2_S11_contigs.fasta",
+      "size": 2892884
+    },
+    {
+      "name": "T-2016-70-F4-3_S10_contigs.fasta",
+      "size": 2648384
+    },
+    {
+      "name": "T-211_S5_contigs.fasta",
+      "size": 2642707
+    },
+    {
+      "name": "T-217_S6_contigs.fasta",
+      "size": 2664715
+    },
+    {
+      "name": "T-218_S8_contigs.fasta",
+      "size": 2675050
+    },
+    {
+      "name": "T-219_S4_contigs.fasta",
+      "size": 2683087
+    },
+    {
+      "name": "T-232_S7_contigs.fasta",
+      "size": 2805648
+    },
+    {
+      "name": "T-280_S9_contigs.fasta",
+      "size": 2676140
+    },
+    {
+      "name": "Tenacibaculum_dicentrarchi_strain_AY7486TD_genomic.fasta",
+      "size": 2918366
+    },
+    {
+      "name": "Tenacibaculum_sp_LPB0136_genomic.fasta",
+      "size": 3019309
+    },
+    {
+      "name": "Teredinibacter_turnerae_T7901_genomic.fasta",
+      "size": 5193261
+    },
+    {
+      "name": "Thalassolituus_oleivorans_MIL-1_genomic.fasta",
+      "size": 3920426
+    },
+    {
+      "name": "Thalassolituus_oleivorans_R6-15_genomic.fasta",
+      "size": 3764152
+    },
+    {
+      "name": "Thalassolituus_oleivorans_strain_K188_genomic.fasta",
+      "size": 3909807
+    },
+    {
+      "name": "Thalassotalea_sp_LPB0090_genomic.fasta",
+      "size": 3861766
+    },
+    {
+      "name": "Thermaerobacter_marianensis_DSM_12885_genomic.fasta",
+      "size": 2844801
+    },
+    {
+      "name": "Thermoanaerobacter_siderophilus_SR4_genomic.fasta",
+      "size": 2540287
+    },
+    {
+      "name": "Thermococcus_barophilus_CH5_genomic.fasta",
+      "size": 2388632
+    },
+    {
+      "name": "Thermococcus_barophilus_MP_genomic.fasta",
+      "size": 2064441
+    },
+    {
+      "name": "Thermococcus_eurythermalis_A501_genomic.fasta",
+      "size": 2126373
+    },
+    {
+      "name": "Thermococcus_gammatolerans_EJ3_genomic.fasta",
+      "size": 2045536
+    },
+    {
+      "name": "Thermococcus_litoralis_DSM_5473_genomic.fasta",
+      "size": 2215271
+    },
+    {
+      "name": "Thermococcus_nautili_strain_30-1_genomic.fasta",
+      "size": 1976456
+    },
+    {
+      "name": "Thermococcus_onnurineus_NA1_genomic.fasta",
+      "size": 1847702
+    },
+    {
+      "name": "Thermococcus_sp_4557_genomic.fasta",
+      "size": 2011409
+    },
+    {
+      "name": "Thermococcus_sp_AM4_genomic.fasta",
+      "size": 2086516
+    },
+    {
+      "name": "Thermococcus_sp_CDGS_genomic.fasta",
+      "size": 1928889
+    },
+    {
+      "name": "Thermococcus_sp_CL1_genomic.fasta",
+      "size": 1950415
+    },
+    {
+      "name": "Thermococcus_sp_ES1_genomic.fasta",
+      "size": 1957830
+    },
+    {
+      "name": "Thermodesulfatator_indicus_DSM_15286_genomic.fasta",
+      "size": 2322328
+    },
+    {
+      "name": "Thermoplasma_volcanium_GSS1_genomic.fasta",
+      "size": 1584903
+    },
+    {
+      "name": "Thermosediminibacter_oceani_DSM_16646_genomic.fasta",
+      "size": 2280140
+    },
+    {
+      "name": "Thermosipho_melanesiensis_BI429_genomic.fasta",
+      "size": 1915337
+    },
+    {
+      "name": "Thermosipho_melanesiensis_strain_431_genomic.fasta",
+      "size": 1915451
+    },
+    {
+      "name": "Thermosipho_sp_1063_genomic.fasta",
+      "size": 1766724
+    },
+    {
+      "name": "Thermotoga_maritima_MSB8_1_genomic.fasta",
+      "size": 1869705
+    },
+    {
+      "name": "Thermotoga_maritima_MSB8_2_genomic.fasta",
+      "size": 1869737
+    },
+    {
+      "name": "Thermotoga_maritima_MSB8_3_genomic.fasta",
+      "size": 1869705
+    },
+    {
+      "name": "Thermotoga_maritima_MSB8_4_genomic.fasta",
+      "size": 1860817
+    },
+    {
+      "name": "Thermotoga_maritima_strain_Tma100_genomic.fasta",
+      "size": 1869714
+    },
+    {
+      "name": "Thermotoga_maritima_strain_Tma200_genomic.fasta",
+      "size": 1859686
+    },
+    {
+      "name": "Thermotoga_neapolitana_DSM_4359_genomic.fasta",
+      "size": 1884661
+    },
+    {
+      "name": "Thermotoga_sp_2812B_genomic.fasta",
+      "size": 1843819
+    },
+    {
+      "name": "Thermotoga_sp_Cell2_genomic.fasta",
+      "size": 1749992
+    },
+    {
+      "name": "Thermotoga_sp_RQ2_genomic.fasta",
+      "size": 1877779
+    },
+    {
+      "name": "Thermotoga_sp_RQ7_genomic.fasta",
+      "size": 1851704
+    },
+    {
+      "name": "Thermovirga_lienii_DSM_17291_genomic.fasta",
+      "size": 1999855
+    },
+    {
+      "name": "Thiocystis_violascens_DSM_198_genomic.fasta",
+      "size": 5017168
+    },
+    {
+      "name": "Thioflavicoccus_mobilis_8321_genomic.fasta",
+      "size": 4137731
+    },
+    {
+      "name": "Thiolapillus_brandeum_Hiromi_1_genomic.fasta",
+      "size": 3153944
+    },
+    {
+      "name": "Thiomicrospira_crunogena_XCL-2_genomic.fasta",
+      "size": 2427832
+    },
+    {
+      "name": "TiA_S9_contigs.fasta",
+      "size": 3061215
+    },
+    {
+      "name": "TiB_S10_contigs.fasta",
+      "size": 2564537
+    },
+    {
+      "name": "TiE_S11_contigs.fasta",
+      "size": 2543788
+    },
+    {
+      "name": "Tistrella_mobilis_KA081020-065_genomic.fasta",
+      "size": 6513529
+    },
+    {
+      "name": "Titti15_S2_contigs.fasta",
+      "size": 3112929
+    },
+    {
+      "name": "Titti16_S3_contigs.fasta",
+      "size": 3075617
+    },
+    {
+      "name": "Titti18_S5_contigs.fasta",
+      "size": 4915137
+    },
+    {
+      "name": "Titti19_S6_contigs.fasta",
+      "size": 4586168
+    },
+    {
+      "name": "Titti20_S7_contigs.fasta",
+      "size": 4514613
+    },
+    {
+      "name": "Titti21_S1_contigs.fasta",
+      "size": 5531747
+    },
+    {
+      "name": "Titti22_S2_contigs.fasta",
+      "size": 3667753
+    },
+    {
+      "name": "Titti23_S3_contigs.fasta",
+      "size": 2857100
+    },
+    {
+      "name": "Titti24_S4_contigs.fasta",
+      "size": 5819016
+    },
+    {
+      "name": "Titti25_S5_contigs.fasta",
+      "size": 6017635
+    },
+    {
+      "name": "Titti26_S6_contigs.fasta",
+      "size": 3195167
+    },
+    {
+      "name": "Titti27_S7_contigs.fasta",
+      "size": 3313561
+    },
+    {
+      "name": "Titti28_S8_contigs.fasta",
+      "size": 4126531
+    },
+    {
+      "name": "Titti29_S9_contigs.fasta",
+      "size": 3920282
+    },
+    {
+      "name": "Titti30_S10_contigs.fasta",
+      "size": 5855151
+    },
+    {
+      "name": "Titti33_S13_contigs.fasta",
+      "size": 2723587
+    },
+    {
+      "name": "TNX_S11_contigs.fasta",
+      "size": 3705915
+    },
+    {
+      "name": "Trichodesmium_erythraeum_IMS101_genomic.fasta",
+      "size": 7750207
+    },
+    {
+      "name": "U1_S23_contigs.fasta",
+      "size": 7106021
+    },
+    {
+      "name": "ukjent1_S8_contigs.fasta",
+      "size": 4358794
+    },
+    {
+      "name": "ukjent2_S9_contigs.fasta",
+      "size": 4518853
+    },
+    {
+      "name": "ukjent3_S10_contigs.fasta",
+      "size": 5880522
+    },
+    {
+      "name": "V-H1309-2-2_S2_contigs.fasta",
+      "size": 5297963
+    },
+    {
+      "name": "V-H1309-2-4_S3_contigs.fasta",
+      "size": 5456094
+    },
+    {
+      "name": "V-H1309-5I_S5_contigs.fasta",
+      "size": 4929975
+    },
+    {
+      "name": "V34_S3_contigs.fasta",
+      "size": 5341998
+    },
+    {
+      "name": "V36_S4_contigs.fasta",
+      "size": 5944186
+    },
+    {
+      "name": "Verrucomicrobia_bacterium_L21-Fru-AB_genomic.fasta",
+      "size": 2949830
+    },
+    {
+      "name": "Verrucosispora_maris_AB-18-032_genomic.fasta",
+      "size": 6732482
+    },
+    {
+      "name": "Vibrio_alginolyticus_strain_ATCC_33787_genomic.fasta",
+      "size": 5725549
+    },
+    {
+      "name": "Vibrio_alginolyticus_strain_ZJ-T_genomic.fasta",
+      "size": 5406329
+    },
+    {
+      "name": "Vibrio_anguillarum_775_genomic.fasta",
+      "size": 4052257
+    },
+    {
+      "name": "Vibrio_anguillarum_M3_genomic.fasta",
+      "size": 4118202
+    },
+    {
+      "name": "Vibrio_anguillarum_NB10_genomic.fasta",
+      "size": 4374176
+    },
+    {
+      "name": "Vibrio_anguillarum_strain_90-11-286_genomic.fasta",
+      "size": 4342466
+    },
+    {
+      "name": "Vibrio_breoganii_strain_FF50_genomic.fasta",
+      "size": 4492524
+    },
+    {
+      "name": "Vibrio_campbellii_ATCC_BAA-1116_genomic.fasta",
+      "size": 6058721
+    },
+    {
+      "name": "Vibrio_cholerae_strain_Env-390_genomic.fasta",
+      "size": 4051158
+    },
+    {
+      "name": "Vibrio_coralliilyticus_OCN014_genomic.fasta",
+      "size": 5733152
+    },
+    {
+      "name": "Vibrio_coralliilyticus_RE98_genomic.fasta",
+      "size": 6038289
+    },
+    {
+      "name": "Vibrio_coralliilyticus_strain_58_genomic.fasta",
+      "size": 5490365
+    },
+    {
+      "name": "Vibrio_fischeri_ES114_genomic.fasta",
+      "size": 4274031
+    },
+    {
+      "name": "Vibrio_fischeri_MJ11_genomic.fasta",
+      "size": 4503646
+    },
+    {
+      "name": "Vibrio_furnissii_NCTC_11218_genomic.fasta",
+      "size": 4916627
+    },
+    {
+      "name": "Vibrio_harveyi_strain_QT520_genomic.fasta",
+      "size": 6130849
+    },
+    {
+      "name": "Vibrio_natriegens_NBRC_15636_ATCC_14048_DSM_759_genomic.fasta",
+      "size": 5168959
+    },
+    {
+      "name": "Vibrio_natriegens_strain_CCUG_16371_genomic.fasta",
+      "size": 5161688
+    },
+    {
+      "name": "Vibrio_natriegens_strain_CCUG_16373_genomic.fasta",
+      "size": 5549460
+    },
+    {
+      "name": "Vibrio_natriegens_strain_CCUG_16374_genomic.fasta",
+      "size": 5504925
+    },
+    {
+      "name": "Vibrio_nigripulchritudo_str_SFn1_genomic.fasta",
+      "size": 6322378
+    },
+    {
+      "name": "Vibrio_parahaemolyticus_BB22OP_genomic.fasta",
+      "size": 5103749
+    },
+    {
+      "name": "Vibrio_parahaemolyticus_strain_CHN25_genomic.fasta",
+      "size": 5444001
+    },
+    {
+      "name": "Vibrio_parahaemolyticus_strain_FORC_018_genomic.fasta",
+      "size": 5045810
+    },
+    {
+      "name": "Vibrio_parahaemolyticus_UCM-V493_genomic.fasta",
+      "size": 5232918
+    },
+    {
+      "name": "Vibrio_scophthalmi_strain_VS-05_genomic.fasta",
+      "size": 4803318
+    },
+    {
+      "name": "Vibrio_scophthalmi_strain_VS-12_genomic.fasta",
+      "size": 4926661
+    },
+    {
+      "name": "Vibrio_sp_EJY3_genomic.fasta",
+      "size": 5452841
+    },
+    {
+      "name": "Vibrio_sp_Ex25_genomic.fasta",
+      "size": 5089218
+    },
+    {
+      "name": "Vibrio_tubiashii_ATCC_19109_genomic.fasta",
+      "size": 5541008
+    },
+    {
+      "name": "Vibrio_vulnificus_strain_93U204_genomic.fasta",
+      "size": 5127698
+    },
+    {
+      "name": "VO4_S11_contigs.fasta",
+      "size": 3477260
+    },
+    {
+      "name": "VO5_S12_contigs.fasta",
+      "size": 3477637
+    },
+    {
+      "name": "VO6_S13_contigs.fasta",
+      "size": 3475915
+    },
+    {
+      "name": "VO8_S14_contigs.fasta",
+      "size": 3395540
+    },
+    {
+      "name": "VSalm554_S15_contigs.fasta",
+      "size": 4098883
+    },
+    {
+      "name": "VSalm561_S16_contigs.fasta",
+      "size": 4105882
+    },
+    {
+      "name": "VSalmN5541_S14_contigs.fasta",
+      "size": 3998819
+    },
+    {
+      "name": "Vw11_S2_contigs.fasta",
+      "size": 4518948
+    },
+    {
+      "name": "Vw12_S5_contigs.fasta",
+      "size": 4944242
+    },
+    {
+      "name": "Vw130426_S9_contigs.fasta",
+      "size": 4567546
+    },
+    {
+      "name": "Vw1_S1_contigs.fasta",
+      "size": 4571378
+    },
+    {
+      "name": "Vw27_S8_contigs.fasta",
+      "size": 4560298
+    },
+    {
+      "name": "Vw29_S11_contigs.fasta",
+      "size": 4521492
+    },
+    {
+      "name": "Vw35_S3_contigs.fasta",
+      "size": 4691468
+    },
+    {
+      "name": "Vw5_S4_contigs.fasta",
+      "size": 4468520
+    },
+    {
+      "name": "Vw7_S7_contigs.fasta",
+      "size": 4488749
+    },
+    {
+      "name": "Vw8_S10_contigs.fasta",
+      "size": 4475947
+    },
+    {
+      "name": "VwK7F1_S12_contigs.fasta",
+      "size": 4354997
+    },
+    {
+      "name": "Weissella_ceti_strain_WS08_genomic.fasta",
+      "size": 1355947
+    },
+    {
+      "name": "Weissella_ceti_strain_WS105_genomic.fasta",
+      "size": 1390492
+    },
+    {
+      "name": "Weissella_ceti_strain_WS74_genomic.fasta",
+      "size": 1389607
+    },
+    {
+      "name": "Wenyingzhuangia_fucanilytica_strain_CZ1127_genomic.fasta",
+      "size": 3427170
+    },
+    {
+      "name": "Wenzhouxiangella_marina_strain_KCTC_42284_genomic.fasta",
+      "size": 3675314
+    },
+    {
+      "name": "Winogradskyella_sp_PG-2_genomic.fasta",
+      "size": 3811575
+    },
+    {
+      "name": "Woeseia_oceani_strain_XK5_genomic.fasta",
+      "size": 4059987
+    },
+    {
+      "name": "Yangia_sp_CCB-MM3_genomic.fasta",
+      "size": 5522803
+    },
+    {
+      "name": "Yersinia_aldovae_670-83_genomic.fasta",
+      "size": 4471181
+    },
+    {
+      "name": "Yersinia_ruckeri_strain_Big_Creek_74_genomic.fasta",
+      "size": 3699832
+    },
+    {
+      "name": "Yersinia_ruckeri_YRB_genomic.fasta",
+      "size": 3605311
+    },
+    {
+      "name": "Zunongwangia_profunda_SM-A87_genomic.fasta",
+      "size": 5128283
+    }
+  ],
+  "totalSize": 2918250047,
+  "lastUpdated": "2026-04-19T22:29:43.970Z"
+}

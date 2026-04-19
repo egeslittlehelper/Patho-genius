@@ -116,11 +116,12 @@
                 <div class="form-group">
                     <label for="database-select">Reference Database</label>
                     <select id="database-select" class="input-field">
-                        <option value="ncbi-refseq">NCBI RefSeq 2025 (Default)</option>
-                        <option value="bacteria">Bacteria Only</option>
-                        <option value="viral">Viral Only</option>
+                        <option value="default">Default Database (Built-in Pathogens)</option>
                         <option value="custom">Custom Database</option>
                     </select>
+                    <div id="custom-db-warning" class="form-warning hidden">
+                        ⚠️ No custom database configured. Go to <a href="#" onclick="App.navigateTo('database'); return false;">Database Management</a> to set one.
+                    </div>
                 </div>
                 <div class="form-group">
                     <label for="confidence-threshold">Confidence Threshold</label>

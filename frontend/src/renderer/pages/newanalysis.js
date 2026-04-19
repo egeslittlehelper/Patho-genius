@@ -12,7 +12,7 @@ const AnalysisPage = {
     config: {
         analysisName: '',
         sampleType: 'clinical',
-        database: 'ncbi-refseq',
+        database: 'default',
         confidenceThreshold: 0.7,
         engine: 'cpu',
         inputFiles: []
@@ -51,6 +51,12 @@ const AnalysisPage = {
         const startBtn = document.getElementById('start-analysis-btn');
         if (startBtn) {
             startBtn.addEventListener('click', () => this.startAnalysis());
+        }
+
+        // Database selector — validate custom DB
+        const dbSelect = document.getElementById('database-select');
+        if (dbSelect) {
+            dbSelect.addEventListener('change', () => this.onDatabaseChange());
         }
 
         // Engine selector cards
@@ -178,7 +184,7 @@ const AnalysisPage = {
     collectConfig() {
         this.config.analysisName = document.getElementById('analysis-name')?.value || '';
         this.config.sampleType = document.getElementById('sample-type')?.value || 'clinical';
-        this.config.database = document.getElementById('database-select')?.value || 'ncbi-refseq';
+        this.config.database = document.getElementById('database-select')?.value || 'default';
         this.config.confidenceThreshold = parseFloat(document.getElementById('confidence-threshold')?.value || '0.7');
         // Read engine from radio buttons
         const engineRadio = document.querySelector('input[name="engine"]:checked');
@@ -216,12 +222,37 @@ const AnalysisPage = {
      */
     getDatabaseLabel(value) {
         const labels = {
-            'ncbi-refseq': 'NCBI RefSeq 2025',
-            'bacteria': 'Bacteria Only',
-            'viral': 'Viral Only',
+            'default': 'Default Database (Built-in)',
             'custom': 'Custom Database'
         };
         return labels[value] || value;
+    },
+
+    /**
+     * Handle database dropdown change — validate custom DB
+     */
+    async onDatabaseChange() {
+        const select = document.getElementById('database-select');
+        const warning = document.getElementById('custom-db-warning');
+        if (!select || !warning) return;
+
+        if (select.value === 'custom') {
+            // Check if custom DB is set
+            try {
+                if (window.api?.database?.getInfo) {
+                    const info = await window.api.database.getInfo();
+                    if (!info.customDb || !info.customDb.path) {
+                        warning.classList.remove('hidden');
+                    } else {
+                        warning.classList.add('hidden');
+                    }
+                }
+            } catch (e) {
+                warning.classList.remove('hidden');
+            }
+        } else {
+            warning.classList.add('hidden');
+        }
     },
 
     /**
@@ -388,7 +419,7 @@ const AnalysisPage = {
         this.config = {
             analysisName: '',
             sampleType: 'clinical',
-            database: 'ncbi-refseq',
+            database: 'default',
             confidenceThreshold: 0.7,
             engine: 'cpu',
             inputFiles: []

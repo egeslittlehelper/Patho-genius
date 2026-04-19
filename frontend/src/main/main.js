@@ -12,6 +12,7 @@ const si = require('systeminformation');
 const authService = require('./services/auth-service');
 const analysisService = require('./services/analysis-service');
 const encryptionService = require('./services/encryption-service');
+const dbSettings = require('./services/db-settings');
 
 // Global reference to main window
 let mainWindow = null;
@@ -37,7 +38,7 @@ function createWindow() {
     global.mainWindow = mainWindow;
 
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-    
+
     // Open DevTools in development
     // mainWindow.webContents.openDevTools();
 
@@ -154,22 +155,22 @@ ipcMain.handle('app:get-system-stats', async () => {
         // Get CPU information
         const cpuInfo = await si.cpu();
         const cpuUsage = 34; // Hardcoded CPU usage
-        
+
         // Get memory information
         const memInfo = await si.mem();
-        
+
         // Get disk information
         const diskInfo = await si.fsSize();
         const mainDisk = diskInfo.find(disk => disk.mount === 'C:' || disk.mount === '/') || diskInfo[0];
-        
+
         // Get GPU information
         const gpuInfo = await si.graphics();
         const primaryGpu = gpuInfo.controllers.find(gpu => gpu.vendor !== 'Microsoft') || gpuInfo.controllers[0];
-        
+
         // Get network information
         const networkInterfaces = await si.networkInterfaces();
         const activeInterface = networkInterfaces.find(iface => iface.operstate === 'up' && iface.ip4);
-        
+
         return {
             cpu: {
                 cores: cpuInfo.cores,
@@ -214,7 +215,7 @@ ipcMain.handle('app:get-system-stats', async () => {
         const totalMemory = os.totalmem();
         const freeMemory = os.freemem();
         const usedMemory = totalMemory - freeMemory;
-        
+
         return {
             cpu: {
                 cores: cpus.length,
@@ -246,33 +247,38 @@ ipcMain.handle('app:get-system-stats', async () => {
 ipcMain.handle('app:get-database-info', async () => {
     // Return database information
     // TODO: Read actual database metadata when available
+    const defaultDb = dbSettings.getDefaultDbInfo();
+    const settings = dbSettings.loadSettings();
     return {
-        name: 'NCBI RefSeq 2025',
-        version: '2025.01',
-        type: 'Bacterial and Viral Genomes',
-        indexSize: 12.4 * 1024 * 1024 * 1024, // 12.4 GB
-        totalGenomes: 24582,
-        lastUpdated: '2025-12-01',
-        path: analysisService.ANALYSIS_CONFIG.KRAKEN2_DB,
-        components: [
-            { name: 'Bacterial Genomes', species: 15234, size: 8.2 },
-            { name: 'Viral Genomes', species: 4521, size: 2.1 },
-            { name: 'AMR Gene Database', genes: 2847, size: 1.8 },
-            { name: 'Taxonomy Index', type: 'k-mer', size: 0.3 }
-        ]
+        defaultDb: {
+            path: defaultDb.path,
+            isBuilt: defaultDb.isBuilt,
+            genomeCount: defaultDb.genomeCount,
+        },
+        customDb: {
+            path: settings.customDbPath,
+            files: settings.customDbFiles || [],
+            totalSize: settings.totalSize || 0,
+            lastUpdated: settings.lastUpdated,
+        },
     };
 });
 
 ipcMain.handle('app:import-database', async (event, folderPath) => {
     // TODO: Implement database import from FASTA files
-    console.log('Importing database from:', folderPath);
-    return { success: true, message: 'Database import started' };
+    console.log('Importing custom database from:', folderPath);
+    return dbSettings.setCustomDbPath(folderPath);
+});
+
+ipcMain.handle('app:clear-custom-db', async () => {
+    dbSettings.clearCustomDb();
+    return { success: true };
 });
 
 ipcMain.handle('app:check-database-updates', async () => {
     // TODO: Check for database updates (would require network)
-    return { 
-        hasUpdate: false, 
+    return {
+        hasUpdate: false,
         currentVersion: '2025.01',
         message: 'Database is up to date'
     };

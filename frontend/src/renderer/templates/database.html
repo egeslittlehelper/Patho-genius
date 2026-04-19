@@ -17,55 +17,65 @@
                 </svg>
             </div>
             <div class="database-title">
-                <h3>Current Reference Database</h3>
-                <p>NCBI RefSeq 2025 - Bacterial and Viral Genomes</p>
+                <h3>Default Reference Database</h3>
+                <p id="default-db-subtitle">Built-in pathogen genomes</p>
             </div>
-            <span class="status-badge status-active">
+            <span class="status-badge" id="default-db-status">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                Active
+                <span id="default-db-status-text">Checking...</span>
             </span>
         </div>
         <div class="database-stats">
             <div class="db-stat">
-                <span class="db-stat-label">Version</span>
-                <span class="db-stat-value">2025.01</span>
+                <span class="db-stat-label">Genomes</span>
+                <span class="db-stat-value" id="default-db-genomes">—</span>
             </div>
             <div class="db-stat">
-                <span class="db-stat-label">Index Size</span>
-                <span class="db-stat-value">12.4 GB</span>
+                <span class="db-stat-label">Index</span>
+                <span class="db-stat-value" id="default-db-index">—</span>
             </div>
             <div class="db-stat">
-                <span class="db-stat-label">Total Genomes</span>
-                <span class="db-stat-value">24,582</span>
+                <span class="db-stat-label">Source</span>
+                <span class="db-stat-value">Default_References</span>
             </div>
-            <div class="db-stat">
-                <span class="db-stat-label">Last Updated</span>
-                <span class="db-stat-value">Dec 1, 2025</span>
-            </div>
-        </div>
-        <div class="database-actions-row">
-            <button class="btn btn-outline">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 2v6h-6"></path><path d="M3 12a9 9 0 0 1 15-6.7L21 8"></path><path d="M3 22v-6h6"></path><path d="M21 12a9 9 0 0 1-15 6.7L3 16"></path></svg>
-                Check for Updates
-            </button>
-            <button class="btn btn-outline">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                Export Database
-            </button>
         </div>
     </div>
 
+    <!-- Custom Database Section -->
     <div class="card">
-        <h3 class="card-title">Import Custom Reference Database</h3>
-        <p class="text-muted">Add custom FASTA files to extend the reference database with specific organisms or sequences for offline analysis</p>
-        <div class="upload-zone upload-zone-sm" id="db-upload-zone">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                <polyline points="17 8 12 3 7 8"></polyline>
-                <line x1="12" y1="3" x2="12" y2="15"></line>
-            </svg>
-            <p>Drop FASTA files here or click to browse</p>
-            <button class="btn btn-outline btn-sm" id="import-db-btn">Browse Files</button>
+        <h3 class="card-title">Custom Reference Database</h3>
+        <p class="text-muted">Select a folder containing FASTA genome files (.fasta, .fna, .fa, .fsa, or gzipped variants) to use as a custom database in analysis.</p>
+        
+        <!-- No custom DB set -->
+        <div id="custom-db-empty">
+            <div class="upload-zone upload-zone-sm" id="db-upload-zone">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
+                </svg>
+                <p>Select a folder containing genome FASTA / FNA files</p>
+                <button class="btn btn-primary btn-sm" id="import-db-btn">Select Genome Folder</button>
+            </div>
+        </div>
+
+        <!-- Custom DB is set -->
+        <div id="custom-db-info" class="hidden">
+            <div class="custom-db-path-row">
+                <div class="custom-db-details">
+                    <span class="custom-db-label">Genome Folder:</span>
+                    <span class="custom-db-path" id="custom-db-path-display" title="">—</span>
+                </div>
+                <div class="custom-db-actions">
+                    <button class="btn btn-outline btn-sm" id="change-db-btn">Change</button>
+                    <button class="btn btn-outline btn-sm btn-danger-outline" id="clear-db-btn">Clear</button>
+                </div>
+            </div>
+            <div class="custom-db-file-summary">
+                <span id="custom-db-file-count">0 files</span> &bull;
+                <span id="custom-db-total-size">0 MB</span>
+            </div>
+            <div class="custom-db-file-list" id="custom-db-file-list">
+                <!-- Populated by JS -->
+            </div>
         </div>
     </div>
 
@@ -92,39 +102,4 @@
             <!-- Populated by JavaScript -->
         </div>
     </div>
-
-    <div class="card">
-        <h3 class="card-title">Database Components</h3>
-        <div class="database-list">
-            <div class="database-item">
-                <div class="database-info">
-                    <h4>Bacterial Genomes</h4>
-                    <p class="text-muted">15,234 species • 8.2 GB</p>
-                </div>
-                <span class="status-badge status-completed">Indexed</span>
-            </div>
-            <div class="database-item">
-                <div class="database-info">
-                    <h4>Viral Genomes</h4>
-                    <p class="text-muted">4,521 species • 2.1 GB</p>
-                </div>
-                <span class="status-badge status-completed">Indexed</span>
-            </div>
-            <div class="database-item">
-                <div class="database-info">
-                    <h4>AMR Gene Database</h4>
-                    <p class="text-muted">2,847 genes • 1.8 GB</p>
-                </div>
-                <span class="status-badge status-completed">Indexed</span>
-            </div>
-            <div class="database-item">
-                <div class="database-info">
-                    <h4>Taxonomy Index (Kraken2)</h4>
-                    <p class="text-muted">k-mer index • 0.3 GB</p>
-                </div>
-                <span class="status-badge status-completed">Ready</span>
-            </div>
-        </div>
-    </div>
 </div>
-
