@@ -33,6 +33,19 @@ clark:
 jetson_nano:
   host: "100.71.242.74"                            # Tailscale IP of the Jetson Nano
   user: "pathogen"                                  # SSH username
+  ssh_batch_mode: false                              # false allows password prompts; true requires key-based auth
   remote_db: "/home/pathogen/cuclark_db"            # CLARK reference database on the Nano
   remote_workspace: "/home/pathogen/pathogenius_ws" # Temp workspace for FASTQ & results
   cuclark_dir: "/home/pathogen/cuclark"             # CU-CLARK installation directory
+
+# ── Genome Sources ─────────────────────────────────────────────────────────────
+# Each entry is a directory of FASTA files (.fna / .fasta / .fa / .fsa / .gz).
+# If a reads_mapping (.tsv or .tsv.gz) is supplied, contig-based taxid lookup
+# is used for any file whose headers look like SPAdes NODE contigs.
+# All other files fall back to NCBI organism-name / accession lookup.
+genome_sources:
+  - path: "./clark_db"          # existing named-pathogen genomes (.fna)
+
+  # Example: add another source with reads_mapping for SPAdes contigs
+  # - path: "./my_genomes/simulation/genomes"
+  #   reads_mapping: "./my_reads/reads_mapping.tsv.gz"

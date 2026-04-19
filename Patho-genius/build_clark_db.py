@@ -1,16 +1,30 @@
 #!/usr/bin/env python3
 """
-Build a custom CLARK-l database from FASTA files with NCBI accessions.
+Universal CLARK-l database builder.
 
-Workflow:
-  1. Find all .fna files in clark_db/ and copy them to clark_db/Custom/
-  2. Extract organism names + accessions from FASTA headers
-  3. Fetch NCBI taxids (organism name first, accession fallback)
-  4. Download only taxdump.tar.gz (~55 MB) — skips the 4.5 GB nucl_accss files
-  5. Pre-create .custom.fileToAccssnTaxID so set_targets.sh skips the nucl_accss lookup
-  6. Run set_targets.sh inside Docker to produce a proper targets.txt
+Reads genome_sources from config.yaml.  Each source is a directory of FASTA
+files (.fna / .fasta / .fa / .fsa / .fna.gz / .fasta.gz).  Taxid resolution
+uses whichever strategy works for each file:
+
+  1. reads_mapping strategy  — if the source specifies a reads_mapping (.tsv
+     or .tsv.gz) AND the FASTA headers look like SPAdes NODE contigs.
+     Parses  anonymous_read_id | genome_id | tax_id | read_id  and maps
+     contig names to genome_ids, then genome_ids to taxids.
+
+  2. NCBI organism-name strategy  — if the header contains a recognisable
+     binomial name (e.g. "Escherichia coli K-12…"), query NCBI Taxonomy.
+
+  3. NCBI accession strategy  — fallback using the accession in the header.
+
+After resolving all taxids the script:
+  • copies every FASTA into clark_db/Custom/
+  • writes .custom and .custom.fileToAccssnTaxID so set_targets.sh skips the
+    4.5 GB nucl_accss download
+  • downloads NCBI taxdump (~55 MB) if taxonomy/ is missing
+  • runs set_targets.sh inside the CLARK Docker image to produce targets.txt
 """
 
+import gzip
 import json
 import re
 import shutil
@@ -21,11 +35,15 @@ import urllib.parse
 import urllib.request
 from pathlib import Path
 
-DB_DIR = Path("clark_db")
+import yaml  # PyYAML  (pip install pyyaml)
+
+# ---------------------------------------------------------------------------
+# Constants
+# ---------------------------------------------------------------------------
+DB_DIR     = Path("clark_db")
 CUSTOM_DIR = DB_DIR / "Custom"
-TAX_DIR = DB_DIR / "taxonomy"
-IMAGE = "quay.io/biocontainers/clark:1.2.6.1--h4ac6f70_3"
-CLARK_DIR = "/usr/local/opt/clark"
+TAX_DIR    = DB_DIR / "taxonomy"
+CLARK_DIR  = "/usr/local/opt/clark"
 
 # Words that signal the end of a species name in a FASTA description
 _STRAIN_TOKENS = {
@@ -35,33 +53,59 @@ _STRAIN_TOKENS = {
     "complete", "whole", "isolate", "clone",
 }
 
+FASTA_SUFFIXES = {".fna", ".fasta", ".fa", ".fsa"}
+
 
 # ---------------------------------------------------------------------------
-# File system helpers
+# Helpers: file I/O
 # ---------------------------------------------------------------------------
+
+def _open(path: Path):
+    """Open a plain or gzip-compressed file for text reading."""
+    if path.suffix == ".gz":
+        return gzip.open(path, "rt")
+    return open(path)
+
 
 def ensure_directories():
     print("📁 Ensuring directory structure...")
     DB_DIR.mkdir(exist_ok=True)
-    CUSTOM_DIR.mkdir(exist_ok=True)
+    CUSTOM_DIR.mkdir(parents=True, exist_ok=True)
     TAX_DIR.mkdir(exist_ok=True)
     print("   ✅ Directories ready")
-
-
-def copy_fasta_to_custom(fasta_file: Path) -> Path:
-    dest = CUSTOM_DIR / fasta_file.name
-    if not dest.exists():
-        shutil.copy2(fasta_file, dest)
-    return dest
 
 
 # ---------------------------------------------------------------------------
 # FASTA parsing
 # ---------------------------------------------------------------------------
 
+def _fasta_headers(path: Path):
+    """Yield every header line (without '>') from a FASTA file."""
+    with _open(path) as fh:
+        for line in fh:
+            if line.startswith(">"):
+                yield line[1:].strip()
+
+
+def _first_header(path: Path) -> str | None:
+    for h in _fasta_headers(path):
+        return h
+    return None
+
+
+def _is_node_header(header: str) -> bool:
+    """True if this looks like a SPAdes assembly contig header."""
+    return header.startswith("NODE_")
+
+
+def _parse_accession(header: str) -> str | None:
+    """Extract the leading accession token from a FASTA header."""
+    return header.split()[0] if header else None
+
+
 def _parse_fasta_header(fasta_path: Path):
     """Return (accession, raw_description) from the first header line."""
-    with open(fasta_path) as f:
+    with _open(fasta_path) as f:
         for line in f:
             if line.startswith(">"):
                 m = re.match(
@@ -96,8 +140,8 @@ def _trim_to_species(description: str) -> str:
         # Stop at strain-like tokens
         if (
             clean in _STRAIN_TOKENS
-            or clean.upper() == clean and len(clean) > 1  # all-caps abbreviation
-            or any(ch.isdigit() for ch in clean)          # contains a digit
+            or (clean.upper() == clean and len(clean) > 1)  # all-caps abbreviation
+            or any(ch.isdigit() for ch in clean)             # contains a digit
         ):
             break
         kept.append(clean)
@@ -105,6 +149,28 @@ def _trim_to_species(description: str) -> str:
         if clean.lower() == "virus":
             break
     return " ".join(kept)
+
+
+def _extract_organism(header: str) -> str | None:
+    """Pull out a binomial organism name from a FASTA header description."""
+    m = re.match(
+        r"(\S+)\s+(.+?)(?:,| complete| whole| genomic scaffold"
+        r"| genome| chromosome| str\.| strain| substr\.| isolate)",
+        header,
+    )
+    if m:
+        desc = m.group(2).strip()
+    else:
+        parts = header.split(None, 1)
+        desc = parts[1].strip() if len(parts) > 1 else ""
+
+    if not desc:
+        return None
+    trimmed = _trim_to_species(desc)
+    # Reject if it looks like a contig ID rather than an organism name
+    if not trimmed or trimmed.startswith("NODE_") or re.search(r"\d", trimmed):
+        return None
+    return trimmed
 
 
 def extract_organism_from_fasta(fasta_path: Path) -> str | None:
@@ -117,6 +183,70 @@ def extract_organism_from_fasta(fasta_path: Path) -> str | None:
 def extract_accession_from_fasta(fasta_path: Path) -> str | None:
     accession, _ = _parse_fasta_header(fasta_path)
     return accession
+
+
+# ---------------------------------------------------------------------------
+# Taxid resolution — reads_mapping strategy
+# ---------------------------------------------------------------------------
+
+def _load_reads_mapping(mapping_path: Path) -> tuple[dict, dict]:
+    """
+    Parse a reads_mapping .tsv or .tsv.gz.
+
+    Columns (tab-separated, first line is a comment header):
+      #anonymous_read_id  genome_id  tax_id  read_id
+
+    read_id examples:
+      NODE_53_length_21423_cov_84.979292-1386/1   <- SPAdes contig + position
+      CP009288.1-10831/1                          <- NCBI accession + position
+
+    Returns:
+      genome_taxid : { genome_id  -> taxid }
+      contig_genome: { contig_name -> genome_id }   (NODE-based reads only)
+    """
+    print(f"   📖 Parsing reads mapping: {mapping_path.name} …")
+    genome_taxid:  dict[str, str] = {}
+    contig_genome: dict[str, str] = {}
+
+    with _open(mapping_path) as fh:
+        for line in fh:
+            if line.startswith("#"):
+                continue
+            parts = line.rstrip("\n").split("\t")
+            if len(parts) < 4:
+                continue
+            genome_id = parts[1]
+            tax_id    = parts[2]
+            read_id   = parts[3]
+
+            if genome_id not in genome_taxid:
+                genome_taxid[genome_id] = tax_id
+
+            if read_id.startswith("NODE_"):
+                # contig name = read_id up to the last "-<position>" suffix
+                contig = read_id.rsplit("-", 1)[0]
+                if contig not in contig_genome:
+                    contig_genome[contig] = genome_id
+
+    print(f"      ✅ {len(genome_taxid):,} genome IDs, {len(contig_genome):,} contig names")
+    return genome_taxid, contig_genome
+
+
+def _taxid_from_mapping(
+    fasta_path: Path,
+    genome_taxid: dict,
+    contig_genome: dict,
+) -> str | None:
+    """
+    Scan FASTA headers; return the taxid as soon as one NODE contig is found
+    in contig_genome.
+    """
+    for header in _fasta_headers(fasta_path):
+        contig = header.split()[0]
+        gid = contig_genome.get(contig)
+        if gid:
+            return genome_taxid.get(gid)
+    return None
 
 
 # ---------------------------------------------------------------------------
@@ -134,7 +264,7 @@ def _ncbi_esearch(term: str, db: str = "taxonomy") -> list[str]:
             data = json.loads(resp.read())
             return data.get("esearchresult", {}).get("idlist", [])
     except Exception as exc:
-        print(f"    ⚠️  NCBI query failed: {exc}")
+        print(f"      ⚠️  NCBI query failed: {exc}")
         return []
 
 
@@ -159,19 +289,19 @@ def _taxid_from_accession(accession: str) -> str | None:
                         if ids2:
                             return str(ids2[0])
     except Exception as exc:
-        print(f"    ⚠️  elink failed: {exc}")
+        print(f"      ⚠️  elink failed: {exc}")
     return None
 
 
 def fetch_taxid(organism: str, accession: str | None) -> str | None:
     """Try organism-name search first, then fall back to accession lookup."""
-    print(f"    Searching NCBI Taxonomy for: {organism}")
+    print(f"      🔎 Searching NCBI Taxonomy for: {organism}")
     ids = _ncbi_esearch(organism)
     if ids:
         return ids[0]
 
     if accession:
-        print(f"    ⚠️  Name lookup failed; trying accession {accession}...")
+        print(f"      ⚠️  Name lookup failed; trying accession {accession}...")
         time.sleep(0.4)  # be polite to NCBI
         taxid = _taxid_from_accession(accession)
         if taxid:
@@ -180,18 +310,107 @@ def fetch_taxid(organism: str, accession: str | None) -> str | None:
     return None
 
 
+def _taxid_from_ncbi(header: str) -> str | None:
+    """Try organism name, then accession, then give up."""
+    organism = _extract_organism(header)
+    accession = _parse_accession(header)
+
+    if organism:
+        print(f"      🔎 NCBI name lookup: {organism}")
+        ids = _ncbi_esearch(organism)
+        time.sleep(0.35)
+        if ids:
+            return ids[0]
+
+    if accession and re.match(r"[A-Z]{1,2}_?\d", accession):
+        print(f"      🔎 NCBI accession lookup: {accession}")
+        time.sleep(0.35)
+        taxid = _taxid_from_accession(accession)
+        if taxid:
+            return taxid
+
+    return None
+
+
+# ---------------------------------------------------------------------------
+# Per-source processing
+# ---------------------------------------------------------------------------
+
+def process_source(source: dict) -> dict[Path, str]:
+    """
+    Resolve taxids for every FASTA file in one genome_source entry.
+
+    source keys:
+      path          : str  (required) directory of FASTA files
+      reads_mapping : str  (optional) path to reads_mapping .tsv[.gz]
+
+    Returns {dest_path_in_Custom -> taxid}.
+    """
+    src_dir  = Path(source["path"])
+    map_path = Path(source["reads_mapping"]) if "reads_mapping" in source else None
+
+    fasta_files = [
+        f for f in sorted(src_dir.iterdir())
+        if f.suffix in FASTA_SUFFIXES
+        or (f.suffix == ".gz" and Path(f.stem).suffix in FASTA_SUFFIXES)
+    ]
+
+    print(f"\n📁 Source: {src_dir}  ({len(fasta_files):,} files)")
+
+    # Pre-load reads mapping if provided
+    genome_taxid:  dict[str, str] = {}
+    contig_genome: dict[str, str] = {}
+    if map_path:
+        genome_taxid, contig_genome = _load_reads_mapping(map_path)
+
+    file_taxids: dict[Path, str] = {}
+    skipped: list[str] = []
+
+    for fasta in fasta_files:
+        first_hdr = _first_header(fasta)
+        if not first_hdr:
+            skipped.append(fasta.name)
+            continue
+
+        taxid = None
+
+        # Strategy 1: reads_mapping (for NODE-based SPAdes contigs)
+        if contig_genome and _is_node_header(first_hdr.split()[0]):
+            taxid = _taxid_from_mapping(fasta, genome_taxid, contig_genome)
+            if taxid:
+                print(f"   [mapping] {fasta.name} → taxid {taxid}")
+
+        # Strategy 2 & 3: NCBI (organism name then accession)
+        if not taxid:
+            taxid = _taxid_from_ncbi(first_hdr)
+            if taxid:
+                print(f"   [NCBI]    {fasta.name} → taxid {taxid}")
+
+        if taxid:
+            dest = CUSTOM_DIR / fasta.name
+            if not dest.exists():
+                shutil.copy2(fasta, dest)
+            file_taxids[dest] = taxid
+        else:
+            print(f"   ❌ Could not resolve taxid for {fasta.name} — skipping")
+            skipped.append(fasta.name)
+
+    print(f"   ✅ Resolved {len(file_taxids):,}  |  skipped {len(skipped):,}")
+    return file_taxids
+
+
 # ---------------------------------------------------------------------------
 # Taxonomy download (only taxdump, ~55 MB)
 # ---------------------------------------------------------------------------
 
 def download_taxonomy():
     """Download NCBI taxdump.tar.gz and extract nodes/merged/names.dmp."""
-    print("\n📥 Downloading NCBI taxonomy data (taxdump only, ~55 MB)...")
+    print("\n📥 Checking NCBI taxonomy data …")
 
     taxdump = TAX_DIR / "taxdump.tar.gz"
     if not taxdump.exists():
+        print("   Fetching taxdump.tar.gz (~55 MB) …")
         url = "https://ftp.ncbi.nih.gov/pub/taxonomy/taxdump.tar.gz"
-        print("   Fetching taxdump.tar.gz ...")
         urllib.request.urlretrieve(url, taxdump)
     else:
         print("   taxdump.tar.gz already present — skipping download")
@@ -213,41 +432,50 @@ def download_taxonomy():
 # CLARK metadata files
 # ---------------------------------------------------------------------------
 
-def create_custom_metadata(file_taxids: dict) -> None:
+def write_clark_metadata(all_file_taxids: dict[Path, str]) -> None:
     """
     Pre-create .custom and .custom.fileToAccssnTaxID so that set_targets.sh
     skips the expensive nucl_accss (4.5 GB) download/lookup step.
-    """
-    print("\n📝 Creating CLARK metadata files...")
 
-    # .custom  — list of container-side paths to every .fna in Custom/
+    For NCBI-header files, the accession is extracted from the FASTA header.
+    For NODE-based files (SPAdes contigs), the file stem is used instead
+    (these files do not have real NCBI accessions).
+    """
+    print(f"\n📝 Writing CLARK metadata ({len(all_file_taxids):,} genomes) …")
+
+    # .custom  — list of container-side paths to every FASTA in Custom/
     custom_list = DB_DIR / ".custom"
     with open(custom_list, "w") as f:
-        for fasta in file_taxids:
+        for fasta in all_file_taxids:
             f.write(f"/db/Custom/{fasta.name}\n")
 
     # .custom.fileToAccssnTaxID  — filepath \t accession \t taxid
     accssn_file = DB_DIR / ".custom.fileToAccssnTaxID"
     with open(accssn_file, "w") as f:
-        for fasta, taxid in file_taxids.items():
-            accession = extract_accession_from_fasta(fasta) or "NA"
+        for fasta, taxid in all_file_taxids.items():
+            # Use real accession for NCBI-header files, stem for NODE-based
+            first_hdr = _first_header(fasta)
+            if first_hdr and _is_node_header(first_hdr.split()[0]):
+                accession = fasta.stem
+            else:
+                accession = extract_accession_from_fasta(fasta) or fasta.stem
             f.write(f"/db/Custom/{fasta.name}\t{accession}\t{taxid}\n")
 
-    print(f"   ✅ .custom ({len(file_taxids)} entries)")
-    print(f"   ✅ .custom.fileToAccssnTaxID")
+    print(f"   ✅ .custom ({len(all_file_taxids)} entries)")
+    print(f"   ✅ .custom.fileToAccssnTaxID written")
 
 
 # ---------------------------------------------------------------------------
 # Run set_targets.sh inside Docker
 # ---------------------------------------------------------------------------
 
-def build_clark_targets() -> None:
+def build_clark_targets(image: str) -> None:
     """
     Run set_targets.sh to produce targets.txt (and .settings inside the
     container — we don't need .settings because the Snakefile calls
     CLARK-l directly with -T).
     """
-    print("\n🔨 Running set_targets.sh to build targets.txt...")
+    print("\n🔨 Running set_targets.sh inside Docker …")
 
     db_abs = DB_DIR.resolve().as_posix()
 
@@ -255,7 +483,7 @@ def build_clark_targets() -> None:
         "docker", "run", "--rm",
         "-v", f"{db_abs}:/db",
         "-w", CLARK_DIR,
-        IMAGE,
+        image,
         "sh", "-c",
         "./set_targets.sh /db custom --species",
     ]
@@ -274,53 +502,42 @@ def build_clark_targets() -> None:
 # ---------------------------------------------------------------------------
 
 def main():
-    print("🧬 CLARK-l Custom Database Builder\n")
+    print("🧬 CLARK-l Universal Database Builder\n")
+
+    with open("config.yaml") as fh:
+        cfg = yaml.safe_load(fh)
+
+    image   = cfg["clark"]["image"]
+    sources = cfg.get("genome_sources", [])
+
+    if not sources:
+        print("❌ No genome_sources defined in config.yaml")
+        return
 
     ensure_directories()
 
-    fasta_files = list(DB_DIR.glob("*.fna"))
-    print(f"\n📁 Found {len(fasta_files)} FASTA files")
-    if not fasta_files:
-        print("❌ No .fna files found in clark_db/")
-        return
+    # Process each genome source
+    all_file_taxids: dict[Path, str] = {}
+    for source in sources:
+        file_taxids = process_source(source)
+        all_file_taxids.update(file_taxids)
 
-    # Collect taxids
-    print("\n🔍 Fetching taxonomy IDs for each file...")
-    file_taxids: dict[Path, str] = {}
-    for fasta in fasta_files:
-        print(f"  Processing {fasta.name}...")
-        organism = extract_organism_from_fasta(fasta)
-        if not organism:
-            print("    ⚠️  Could not extract organism name — skipping")
-            continue
-
-        accession = extract_accession_from_fasta(fasta)
-        taxid = fetch_taxid(organism, accession)
-        time.sleep(0.34)  # stay within NCBI rate limit (3 req/s without API key)
-
-        if taxid:
-            custom_fasta = copy_fasta_to_custom(fasta)
-            file_taxids[custom_fasta] = taxid
-            print(f"    ✅ {organism} → taxid {taxid}")
-        else:
-            print(f"    ❌ Could not find taxid for {organism} — skipping")
-
-    if not file_taxids:
-        print("\n❌ No valid taxonomy IDs found — cannot build database.")
+    if not all_file_taxids:
+        print("\n❌ No genomes with resolved taxids — cannot build database.")
         return
 
     # Download minimal taxonomy data (taxdump.tar.gz only, ~55 MB)
     download_taxonomy()
 
     # Pre-create CLARK metadata to bypass the 4.5 GB nucl_accss download
-    create_custom_metadata(file_taxids)
+    write_clark_metadata(all_file_taxids)
 
     # Run set_targets.sh to produce targets.txt
-    build_clark_targets()
+    build_clark_targets(image)
 
-    print("\n🎉 CLARK-l database ready!")
+    print(f"\n🎉 CLARK-l database ready!")
     print(f"   Location : {DB_DIR.resolve()}")
-    print(f"   Genomes  : {len(file_taxids)}")
+    print(f"   Genomes  : {len(all_file_taxids):,}")
     print()
     print("Next step: run  snakemake --cores 1  to classify your sample.")
 

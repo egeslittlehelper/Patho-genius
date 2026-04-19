@@ -18,9 +18,20 @@ import json
 from datetime import datetime
 
 # CLARK output CSVs can contain fields exceeding Python's default
-# csv.field_size_limit (131 072 bytes).  Raise the limit so csv.reader
-# never chokes on them.
-csv.field_size_limit(sys.maxsize)
+# csv.field_size_limit (131 072 bytes). Raise the limit so csv.reader
+# never chokes on them. On Windows, passing sys.maxsize can overflow
+# C long, so progressively reduce until accepted.
+def _set_max_csv_field_size_limit():
+    max_int = sys.maxsize
+    while True:
+        try:
+            csv.field_size_limit(max_int)
+            return
+        except OverflowError:
+            max_int = max_int // 10
+
+
+_set_max_csv_field_size_limit()
 
 configfile: "config.yaml"
 
@@ -43,6 +54,8 @@ JETSON_USER  = config.get("jetson_nano", {}).get("user", "")
 REMOTE_DB    = config.get("jetson_nano", {}).get("remote_db", "")
 REMOTE_WS    = config.get("jetson_nano", {}).get("remote_workspace", "")
 CUCLARK_DIR  = config.get("jetson_nano", {}).get("cuclark_dir", "")
+SSH_BATCH_MODE = bool(config.get("jetson_nano", {}).get("ssh_batch_mode", True))
+SSH_BATCH_OPT  = "yes" if SSH_BATCH_MODE else "no"
 SSH_TARGET   = f"{JETSON_USER}@{JETSON_HOST}" if JETSON_USER and JETSON_HOST else ""
 
 print(f"[Pathogenius] Engine: {ENGINE.upper()} | Sample: {SAMPLE}")
@@ -114,11 +127,12 @@ rule clark_lite_classify:
             # 0) Connectivity pre-check — fail fast with a clear message
             shell(
                 'echo [EDGE] Preparing remote workspace on Jetson Nano... && '
-                'ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 '
+                'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
                 '-o ServerAliveInterval=15 {params.ssh_target} '
                 '"mkdir -p {params.remote_ws}" '
                 '|| (echo "[EDGE] ERROR: Cannot reach Jetson Nano at {params.ssh_target}. '
-                'Check Tailscale VPN and SSH configuration." && exit 1)'
+                'Check Tailscale VPN and SSH configuration. '
+                'If you use password auth, set jetson_nano.ssh_batch_mode: false in config.yaml." && exit 1)'
             )
 
             # 1) Check if FASTQ already exists on the Nano (skip upload if so)
@@ -128,7 +142,7 @@ rule clark_lite_classify:
             try:
                 print(f"[EDGE] Checking if {_remote_fastq} exists on Jetson Nano...")
                 _check = _sp.run(
-                    ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "BatchMode=yes",
+                    ["ssh", "-o", "StrictHostKeyChecking=no", "-o", f"BatchMode={SSH_BATCH_OPT}",
                      "-o", "ConnectTimeout=10",
                      params.ssh_target, f"test -f {_remote_fastq} && echo EXISTS"],
                     capture_output=True, text=True, timeout=30
@@ -143,7 +157,7 @@ rule clark_lite_classify:
             if _need_upload:
                 shell(
                     'echo [EDGE] Uploading FASTQ to Jetson Nano... && '
-                    'scp -o StrictHostKeyChecking=no -o BatchMode=yes '
+                    'scp -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} '
                     '"{input.fastq}" '
                     '{params.ssh_target}:{params.remote_ws}/{params.sample}.fastq'
                 )
@@ -153,7 +167,7 @@ rule clark_lite_classify:
             # 3) Free GPU memory on the Nano (unified memory — page cache fills RAM)
             shell(
                 'echo [EDGE] Freeing GPU memory on Jetson Nano... && '
-                'ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 '
+                'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
                 '-o ServerAliveInterval=15 {params.ssh_target} '
                 '"sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null"'
             )
@@ -164,7 +178,7 @@ rule clark_lite_classify:
             #    and verify the output file exists instead.
             shell(
                 'echo [EDGE] Running CU-CLARK-L GPU classification on Jetson Nano... && '
-                'ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 '
+                'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
                 '-o ServerAliveInterval=15 {params.ssh_target} '
                 '"{params.cuclark}/exe/cuCLARK-l '
                 '-T {params.remote_db}/targets.txt '
@@ -178,7 +192,7 @@ rule clark_lite_classify:
             # Verify that cuCLARK-l actually produced output
             import subprocess as _sp2
             _verify = _sp2.run(
-                ["ssh", "-o", "StrictHostKeyChecking=no", "-o", "BatchMode=yes",
+                ["ssh", "-o", "StrictHostKeyChecking=no", "-o", f"BatchMode={SSH_BATCH_OPT}",
                  "-o", "ConnectTimeout=10",
                  params.ssh_target,
                  f"test -f {params.remote_ws}/{params.sample}.clark.csv"],
@@ -193,7 +207,7 @@ rule clark_lite_classify:
             # 4) Download classification CSV back
             shell(
                 'echo [EDGE] Downloading classification results from Jetson Nano... && '
-                'scp -o StrictHostKeyChecking=no -o BatchMode=yes '
+                'scp -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} '
                 '{params.ssh_target}:{params.remote_ws}/{params.sample}.clark.csv '
                 '"{params.results}/{params.sample}.clark.csv"'
             )
@@ -201,7 +215,7 @@ rule clark_lite_classify:
             # 5) Cleanup: remove FASTQ, .clark prefix, and .clark.csv from the Nano
             shell(
                 'echo [EDGE] Cleaning up remote files on Jetson Nano... && '
-                'ssh -o StrictHostKeyChecking=no -o BatchMode=yes -o ConnectTimeout=10 '
+                'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
                 '{params.ssh_target} '
                 '"rm -f {params.remote_ws}/{params.sample}.fastq '
                 '{params.remote_ws}/{params.sample}.clark '
@@ -268,10 +282,10 @@ rule clark_abundance_report:
             if not os.path.exists(names_path) or not os.path.exists(nodes_path):
                 shell(
                     'echo [EDGE] Downloading taxonomy data from Jetson Nano... && '
-                    'scp -o StrictHostKeyChecking=no -o BatchMode=yes '
+                    'scp -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} '
                     '{params.ssh_target}:{params.remote_db}/taxonomy/names.dmp '
                     '"{params.tax_cache}/names.dmp" && '
-                    'scp -o StrictHostKeyChecking=no -o BatchMode=yes '
+                    'scp -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} '
                     '{params.ssh_target}:{params.remote_db}/taxonomy/nodes.dmp '
                     '"{params.tax_cache}/nodes.dmp"'
                 )
