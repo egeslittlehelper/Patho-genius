@@ -1,5 +1,6 @@
 {
   "customDbPath": "C:\\Users\\egeni\\OneDrive\\Desktop\\Eges_Codes\\CS_491\\example data\\marmgCAMI2_genomes\\simulation_short_read\\genomes",
+  "customDbMapping": null,
   "customDbFiles": [
     {
       "name": "10_S10_contigs.fasta",
@@ -3911,5 +3912,6 @@
     }
   ],
   "totalSize": 2918250047,
-  "lastUpdated": "2026-04-19T22:29:43.970Z"
+  "lastUpdated": "2026-04-20T15:33:16.694Z",
+  "isBuilt": true
 }

@@ -7,6 +7,8 @@
 
 const fs = require('fs');
 const path = require('path');
+const yaml = require('js-yaml');
+const { spawn } = require('child_process');
 
 const REPO_ROOT = path.join(__dirname, '..', '..', '..', '..');
 const SETTINGS_FILE = path.join(REPO_ROOT, 'frontend', 'db-settings.json');
@@ -45,7 +47,7 @@ function loadSettings() {
     } catch (err) {
         console.error('Failed to read db-settings.json:', err.message);
     }
-    return { customDbPath: null, customDbFiles: [], lastUpdated: null };
+    return { customDbPath: null, customDbMapping: null, customDbFiles: [], lastUpdated: null, isBuilt: false };
 }
 
 /**
@@ -67,10 +69,10 @@ function getCustomDbPath() {
 }
 
 /**
- * Scan a folder for FASTA/FNA files and persist the path.
+ * Scan a folder for FASTA/FNA files and persist the path and mapping file.
  * Returns { success, path, files: [{ name, size }], totalSize }.
  */
-function setCustomDbPath(folderPath) {
+function setCustomDbPath(folderPath, mappingFile = null) {
     if (!fs.existsSync(folderPath)) {
         return { success: false, error: `Folder not found: ${folderPath}` };
     }
@@ -114,9 +116,11 @@ function setCustomDbPath(folderPath) {
 
     const settings = {
         customDbPath: folderPath,
+        customDbMapping: mappingFile,
         customDbFiles: fastaFiles,
         totalSize,
         lastUpdated: new Date().toISOString(),
+        isBuilt: false
     };
     saveSettings(settings);
 
@@ -132,7 +136,67 @@ function setCustomDbPath(folderPath) {
  * Clear the custom database path.
  */
 function clearCustomDb() {
-    saveSettings({ customDbPath: null, customDbFiles: [], lastUpdated: null });
+    saveSettings({ customDbPath: null, customDbMapping: null, customDbFiles: [], lastUpdated: null, isBuilt: false });
+}
+
+/**
+ * Update config.yaml with custom database folder and run build script.
+ */
+async function buildCustomDb(folderPath) {
+    return new Promise((resolve, reject) => {
+        try {
+            // Update config.yaml
+            const configPath = path.join(WORKFLOW_DIR, 'config.yaml');
+            let configContent = fs.readFileSync(configPath, 'utf8');
+            const doc = yaml.load(configContent);
+
+            const settings = loadSettings();
+            
+            const customSource = { path: folderPath };
+            if (settings.customDbMapping) {
+                customSource.reads_mapping = settings.customDbMapping;
+            }
+
+            // Ensure the genome_sources array contains both default and the new custom folder
+            doc.genome_sources = [
+                { path: "./clark_db" },
+                customSource
+            ];
+
+            // Write back to config.yaml
+            fs.writeFileSync(configPath, yaml.dump(doc));
+
+            console.log('Spawning build_clark_db.py...');
+            const pythonExec = process.platform === 'win32' ? 'python' : 'python3';
+            const buildProc = spawn(pythonExec, ['build_clark_db.py'], {
+                cwd: WORKFLOW_DIR,
+                stdio: ['ignore', 'pipe', 'pipe'] // capture stdout/stderr
+            });
+            
+            buildProc.stdout.on('data', (data) => {
+                console.log(`[build_clark_db] ${data.toString().trim()}`);
+            });
+            
+            buildProc.stderr.on('data', (data) => {
+                console.error(`[build_clark_db ERROR] ${data.toString().trim()}`);
+            });
+
+            buildProc.on('close', (code) => {
+                console.log(`build_clark_db.py exited with code ${code}`);
+                if (code === 0) {
+                    // Update settings isBuilt to true
+                    const settings = loadSettings();
+                    settings.isBuilt = true;
+                    saveSettings(settings);
+                    resolve({ success: true });
+                } else {
+                    reject(new Error(`Database build failed with exit code ${code}`));
+                }
+            });
+        } catch (e) {
+            reject(e);
+        }
+    });
 }
 
 /**
@@ -169,6 +233,7 @@ module.exports = {
     saveSettings,
     getCustomDbPath,
     setCustomDbPath,
+    buildCustomDb,
     clearCustomDb,
     getDefaultDbInfo,
     isFastaFile,

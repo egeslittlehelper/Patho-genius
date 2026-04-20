@@ -114,6 +114,17 @@ ipcMain.handle('app:select-folder', async () => {
     return canceled ? null : filePaths[0];
 });
 
+ipcMain.handle('app:select-mapping-file', async () => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+        properties: ['openFile'],
+        filters: [
+            { name: 'Reads Mapping Files', extensions: ['tsv', 'tsv.gz', 'txt', 'csv'] },
+            { name: 'All Files', extensions: ['*'] }
+        ]
+    });
+    return canceled ? null : filePaths[0];
+});
+
 /* IPC HANDLERS - Analysis (Snakemake) */
 
 ipcMain.handle('app:start-analysis', async (event, config) => {
@@ -245,8 +256,6 @@ ipcMain.handle('app:get-system-stats', async () => {
 /* IPC HANDLERS - Database Management */
 
 ipcMain.handle('app:get-database-info', async () => {
-    // Return database information
-    // TODO: Read actual database metadata when available
     const defaultDb = dbSettings.getDefaultDbInfo();
     const settings = dbSettings.loadSettings();
     return {
@@ -260,14 +269,23 @@ ipcMain.handle('app:get-database-info', async () => {
             files: settings.customDbFiles || [],
             totalSize: settings.totalSize || 0,
             lastUpdated: settings.lastUpdated,
+            isBuilt: settings.isBuilt || false,
         },
     };
 });
 
-ipcMain.handle('app:import-database', async (event, folderPath) => {
-    // TODO: Implement database import from FASTA files
-    console.log('Importing custom database from:', folderPath);
-    return dbSettings.setCustomDbPath(folderPath);
+ipcMain.handle('app:import-database', async (event, folderPath, mappingFile) => {
+    console.log('Importing custom database from:', folderPath, 'Mapping:', mappingFile);
+    const result = dbSettings.setCustomDbPath(folderPath, mappingFile);
+    if (!result.success) return result;
+    
+    try {
+        await dbSettings.buildCustomDb(folderPath);
+    } catch (error) {
+        return { success: false, error: 'Database build failed: ' + error.message };
+    }
+    
+    return result;
 });
 
 ipcMain.handle('app:clear-custom-db', async () => {
@@ -276,7 +294,6 @@ ipcMain.handle('app:clear-custom-db', async () => {
 });
 
 ipcMain.handle('app:check-database-updates', async () => {
-    // TODO: Check for database updates (would require network)
     return {
         hasUpdate: false,
         currentVersion: '2025.01',
@@ -286,19 +303,16 @@ ipcMain.handle('app:check-database-updates', async () => {
 
 ipcMain.handle('app:add-fasta', async (event, filePath, metadata) => {
     console.log('Adding FASTA:', filePath, metadata);
-    // TODO: Implement FASTA indexing with Kraken2
     return { success: true, message: 'FASTA file added to database' };
 });
 
 ipcMain.handle('app:remove-species', async (event, speciesId) => {
     console.log('Removing species:', speciesId);
-    // TODO: Implement species removal from database
     return { success: true, message: 'Species removed from database' };
 });
 
 ipcMain.handle('app:update-species', async (event, speciesId, metadata) => {
     console.log('Updating species:', speciesId, metadata);
-    // TODO: Implement species metadata update
     return { success: true, message: 'Species metadata updated' };
 });
 

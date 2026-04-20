@@ -43,7 +43,10 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke('app:select-files'),
         
         selectFolder: () => 
-            ipcRenderer.invoke('app:select-folder')
+            ipcRenderer.invoke('app:select-folder'),
+            
+        selectMappingFile: () => 
+            ipcRenderer.invoke('app:select-mapping-file')
     },
 
     /* ANALYSIS (Snakemake Workflow) */

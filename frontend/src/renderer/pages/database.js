@@ -146,10 +146,25 @@ const DatabasePage = {
                     }
                 }
             }
+            // Update custom DB status badge
+            const customStatusEl = document.getElementById('custom-db-status');
+            const customStatusText = document.getElementById('custom-db-status-text');
+            if (customStatusEl && customStatusText) {
+                customStatusEl.classList.remove('hidden');
+                if (info.customDb.isBuilt) {
+                    customStatusEl.className = 'status-badge status-active';
+                    customStatusText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:4px;"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Built';
+                } else {
+                    customStatusEl.className = 'status-badge status-pending';
+                    customStatusText.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;margin-right:4px;"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 16 14"></polyline></svg> Not Built';
+                }
+            }
         } else {
             // Show empty state
             if (emptyEl) emptyEl.classList.remove('hidden');
             if (infoEl) infoEl.classList.add('hidden');
+            const customStatusEl = document.getElementById('custom-db-status');
+            if (customStatusEl) customStatusEl.classList.add('hidden');
         }
     },
 
@@ -171,17 +186,34 @@ const DatabasePage = {
 
             console.log('Importing from:', folder);
             
+            let mappingFile = null;
+            if (confirm('Do these genomes contain contigs (e.g. from SPAdes) that require a reads mapping file to resolve Taxonomic IDs?\n\nClick OK to select a reads_mapping.tsv file, or Cancel to skip.')) {
+                if (window.api?.files?.selectMappingFile) {
+                    mappingFile = await window.api.files.selectMappingFile();
+                }
+            }
+            
+            const btn1 = document.getElementById('import-db-btn');
+            const btn2 = document.getElementById('change-db-btn');
+            const originalText1 = btn1 ? btn1.textContent : '';
+            const originalText2 = btn2 ? btn2.textContent : '';
+            if (btn1) { btn1.disabled = true; btn1.textContent = 'Building database... (this may take a few minutes)'; }
+            if (btn2) { btn2.disabled = true; btn2.textContent = 'Building...'; }
+            
             if (window.api?.database?.import) {
-                const result = await window.api.database.import(folder);
+                const result = await window.api.database.import(folder, mappingFile);
                 if (result.success) {
                     // Reload info to show the new files
                     await this.loadDatabaseInfo();
                 } else {
-                    alert('Import failed: ' + (result.error || 'Unknown error'));
+                    alert('Import/Build failed: ' + (result.error || 'Unknown error'));
                 }
             } else {
                 alert('Import feature requires Electron backend');
             }
+            
+            if (btn1) { btn1.disabled = false; btn1.textContent = originalText1; }
+            if (btn2) { btn2.disabled = false; btn2.textContent = originalText2; }
         } catch (error) {
             console.error('Import error:', error);
             alert('Failed to import database: ' + error.message);

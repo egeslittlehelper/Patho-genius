@@ -366,6 +366,21 @@ const AnalysisPage = {
             return;
         }
 
+        // Custom DB validation
+        if (this.config.database === 'custom') {
+            try {
+                if (window.api?.database?.getInfo) {
+                    const info = await window.api.database.getInfo();
+                    if (!info.customDb || !info.customDb.isBuilt) {
+                        alert('The custom database has not been correctly implemented or built. Please check the Database Management page.');
+                        return;
+                    }
+                }
+            } catch (error) {
+                console.error('Failed to validate custom DB:', error);
+            }
+        }
+
         console.log('Starting Snakemake analysis with config:', this.config);
         this.isAnalyzing = true;
 
