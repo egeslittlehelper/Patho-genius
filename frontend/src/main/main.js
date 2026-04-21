@@ -12,6 +12,7 @@ const si = require('systeminformation');
 const authService = require('./services/auth-service');
 const analysisService = require('./services/analysis-service');
 const encryptionService = require('./services/encryption-service');
+const llmService = require('./services/llm-service');
 
 // Global reference to main window
 let mainWindow = null;
@@ -48,7 +49,15 @@ function createWindow() {
 }
 
 // App lifecycle
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    createWindow();
+    // Auto-load the LLM model in the background
+    llmService.loadModel().then(status => {
+        if (status.loadError) {
+            console.error('LLM auto-load failed:', status.loadError);
+        }
+    });
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
@@ -427,6 +436,44 @@ ipcMain.handle('admin:delete-user', async (event, userId) => {
     console.log('Admin: Deleting user:', userId);
     // TODO: Implement actual user deletion
     return { success: true };
+});
+
+/* ============================================
+   IPC HANDLERS - LLM Service
+   ============================================ */
+
+ipcMain.handle('llm:get-status', () => {
+    return llmService.getStatus();
+});
+
+ipcMain.handle('llm:load-model', async () => {
+    return await llmService.loadModel();
+});
+
+ipcMain.handle('llm:chat', async (event, prompt) => {
+    try {
+        const response = await llmService.chat(prompt, (chunk) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('llm:token', chunk);
+            }
+        });
+        return { success: true, response };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('llm:generate-summary', async (event, resultData) => {
+    try {
+        const response = await llmService.generateSummary(resultData, (chunk) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('llm:token', chunk);
+            }
+        });
+        return { success: true, response };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
 });
 
 console.log(' Pathogenius Main Process Ready');
