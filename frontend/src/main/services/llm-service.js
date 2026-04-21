@@ -187,10 +187,11 @@ function buildPrompt(result) {
         `Total AMR genes: ${summary.amr_genes ?? 0}\n` +
         `Average read quality: Q${quality.average_quality ?? 'N/A'}\n\n` +
         `Detected pathogens:\n${pathogenLines}\n\n` +
-        `Provide a 2–3 paragraph clinical summary covering:\n` +
+        `Provide a 3–4 paragraph clinical summary covering:\n` +
         `1. Main findings and the most clinically significant pathogens.\n` +
         `2. Antimicrobial resistance (AMR) concerns based on detected genes.\n` +
         `3. Suggested clinical action or recommendation.\n` +
+        `4. A safety assessment paragraph stating whether this water sample appears safe for drinking, washing hands, and washing face, based on the detected pathogens and their risk levels. Be specific about each use case.\n` +
         `Keep the tone professional and concise.`
     );
 }
