@@ -493,6 +493,7 @@ function simulateWorkflow(analysisId) {
             clearInterval(analysis.mockTimer);
             analysis.mockTimer = null;
             analysis.results = generateMockResults(analysis.config);
+            // analysis.results = loadMockResultsFromFile(analysis.config);
             fs.writeFileSync(
                 path.join(analysis.outputDir, 'results.json'),
                 JSON.stringify(analysis.results, null, 2)
@@ -561,6 +562,31 @@ function completeAnalysis(analysisId, success, error = null) {
 
     console.log(`Analysis ${analysisId} ${success ? 'completed' : 'failed'} [engine=${analysis.config?.engine}]`);
 }
+
+/*
+function loadMockResultsFromFile(cfg) {
+    const mockPath =
+        process.env.PATHOGENIUS_MOCK_RESULT_PATH ||
+        path.join(ANALYSIS_CONFIG.RESULTS_DIR, 'mock-result.json');
+    
+    console.log("MOCK FILE USED:", mockPath);
+
+    if (!fs.existsSync(mockPath)) {
+        throw new Error(`Mock result file not found: ${mockPath}`);
+    }
+
+    const raw = fs.readFileSync(mockPath, 'utf-8');
+    const parsed = JSON.parse(raw);
+
+    console.log("MOCK JSON:", parsed);
+
+    return {
+        ...parsed,
+        analysis_name: parsed.analysis_name || cfg.analysis_name || 'Mock analysis',
+        sample_type: parsed.sample_type || cfg.sample_type || 'clinical',
+    };
+}
+*/
 
 function generateMockResults(cfg) {
     const classifier = cfg.engine === 'gpu' ? 'CU-CLARK-L (GPU)' : 'CLARK-l';

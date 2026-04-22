@@ -1,7 +1,22 @@
 /**
  * CHARTS.JS - Interactive Visualization Components
  * Purpose: Render interactive charts for analysis results
- * Charts: Sunburst, Sankey, Treemap with tooltips and hover effects
+ * Charts: Sunburst, Sankey, Treemap, Radar with tooltips and hover effects
+ *
+ * This version is aligned with backend results.json shape:
+ * {
+ *   analysis_name,
+ *   sample_type,
+ *   completed_at,
+ *   sample_id,
+ *   processed_date,
+ *   classifier,
+ *   summary: {...},
+ *   quality: {...},
+ *   pathogens: [...],
+ *   pathogens_detected: [...],
+ *   taxonomy: {...}
+ * }
  */
 
 const Charts = {
@@ -43,6 +58,10 @@ const Charts = {
         titleEl.textContent = title;
         contentEl.innerHTML = content;
         
+        this.tooltip.classList.add('visible');
+        this.tooltip.style.left = '0px';
+        this.tooltip.style.top = '0px';
+
         // Position tooltip
         const rect = this.tooltip.getBoundingClientRect();
         const offsetX = 15;
@@ -59,9 +78,8 @@ const Charts = {
             top = y - rect.height - offsetY;
         }
         
-        this.tooltip.style.left = `${left}px`;
-        this.tooltip.style.top = `${top}px`;
-        this.tooltip.classList.add('visible');
+        this.tooltip.style.left = `${Math.max(8, left)}px`;
+        this.tooltip.style.top = `${Math.max(8, top)}px`;
     },
 
     /**
@@ -73,29 +91,45 @@ const Charts = {
         }
     },
 
+    renderEmptyState(container, message = 'No data available') {
+        container.innerHTML = `
+            <div class="chart-empty-state" style="
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                min-height:240px;
+                color:#6B7280;
+                font-size:14px;
+                border:1px dashed #D1D5DB;
+                border-radius:12px;
+                background:#F9FAFB;
+            ">
+                ${message}
+            </div>
+        `;
+    },
+
     // ============================================
     // SUNBURST CHART
-    // Hierarchical taxonomy visualization
     // ============================================
-
-    /**
-     * Render sunburst chart
-     * @param {string} containerId - Container element ID
-     * @param {object} data - Hierarchical taxonomy data
-     */
     renderSunburst(containerId, data = null) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
         // Use mock data if not provided
         const chartData = data || this.getMockSunburstData();
+
+        if (!chartData || !chartData.children || chartData.children.length === 0) {
+            this.renderEmptyState(container, 'No taxonomy data available');
+            return;
+        }
         
         // Calculate dimensions
         const width = container.clientWidth || 400;
         const height = 400;
         const centerX = width / 2;
         const centerY = height / 2;
-        const maxRadius = Math.min(width, height) / 2 - 20;
+        const maxRadius = Math.min(width, height) / 2 - 10;
 
         // Create SVG
         container.innerHTML = `
@@ -118,38 +152,48 @@ const Charts = {
      */
     generateSunburstSegments(data, maxRadius, startAngle = 0, endAngle = 360, level = 0, parentColor = null) {
         const segments = [];
-        const innerRadius = level * (maxRadius / 3);
-        const outerRadius = (level + 1) * (maxRadius / 3);
+        const maxLevels = data.children?.some(c => Array.isArray(c.children) && c.children.length) ? 3 : 1;
+        const innerRadius = level * (maxRadius / maxLevels);
+        const outerRadius = (level + 1) * (maxRadius / maxLevels);
         
-        let currentAngle = startAngle;
-        const totalValue = data.children ? data.children.reduce((sum, c) => sum + c.value, 0) : data.value;
-
         const items = data.children || [data];
-        
+        const totalValue = Math.max(
+            0.0001,
+            items.reduce((sum, item) => sum + Number(item.value || 0), 0)
+        );
+
+        let currentAngle = startAngle;
+
         items.forEach((item, idx) => {
-            const angleSpan = (item.value / totalValue) * (endAngle - startAngle);
+            const itemValue = Number(item.value || 0);
+            if (itemValue <= 0) return;
+
+            const angleSpan = (itemValue / totalValue) * (endAngle - startAngle);
             const itemEndAngle = currentAngle + angleSpan;
             
             // Generate color
             const color = item.color || parentColor || this.getColorForIndex(idx, items.length);
-            const lighterColor = this.lightenColor(color, level * 15);
+            const lighterColor = this.lightenColor(color, level * 12);
             
             // Create arc path
             const path = this.describeArc(0, 0, innerRadius, outerRadius, currentAngle, itemEndAngle);
             
+            const tooltipContent = `
+                <div><strong>Value:</strong> ${this.formatPercent(itemValue)}</div>
+                ${item.reads != null ? `<div><strong>Reads:</strong> ${this.formatNumber(item.reads)}</div>` : ''}
+                ${item.confidence != null ? `<div><strong>Confidence:</strong> ${this.formatPercent(item.confidence)}</div>` : ''}
+            `.trim();
+
             segments.push(`
-                <path 
-                    d="${path}" 
+                <path
+                    d="${path}"
                     fill="${lighterColor}"
                     stroke="white"
                     stroke-width="2"
                     class="sunburst-segment"
-                    data-name="${item.name}"
-                    data-value="${item.value}"
-                    data-percentage="${((item.value / totalValue) * 100).toFixed(1)}"
-                    data-level="${level}"
-                    data-reads="${item.reads || 'N/A'}"
-                    data-confidence="${item.confidence || 'N/A'}"
+                    data-name="${this.escapeAttr(item.name)}"
+                    data-value="${itemValue}"
+                    data-tooltip="${this.escapeAttr(tooltipContent)}"
                 />
             `);
 
@@ -161,23 +205,23 @@ const Charts = {
                 const labelY = labelRadius * Math.sin((midAngle - 90) * Math.PI / 180);
                 
                 segments.push(`
-                    <text 
-                        x="${labelX}" 
-                        y="${labelY}" 
+                    <text
+                        x="${labelX}"
+                        y="${labelY}"
                         class="sunburst-label"
                         text-anchor="middle"
                         dominant-baseline="middle"
                         fill="${level === 0 ? 'white' : '#374151'}"
                         font-size="${level === 0 ? '12' : '10'}"
-                    >${item.name}</text>
+                    >${this.truncateLabel(item.name, 16)}</text>
                 `);
             }
 
             // Recurse for children
-            if (item.children && item.children.length > 0) {
-                segments.push(this.generateSunburstSegments(
-                    item, maxRadius, currentAngle, itemEndAngle, level + 1, color
-                ));
+            if (item.children && item.children.length > 0 && level < 2) {
+                segments.push(
+                    this.generateSunburstSegments(item, maxRadius, currentAngle, itemEndAngle, level + 1, color)
+                );
             }
 
             currentAngle = itemEndAngle;
@@ -194,7 +238,7 @@ const Charts = {
         return items.map((item, idx) => `
             <span class="legend-item">
                 <span class="legend-dot" style="background: ${item.color || this.getColorForIndex(idx, items.length)}"></span>
-                ${item.name} (${item.value}%)
+                ${item.name} (${this.formatPercent(item.value)})
             </span>
         `).join('');
     },
@@ -204,34 +248,32 @@ const Charts = {
      */
     attachSunburstEvents(container) {
         const segments = container.querySelectorAll('.sunburst-segment');
-        
+
         segments.forEach(segment => {
             segment.addEventListener('mouseenter', (e) => {
-                const name = segment.dataset.name;
-                const value = segment.dataset.percentage;
-                const reads = segment.dataset.reads;
-                const confidence = segment.dataset.confidence;
-                
-                segment.style.opacity = '0.8';
-                segment.style.transform = 'scale(1.02)';
-                
-                this.showTooltip(e.pageX, e.pageY, name, `
-                    <div><strong>Abundance:</strong> ${value}%</div>
-                    ${reads !== 'N/A' ? `<div><strong>Reads:</strong> ${reads}</div>` : ''}
-                    ${confidence !== 'N/A' ? `<div><strong>Confidence:</strong> ${confidence}%</div>` : ''}
-                `);
-            });
-            
-            segment.addEventListener('mousemove', (e) => {
-                this.showTooltip(e.pageX, e.pageY, 
-                    segment.dataset.name, 
-                    this.tooltip.querySelector('.tooltip-content').innerHTML
+                segment.style.opacity = '0.85';
+                segment.style.strokeWidth = '3';
+
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    segment.dataset.name || 'Taxonomy',
+                    this.unescapeAttr(segment.dataset.tooltip || '')
                 );
             });
-            
+
+            segment.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    segment.dataset.name || 'Taxonomy',
+                    this.unescapeAttr(segment.dataset.tooltip || '')
+                );
+            });
+
             segment.addEventListener('mouseleave', () => {
                 segment.style.opacity = '1';
-                segment.style.transform = 'scale(1)';
+                segment.style.strokeWidth = '2';
                 this.hideTooltip();
             });
         });
@@ -239,20 +281,18 @@ const Charts = {
 
     // ============================================
     // SANKEY DIAGRAM
-    // Flow visualization for read classification
     // ============================================
-
-    /**
-     * Render sankey diagram
-     * @param {string} containerId - Container element ID
-     * @param {object} data - Flow data with nodes and links
-     */
     renderSankey(containerId, data = null) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
         const chartData = data || this.getMockSankeyData();
         
+        if (!chartData || !Array.isArray(chartData.nodes) || chartData.nodes.length === 0) {
+            this.renderEmptyState(container, 'No flow data available');
+            return;
+        }
+
         const width = container.clientWidth || 600;
         const height = 400;
         const nodeWidth = 20;
@@ -287,49 +327,54 @@ const Charts = {
         // Group nodes by column
         data.nodes.forEach(node => {
             if (!columns[node.column]) columns[node.column] = [];
-            columns[node.column].push(node);
+            columns[node.column].push({ ...node });
         });
 
-        const columnCount = Object.keys(columns).length;
-        const columnWidth = (width - nodeWidth) / (columnCount - 1);
+        const columnKeys = Object.keys(columns).map(Number).sort((a, b) => a - b);
+        const columnCount = Math.max(1, columnKeys.length);
+        const columnWidth = columnCount > 1 ? (width - nodeWidth) / (columnCount - 1) : 0;
 
         // Position nodes
-        Object.entries(columns).forEach(([col, nodes]) => {
-            const colIdx = parseInt(col);
-            const totalValue = nodes.reduce((sum, n) => sum + n.value, 0);
+        columnKeys.forEach(col => {
+            const nodes = columns[col];
+            const totalValue = Math.max(1, nodes.reduce((sum, n) => sum + Number(n.value || 0), 0));
             const availableHeight = height - (nodes.length - 1) * nodePadding;
-            
+
             let y = 0;
             nodes.forEach(node => {
-                node.x = colIdx * columnWidth;
-                node.height = (node.value / totalValue) * availableHeight;
+                node.x = col * columnWidth;
+                node.height = Math.max(16, (Number(node.value || 0) / totalValue) * availableHeight);
                 node.y = y;
                 y += node.height + nodePadding;
             });
         });
 
         // Create node map for quick lookup
+        const flatNodes = columnKeys.flatMap(col => columns[col]);
         const nodeMap = {};
-        data.nodes.forEach(n => nodeMap[n.id] = n);
+        flatNodes.forEach(n => { nodeMap[n.id] = n; });
 
         // Calculate link paths
-        const links = data.links.map(link => {
-            const source = nodeMap[link.source];
-            const target = nodeMap[link.target];
-            
-            return {
-                ...link,
-                sourceX: source.x + nodeWidth,
-                sourceY: source.y + source.height / 2,
-                targetX: target.x,
-                targetY: target.y + target.height / 2,
-                sourceNode: source,
-                targetNode: target,
-                thickness: Math.max(2, (link.value / source.value) * source.height)
-            };
-        });
+        const links = (data.links || [])
+            .map(link => {
+                const source = nodeMap[link.source];
+                const target = nodeMap[link.target];
+                if (!source || !target) return null;
 
-        return { nodes: data.nodes, links };
+                return {
+                    ...link,
+                    sourceX: source.x + nodeWidth,
+                    sourceY: source.y + source.height / 2,
+                    targetX: target.x,
+                    targetY: target.y + target.height / 2,
+                    sourceNode: source,
+                    targetNode: target,
+                    thickness: Math.max(2, (Number(link.value || 0) / Math.max(1, Number(source.value || 0))) * source.height)
+                };
+            })
+            .filter(Boolean);
+
+        return { nodes: flatNodes, links };
     },
 
     /**
@@ -349,26 +394,25 @@ const Charts = {
      */
     generateSankeyLinks(links) {
         return links.map((link, idx) => {
-            const curvature = 0.5;
             const x0 = link.sourceX;
             const x1 = link.targetX;
-            const xi = (x0 + x1) * curvature;
-            const x2 = xi;
-            const x3 = xi;
-            
-            const path = `M${x0},${link.sourceY} C${x2},${link.sourceY} ${x3},${link.targetY} ${x1},${link.targetY}`;
-            
+            const xi = x0 + (x1 - x0) * 0.5;
+            const path = `M${x0},${link.sourceY} C${xi},${link.sourceY} ${xi},${link.targetY} ${x1},${link.targetY}`;
+
+            const tooltipContent = `
+                <div><strong>Flow:</strong> ${this.formatNumber(link.value)} reads</div>
+                ${link.label ? `<div>${link.label}</div>` : ''}
+            `.trim();
+
             return `
-                <path 
+                <path
                     d="${path}"
                     fill="none"
                     stroke="url(#link-gradient-${idx})"
                     stroke-width="${link.thickness}"
                     class="sankey-link"
-                    data-source="${link.sourceNode.name}"
-                    data-target="${link.targetNode.name}"
-                    data-value="${link.value}"
-                    data-label="${link.label || ''}"
+                    data-title="${this.escapeAttr(`${link.sourceNode.name} → ${link.targetNode.name}`)}"
+                    data-tooltip="${this.escapeAttr(tooltipContent)}"
                 />
             `;
         }).join('');
@@ -378,64 +422,84 @@ const Charts = {
      * Generate sankey nodes
      */
     generateSankeyNodes(nodes, nodeWidth) {
-        return nodes.map(node => `
-            <g class="sankey-node" data-name="${node.name}" data-value="${node.value}" data-info="${node.info || ''}">
-                <rect 
-                    x="${node.x}" 
-                    y="${node.y}" 
-                    width="${nodeWidth}" 
-                    height="${node.height}"
-                    fill="${node.color}"
-                    rx="2"
-                />
-                <text 
-                    x="${node.column === 0 ? node.x - 5 : node.x + nodeWidth + 5}" 
-                    y="${node.y + node.height / 2}"
-                    text-anchor="${node.column === 0 ? 'end' : 'start'}"
-                    dominant-baseline="middle"
-                    class="sankey-label"
-                    fill="#374151"
-                    font-size="11"
-                >${node.name}</text>
-            </g>
-        `).join('');
+        return nodes.map(node => {
+            const tooltipContent = `
+                <div><strong>Value:</strong> ${this.formatNumber(node.value)}</div>
+                ${node.info ? `<div>${node.info}</div>` : ''}
+            `.trim();
+
+            return `
+                <g class="sankey-node"
+                   data-name="${this.escapeAttr(node.name)}"
+                   data-tooltip="${this.escapeAttr(tooltipContent)}">
+                    <rect
+                        x="${node.x}"
+                        y="${node.y}"
+                        width="${nodeWidth}"
+                        height="${node.height}"
+                        fill="${node.color}"
+                        rx="2"
+                    />
+                    <text
+                        x="${node.column === 0 ? node.x - 5 : node.x + nodeWidth + 5}"
+                        y="${node.y + node.height / 2}"
+                        text-anchor="${node.column === 0 ? 'end' : 'start'}"
+                        dominant-baseline="middle"
+                        class="sankey-label"
+                        fill="#374151"
+                        font-size="11"
+                    >${this.truncateLabel(node.name, 28)}</text>
+                </g>
+            `;
+        }).join('');
     },
 
     /**
      * Attach sankey event listeners
      */
     attachSankeyEvents(container) {
-        // Node events
         container.querySelectorAll('.sankey-node').forEach(node => {
             node.addEventListener('mouseenter', (e) => {
-                const name = node.dataset.name;
-                const value = node.dataset.value;
-                const info = node.dataset.info;
-                
-                this.showTooltip(e.pageX, e.pageY, name, `
-                    <div><strong>Value:</strong> ${this.formatNumber(value)}</div>
-                    ${info ? `<div>${info}</div>` : ''}
-                `);
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    node.dataset.name || 'Node',
+                    this.unescapeAttr(node.dataset.tooltip || '')
+                );
             });
-            
+
+            node.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    node.dataset.name || 'Node',
+                    this.unescapeAttr(node.dataset.tooltip || '')
+                );
+            });
+
             node.addEventListener('mouseleave', () => this.hideTooltip());
         });
 
-        // Link events
         container.querySelectorAll('.sankey-link').forEach(link => {
             link.addEventListener('mouseenter', (e) => {
-                link.style.strokeOpacity = '0.8';
-                const source = link.dataset.source;
-                const target = link.dataset.target;
-                const value = link.dataset.value;
-                const label = link.dataset.label;
-                
-                this.showTooltip(e.pageX, e.pageY, `${source} → ${target}`, `
-                    <div><strong>Flow:</strong> ${this.formatNumber(value)} reads</div>
-                    ${label ? `<div>${label}</div>` : ''}
-                `);
+                link.style.strokeOpacity = '0.85';
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(link.dataset.title || 'Flow'),
+                    this.unescapeAttr(link.dataset.tooltip || '')
+                );
             });
-            
+
+            link.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(link.dataset.title || 'Flow'),
+                    this.unescapeAttr(link.dataset.tooltip || '')
+                );
+            });
+
             link.addEventListener('mouseleave', () => {
                 link.style.strokeOpacity = '0.5';
                 this.hideTooltip();
@@ -445,28 +509,27 @@ const Charts = {
 
     // ============================================
     // ABUNDANCE TREEMAP
-    // Proportional species visualization
     // ============================================
-
-    /**
-     * Render treemap
-     * @param {string} containerId - Container element ID
-     * @param {object} data - Treemap data array
-     */
     renderTreemap(containerId, data = null) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
         const chartData = data || this.getMockTreemapData();
-        const width = container.clientWidth || 600;
-        const height = 400;
 
-        // Calculate treemap layout
+        if (!Array.isArray(chartData) || chartData.length === 0) {
+            this.renderEmptyState(container, 'No pathogen abundance data available');
+            return;
+        }
+
+        const width = Math.min(container.clientWidth || 1000, 900);
+        const height = 400;
         const layout = this.calculateTreemapLayout(chartData, 0, 0, width, height);
 
         container.innerHTML = `
-            <div class="treemap-chart" style="width: ${width}px; height: ${height}px; position: relative;">
-                ${this.generateTreemapCells(layout)}
+            <div style="display:flex; justify-content:center; width:100%;">
+                <div class="treemap-chart" style="width:${width}px; height:${height}px; position:relative;">
+                    ${this.generateTreemapCells(layout)}
+                </div>
             </div>
         `;
 
@@ -477,7 +540,7 @@ const Charts = {
      * Calculate treemap layout using squarified algorithm
      */
     calculateTreemapLayout(data, x, y, width, height) {
-        const total = data.reduce((sum, d) => sum + d.value, 0);
+        const total = Math.max(0.0001, data.reduce((sum, d) => sum + Number(d.value || 0), 0));
         const cells = [];
         
         let currentX = x;
@@ -487,26 +550,19 @@ const Charts = {
         let isHorizontal = width >= height;
 
         // Sort by value descending
-        const sorted = [...data].sort((a, b) => b.value - a.value);
+        const sorted = [...data].sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
 
         sorted.forEach((item, idx) => {
-            const ratio = item.value / total;
-            let cellWidth, cellHeight;
+            const ratio = Number(item.value || 0) / total;
+            let cellWidth;
+            let cellHeight;
 
             if (isHorizontal) {
-                cellWidth = remainingWidth * ratio * (width / remainingWidth);
+                cellWidth = idx === sorted.length - 1 ? remainingWidth : remainingWidth * ratio * (width / Math.max(1, remainingWidth));
                 cellHeight = remainingHeight;
-                
-                if (idx === sorted.length - 1) {
-                    cellWidth = remainingWidth;
-                }
             } else {
                 cellWidth = remainingWidth;
-                cellHeight = remainingHeight * ratio * (height / remainingHeight);
-                
-                if (idx === sorted.length - 1) {
-                    cellHeight = remainingHeight;
-                }
+                cellHeight = idx === sorted.length - 1 ? remainingHeight : remainingHeight * ratio * (height / Math.max(1, remainingHeight));
             }
 
             cells.push({
@@ -540,31 +596,50 @@ const Charts = {
      */
     generateTreemapCells(cells) {
         return cells.map(cell => {
-            const showLabel = cell.width > 60 && cell.height > 40;
-            const showValue = cell.width > 80 && cell.height > 60;
-            const showConfidence = cell.width > 100 && cell.height > 80 && cell.confidence;
-            
+            const showLabel = cell.width > 90 && cell.height > 50;
+            const showValue = cell.width > 110 && cell.height > 65;
+            const showConfidence = cell.width > 130 && cell.height > 85 && cell.confidence != null;
+
+            const tooltipContent = `
+                <div class="tooltip-row"><strong>Relative Abundance:</strong> ${this.formatPercent(cell.value)}</div>
+                ${cell.reads != null ? `<div class="tooltip-row"><strong>Read Count:</strong> ${this.formatNumber(cell.reads)}</div>` : ''}
+                ${cell.confidence != null ? `<div class="tooltip-row"><strong>Confidence Score:</strong> <span class="confidence-highlight">${this.formatPercent(cell.confidence)}</span></div>` : ''}
+                ${cell.risk && cell.risk !== 'Unknown' ? `
+                    <div class="tooltip-row">
+                        <strong>Risk Level:</strong>
+                        <span style="
+                            font-weight:600;
+                            color:${
+                                cell.risk.toLowerCase() === 'high'
+                                    ? '#dc2626'
+                                    : cell.risk.toLowerCase() === 'medium'
+                                    ? '#f59e0b'
+                                    : '#16a34a'
+                            };
+                        ">
+                            ${cell.risk}
+                        </span>
+                    </div>` : ''}
+                ${cell.amrGenes != null ? `<div class="tooltip-row"><strong>AMR Genes:</strong> ${cell.amrGenes}</div>` : ''}
+                ${cell.virulenceFactors != null ? `<div class="tooltip-row"><strong>Virulence Factors:</strong> ${cell.virulenceFactors}</div>` : ''}
+            `.trim();
+
             return `
-                <div 
+                <div
                     class="treemap-cell"
                     style="
-                        left: ${cell.x}px;
-                        top: ${cell.y}px;
-                        width: ${cell.width}px;
-                        height: ${cell.height}px;
-                        background-color: ${cell.color};
+                        left:${cell.x}px;
+                        top:${cell.y}px;
+                        width:${cell.width}px;
+                        height:${cell.height}px;
+                        background-color:${cell.color};
                     "
-                    data-name="${cell.name}"
-                    data-value="${cell.value}"
-                    data-reads="${cell.reads || 'N/A'}"
-                    data-confidence="${cell.confidence || 'N/A'}"
-                    data-risk="${cell.risk || 'N/A'}"
-                    data-amr="${cell.amrGenes ?? 'N/A'}"
-                    data-virulence="${cell.virulenceFactors ?? 'N/A'}"
+                    data-name="${this.escapeAttr(cell.name)}"
+                    data-tooltip="${this.escapeAttr(tooltipContent)}"
                 >
-                    ${showLabel ? `<span class="treemap-cell-label">${cell.name}</span>` : ''}
-                    ${showValue ? `<span class="treemap-cell-value">${cell.value}%</span>` : ''}
-                    ${showConfidence ? `<span class="treemap-cell-confidence">${cell.confidence}% conf.</span>` : ''}
+                    ${showLabel ? `<span class="treemap-cell-label">${this.truncateLabel(cell.name, 28)}</span>` : ''}
+                    ${showValue ? `<span class="treemap-cell-value">${this.formatPercent(cell.value)}</span>` : ''}
+                    ${showConfidence ? `<span class="treemap-cell-confidence">${this.formatPercent(cell.confidence)} conf.</span>` : ''}
                 </div>
             `;
         }).join('');
@@ -579,36 +654,24 @@ const Charts = {
                 cell.style.transform = 'scale(1.02)';
                 cell.style.zIndex = '10';
                 cell.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
-                
-                const name = cell.dataset.name;
-                const value = cell.dataset.value;
-                const reads = cell.dataset.reads;
-                const confidence = cell.dataset.confidence;
-                const risk = cell.dataset.risk;
-                const amr = cell.dataset.amr;
-                const virulence = cell.dataset.virulence;
-                
-                let riskClass = 'low';
-                if (risk === 'High') riskClass = 'high';
-                else if (risk === 'Medium') riskClass = 'medium';
-                
-                this.showTooltip(e.pageX, e.pageY, name, `
-                    <div class="tooltip-row"><strong>Relative Abundance:</strong> ${value}%</div>
-                    ${reads !== 'N/A' ? `<div class="tooltip-row"><strong>Read Count:</strong> ${this.formatNumber(reads)}</div>` : ''}
-                    ${confidence !== 'N/A' ? `<div class="tooltip-row"><strong>Confidence Score:</strong> <span class="confidence-highlight">${confidence}%</span></div>` : ''}
-                    ${risk !== 'N/A' && risk !== 'Unknown' ? `<div class="tooltip-row"><strong>Risk Level:</strong> <span class="risk-badge-sm risk-${riskClass}">${risk}</span></div>` : ''}
-                    ${amr !== 'N/A' && amr !== 'null' ? `<div class="tooltip-row"><strong>AMR Genes:</strong> ${amr}</div>` : ''}
-                    ${virulence !== 'N/A' && virulence !== 'null' ? `<div class="tooltip-row"><strong>Virulence Factors:</strong> ${virulence}</div>` : ''}
-                `);
-            });
-            
-            cell.addEventListener('mousemove', (e) => {
-                this.showTooltip(e.pageX, e.pageY, 
-                    cell.dataset.name, 
-                    this.tooltip.querySelector('.tooltip-content').innerHTML
+
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(cell.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(cell.dataset.tooltip || '')
                 );
             });
-            
+
+            cell.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(cell.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(cell.dataset.tooltip || '')
+                );
+            });
+
             cell.addEventListener('mouseleave', () => {
                 cell.style.transform = 'scale(1)';
                 cell.style.zIndex = '1';
@@ -620,29 +683,29 @@ const Charts = {
 
     // ============================================
     // RADAR CHART
-    // Multi-dimensional pathogen comparison
     // ============================================
-
-    /**
-     * Render radar chart for pathogen comparison
-     * @param {string} containerId - Container element ID
-     * @param {object} data - Radar chart data with pathogens and metrics
-     */
     renderRadar(containerId, data = null) {
         const container = document.getElementById(containerId);
         if (!container) return;
 
         const chartData = data || this.getMockRadarData();
+
+        if (!chartData || !Array.isArray(chartData.pathogens) || chartData.pathogens.length === 0) {
+            this.renderEmptyState(container, 'No pathogen comparison data available');
+            return;
+        }
+
+        // console.log('RENDER RADAR DATA:', chartData);
+        // console.log('RENDER RADAR COUNT:', chartData?.pathogens?.length);
+
         const width = container.clientWidth || 400;
         const height = 400;
         const centerX = width / 2;
         const centerY = height / 2;
         const maxRadius = Math.min(width, height) / 2 - 40;
 
-        // Calculate radar axes
+        // Calculate radar axes 
         const axes = chartData.axes || ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'];
-        const numAxes = axes.length;
-        const angleStep = (Math.PI * 2) / numAxes;
 
         container.innerHTML = `
             <svg width="${width}" height="${height}" class="radar-chart">
@@ -667,6 +730,11 @@ const Charts = {
         const angleStep = (Math.PI * 2) / numAxes;
         let axesHtml = '';
 
+        for (let i = 1; i <= 4; i++) {
+            const radius = (maxRadius * i) / 4;
+            axesHtml += `<circle cx="0" cy="0" r="${radius}" fill="none" stroke="#F3F4F6" stroke-width="1" opacity="0.5"/>`;
+        }
+
         // Draw axes lines and labels
         axes.forEach((axis, index) => {
             const angle = index * angleStep - Math.PI / 2; // Start from top
@@ -680,8 +748,8 @@ const Charts = {
             const labelRadius = maxRadius + 20;
             const labelX = Math.cos(angle) * labelRadius;
             const labelY = Math.sin(angle) * labelRadius;
-            const textAnchor = labelX > 0 ? 'start' : 'end';
-            const dominantBaseline = labelY > 0 ? 'hanging' : 'baseline';
+            const textAnchor = labelX > 8 ? 'start' : (labelX < -8 ? 'end' : 'middle');
+            const dominantBaseline = labelY > 8 ? 'hanging' : (labelY < -8 ? 'baseline' : 'middle');
 
             axesHtml += `
                 <text x="${labelX}" y="${labelY}"
@@ -691,12 +759,6 @@ const Charts = {
                       fill="#374151"
                       font-size="12">${axis}</text>
             `;
-
-            // Grid circles
-            for (let i = 1; i <= 4; i++) {
-                const radius = (maxRadius * i) / 4;
-                axesHtml += `<circle cx="0" cy="0" r="${radius}" fill="none" stroke="#F3F4F6" stroke-width="1" opacity="0.5"/>`;
-            }
         });
 
         return axesHtml;
@@ -710,7 +772,7 @@ const Charts = {
 
         pathogens.forEach((pathogen, index) => {
             const points = axes.map((axis, axisIndex) => {
-                const value = pathogen.metrics[axis] || 0;
+                const value = Number(pathogen.metrics?.[axis] || 0);
                 const normalizedValue = this.normalizeRadarValue(value, axis);
                 const angle = axisIndex * (Math.PI * 2) / axes.length - Math.PI / 2;
                 const radius = normalizedValue * maxRadius;
@@ -719,6 +781,10 @@ const Charts = {
                 return `${x},${y}`;
             }).join(' ');
 
+            const tooltipContent = Object.entries(pathogen.metrics || {})
+                .map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`)
+                .join('');
+
             dataHtml += `
                 <polygon points="${points}"
                          fill="${pathogen.color}"
@@ -726,8 +792,8 @@ const Charts = {
                          stroke="${pathogen.color}"
                          stroke-width="2"
                          class="radar-polygon"
-                         data-name="${pathogen.name}"
-                         data-metrics="${JSON.stringify(pathogen.metrics).replace(/"/g, '&quot;')}"/>
+                         data-name="${this.escapeAttr(pathogen.name)}"
+                         data-tooltip="${this.escapeAttr(tooltipContent)}"/>
             `;
         });
 
@@ -740,7 +806,7 @@ const Charts = {
     generateRadarLegend(pathogens) {
         return pathogens.map(pathogen => `
             <span class="legend-item">
-                <span class="legend-dot" style="background: ${pathogen.color}"></span>
+                <span class="legend-dot" style="background:${pathogen.color}"></span>
                 ${pathogen.name}
             </span>
         `).join('');
@@ -752,24 +818,23 @@ const Charts = {
     attachRadarEvents(container) {
         container.querySelectorAll('.radar-polygon').forEach(polygon => {
             polygon.addEventListener('mouseenter', (e) => {
-                const name = polygon.dataset.name;
-                const metrics = JSON.parse(polygon.dataset.metrics.replace(/&quot;/g, '"'));
-
                 polygon.style.strokeWidth = '3';
                 polygon.style.fillOpacity = '0.2';
 
-                let tooltipContent = '';
-                Object.entries(metrics).forEach(([key, value]) => {
-                    tooltipContent += `<div><strong>${key}:</strong> ${value}</div>`;
-                });
-
-                this.showTooltip(e.pageX, e.pageY, name, tooltipContent);
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(polygon.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(polygon.dataset.tooltip || '')
+                );
             });
 
             polygon.addEventListener('mousemove', (e) => {
-                this.showTooltip(e.pageX, e.pageY,
-                    polygon.dataset.name,
-                    this.tooltip.querySelector('.tooltip-content').innerHTML
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(polygon.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(polygon.dataset.tooltip || '')
                 );
             });
 
@@ -787,15 +852,15 @@ const Charts = {
     normalizeRadarValue(value, axis) {
         // Define max values for each axis
         const maxValues = {
-            'Abundance': 100,
-            'Confidence': 100,
-            'Virulence': 20,
-            'AMR': 10,
-            'Risk': 10
+            Abundance: 100,
+            Confidence: 100,
+            Virulence: 20,
+            AMR: 10,
+            Risk: 10
         };
 
         const max = maxValues[axis] || 100;
-        return Math.min(value / max, 1);
+        return Math.min(Number(value || 0) / max, 1);
     },
 
     // ============================================
@@ -810,9 +875,9 @@ const Charts = {
         const end1 = this.polarToCartesian(x, y, outerRadius, startAngle);
         const start2 = this.polarToCartesian(x, y, innerRadius, endAngle);
         const end2 = this.polarToCartesian(x, y, innerRadius, startAngle);
-        
+
         const largeArcFlag = endAngle - startAngle <= 180 ? '0' : '1';
-        
+
         return [
             'M', start1.x, start1.y,
             'A', outerRadius, outerRadius, 0, largeArcFlag, 0, end1.x, end1.y,
@@ -836,7 +901,7 @@ const Charts = {
     /**
      * Get color for index
      */
-    getColorForIndex(index, total) {
+    getColorForIndex(index) {
         const colors = [
             '#008080', '#006666', '#10B981', '#059669', '#0EA5E9',
             '#6366F1', '#8B5CF6', '#EC4899', '#F59E0B', '#EF4444'
@@ -861,10 +926,265 @@ const Charts = {
      */
     formatNumber(num) {
         const n = parseFloat(num);
-        if (isNaN(n)) return num;
+        if (isNaN(n)) return String(num);
         if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
         if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
         return n.toLocaleString();
+    },
+
+    /**
+     * Format percentage values
+     */
+    formatPercent(value) {
+        const n = Number(value);
+        if (Number.isNaN(n)) return 'N/A';
+        return `${n}%`;
+    },
+
+    /**
+     * Truncate label with ellipsis
+     */
+    normalizeRiskLevel(risk) {
+        const value = String(risk || '').toLowerCase();
+        if (value === 'high') return 'High';
+        if (value === 'medium') return 'Medium';
+        if (value === 'low') return 'Low';
+        return 'Unknown';
+    },
+
+    /**
+     * Convert risk level to numerical score
+     */
+    riskToScore(risk) {
+        const normalized = this.normalizeRiskLevel(risk);
+        switch (normalized) {
+            case 'High': return 9;
+            case 'Medium': return 6;
+            case 'Low': return 3;
+            default: return 0;
+        }
+    },
+
+    /**
+     * Convert text to title case
+     */
+    toTitleCase(text) {
+        return String(text || '')
+            .replace(/[_-]/g, ' ')
+            .replace(/\b\w/g, ch => ch.toUpperCase());
+    },
+
+    /**
+     * Truncate label with ellipsis
+     */
+    truncateLabel(text, maxLength = 20) {
+        const value = String(text || '');
+        return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+    },
+
+    /**
+     * Escape HTML attributes
+     */
+    escapeAttr(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    },
+
+    unescapeAttr(value) {
+        return String(value ?? '')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&');
+    },
+
+    // ============================================
+    // REAL DATA TRANSFORMERS
+    // ============================================
+    transformApiData(apiResponse, chartType) {
+        if (!apiResponse) {
+            return this.getFallbackChartData(chartType);
+        }
+
+        switch (chartType) {
+            case 'sunburst':
+                return this.transformSunburstData(apiResponse);
+            case 'sankey':
+                return this.transformSankeyData(apiResponse);
+            case 'treemap':
+                return this.transformTreemapData(apiResponse);
+            case 'radar':
+                return this.transformRadarData(apiResponse);
+            default:
+                return null;
+        }
+    },
+
+    getFallbackChartData(chartType) {
+        switch (chartType) {
+            case 'sunburst':
+                return this.getMockSunburstData();
+            case 'sankey':
+                return this.getMockSankeyData();
+            case 'treemap':
+                return this.getMockTreemapData();
+            case 'radar':
+                return this.getMockRadarData();
+            default:
+                return null;
+        }
+    },
+
+    transformTreemapData(apiResponse) {
+        const pathogens = apiResponse?.pathogens || [];
+        if (!Array.isArray(pathogens) || pathogens.length === 0) {
+            return this.getMockTreemapData();
+        }
+
+        return pathogens.map((p, idx, arr) => ({
+            name: p.name || 'Unknown',
+            value: Number(p.abundance || 0),
+            reads: Number(p.reads || 0),
+            confidence: p.confidence ?? null,
+            risk: this.normalizeRiskLevel(p.risk_level),
+            color: this.getColorForIndex(idx, arr.length),
+            amrGenes: p.amr_genes ?? 0,
+            virulenceFactors: p.virulence_genes ?? 0
+        }));
+    },
+
+    transformRadarData(apiResponse) {
+        const pathogens = (apiResponse?.pathogens || [])
+            .slice()
+            .sort((a, b) => Number(b.abundance || 0) - Number(a.abundance || 0))
+            .slice(0, 5);
+
+        console.log('RADAR INPUT:', apiResponse?.pathogens);
+
+        if (!pathogens.length) {
+            return this.getMockRadarData();
+        }
+
+        return {
+            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
+            pathogens: pathogens.map((p, idx) => ({
+                name: p.name || 'Unknown',
+                color: this.getColorForIndex(idx, pathogens.length),
+                metrics: {
+                    Abundance: Number(p.abundance || 0),
+                    Confidence: Number(p.confidence || 0),
+                    Virulence: Number(p.virulence_genes || 0),
+                    AMR: Number(p.amr_genes || 0),
+                    Risk: this.riskToScore(p.risk_level)
+                }
+            }))
+        };
+    },
+
+    transformSunburstData(apiResponse) {
+        const taxonomy = apiResponse?.taxonomy;
+        if (!taxonomy || typeof taxonomy !== 'object') {
+            return this.getMockSunburstData();
+        }
+
+        const entries = Object.entries(taxonomy)
+            .filter(([, value]) => Number(value || 0) > 0);
+
+        if (!entries.length) {
+            return this.getMockSunburstData();
+        }
+
+        return {
+            name: 'Taxonomy',
+            value: 100,
+            children: entries.map(([key, value], idx) => ({
+                name: this.toTitleCase(key),
+                value: Number(value || 0),
+                color: this.getColorForIndex(idx, entries.length)
+            }))
+        };
+    },
+
+    transformSankeyData(apiResponse) {
+        const summary = apiResponse?.summary || {};
+        const taxonomy = apiResponse?.taxonomy || {};
+
+        const totalReads = Number(summary.total_reads || 0);
+        const classifiedReads = Number(summary.classified_reads || 0);
+        const unclassifiedReads = Math.max(totalReads - classifiedReads, 0);
+
+        if (!totalReads) {
+            return this.getMockSankeyData();
+        }
+
+        const bacteriaReads = Math.round((Number(taxonomy.bacteria || 0) / 100) * classifiedReads);
+        const virusReads = Math.round((Number(taxonomy.viruses || 0) / 100) * classifiedReads);
+        const otherReads = Math.max(classifiedReads - bacteriaReads - virusReads, 0);
+
+        return {
+            nodes: [
+                {
+                    id: 'raw',
+                    name: `Raw Reads (${this.formatNumber(totalReads)})`,
+                    value: totalReads,
+                    column: 0,
+                    color: '#6B7280',
+                    info: 'Total reads from analysis'
+                },
+                {
+                    id: 'classified',
+                    name: `Classified (${this.formatNumber(classifiedReads)})`,
+                    value: classifiedReads,
+                    column: 1,
+                    color: '#008080',
+                    info: 'Reads classified by CLARK'
+                },
+                {
+                    id: 'unclassified',
+                    name: `Unclassified (${this.formatNumber(unclassifiedReads)})`,
+                    value: unclassifiedReads,
+                    column: 1,
+                    color: '#9CA3AF',
+                    info: 'Reads without confident assignment'
+                },
+                {
+                    id: 'bacteria',
+                    name: `Bacteria (${this.formatNumber(bacteriaReads)})`,
+                    value: bacteriaReads,
+                    column: 2,
+                    color: '#008080',
+                    info: 'Bacterial assignments'
+                },
+                {
+                    id: 'viruses',
+                    name: `Viruses (${this.formatNumber(virusReads)})`,
+                    value: virusReads,
+                    column: 2,
+                    color: '#10B981',
+                    info: 'Viral assignments'
+                },
+                {
+                    id: 'other',
+                    name: `Other (${this.formatNumber(otherReads)})`,
+                    value: otherReads,
+                    column: 2,
+                    color: '#F59E0B',
+                    info: 'Other classified reads'
+                }
+            ],
+            links: [
+                { source: 'raw', target: 'classified', value: classifiedReads, label: 'Classified reads' },
+                { source: 'raw', target: 'unclassified', value: unclassifiedReads, label: 'Unclassified reads' },
+                { source: 'classified', target: 'bacteria', value: bacteriaReads, label: 'Bacterial reads' },
+                { source: 'classified', target: 'viruses', value: virusReads, label: 'Viral reads' },
+                { source: 'classified', target: 'other', value: otherReads, label: 'Other reads' }
+            ]
+        };
     },
 
     // ============================================
@@ -885,56 +1205,28 @@ const Charts = {
                     value: 71,
                     color: '#008080',
                     reads: 5350000,
-                    confidence: 96,
-                    children: [
-                        { 
-                            name: 'Proteobacteria', 
-                            value: 48, 
-                            reads: 3620000, 
-                            confidence: 94,
-                            children: [
-                                { name: 'Gammaproteobacteria', value: 35, reads: 2640000, confidence: 92 },
-                                { name: 'Alphaproteobacteria', value: 8, reads: 600000, confidence: 88 },
-                                { name: 'Betaproteobacteria', value: 5, reads: 380000, confidence: 85 }
-                            ]
-                        },
-                        { 
-                            name: 'Firmicutes', 
-                            value: 18, 
-                            reads: 1360000, 
-                            confidence: 89,
-                            children: [
-                                { name: 'Bacilli', value: 12, reads: 910000, confidence: 87 },
-                                { name: 'Clostridia', value: 6, reads: 450000, confidence: 82 }
-                            ]
-                        },
-                        { name: 'Bacteroidetes', value: 5, reads: 370000, confidence: 82 }
-                    ]
+                    confidence: 96
                 },
                 {
                     name: 'Viruses',
                     value: 4.8,
                     color: '#10B981',
                     reads: 362000,
-                    confidence: 81,
-                    children: [
-                        { name: 'dsDNA viruses', value: 3.2, reads: 241000, confidence: 78 },
-                        { name: 'RNA viruses', value: 1.6, reads: 121000, confidence: 72 }
-                    ]
+                    confidence: 81
                 },
                 {
-                    name: 'Archaea',
-                    value: 1.2,
+                    name: 'Proteobacteria',
+                    value: 48,
+                    color: '#0EA5E9',
+                    reads: 3620000,
+                    confidence: 94
+                },
+                {
+                    name: 'Firmicutes',
+                    value: 18,
                     color: '#6366F1',
-                    reads: 90000,
-                    confidence: 65
-                },
-                {
-                    name: 'Unclassified',
-                    value: 23,
-                    color: '#9CA3AF',
-                    reads: 1730000,
-                    confidence: null
+                    reads: 1360000,
+                    confidence: 89
                 }
             ]
         };
@@ -948,24 +1240,18 @@ const Charts = {
         return {
             nodes: [
                 { id: 'raw', name: 'Raw Reads (11.89M)', value: 11890000, column: 0, color: '#6B7280', info: 'Total sequenced reads from FASTQ' },
-                { id: 'hq', name: 'High Quality (11.2M)', value: 11200000, column: 1, color: '#10B981', info: 'Q≥30 phred score, passed filters' },
-                { id: 'lq', name: 'Low Quality (690K)', value: 690000, column: 1, color: '#EF4444', info: 'Below quality threshold - discarded' },
-                { id: 'classified', name: 'Classified (7.56M)', value: 7560000, column: 2, color: '#008080', info: '67.5% of HQ reads matched database' },
-                { id: 'unclassified', name: 'Unclassified (3.64M)', value: 3640000, column: 2, color: '#9CA3AF', info: 'No confident taxonomic match' },
-                { id: 'bacteria', name: 'Bacteria (5.35M)', value: 5350000, column: 3, color: '#008080', info: '70.8% of classified reads' },
-                { id: 'virus', name: 'Viruses (362K)', value: 362000, column: 3, color: '#10B981', info: '4.8% of classified reads' },
-                { id: 'archaea', name: 'Archaea (90K)', value: 90000, column: 3, color: '#6366F1', info: '1.2% of classified reads' },
-                { id: 'other', name: 'Other Eukaryota (1.76M)', value: 1758000, column: 3, color: '#F59E0B', info: 'Fungi, protozoa, host DNA' }
+                { id: 'classified', name: 'Classified (7.56M)', value: 7560000, column: 1, color: '#008080', info: 'Reads matched database' },
+                { id: 'unclassified', name: 'Unclassified (4.33M)', value: 4330000, column: 1, color: '#9CA3AF', info: 'No confident taxonomic match' },
+                { id: 'bacteria', name: 'Bacteria (5.35M)', value: 5350000, column: 2, color: '#008080', info: 'Bacterial assignments' },
+                { id: 'virus', name: 'Viruses (362K)', value: 362000, column: 2, color: '#10B981', info: 'Viral assignments' },
+                { id: 'other', name: 'Other (1.85M)', value: 1848000, column: 2, color: '#F59E0B', info: 'Other reads' }
             ],
             links: [
-                { source: 'raw', target: 'hq', value: 11200000, label: '94.2% passed quality control' },
-                { source: 'raw', target: 'lq', value: 690000, label: '5.8% failed quality control' },
-                { source: 'hq', target: 'classified', value: 7560000, label: 'Kraken2 + Bracken classified' },
-                { source: 'hq', target: 'unclassified', value: 3640000, label: 'No database hit above threshold' },
-                { source: 'classified', target: 'bacteria', value: 5350000, label: 'Bacterial genomes matched' },
-                { source: 'classified', target: 'virus', value: 362000, label: 'Viral genomes matched' },
-                { source: 'classified', target: 'archaea', value: 90000, label: 'Archaeal genomes matched' },
-                { source: 'classified', target: 'other', value: 1758000, label: 'Other organisms detected' }
+                { source: 'raw', target: 'classified', value: 7560000, label: 'Reads classified' },
+                { source: 'raw', target: 'unclassified', value: 4330000, label: 'Reads unclassified' },
+                { source: 'classified', target: 'bacteria', value: 5350000, label: 'Bacterial reads' },
+                { source: 'classified', target: 'virus', value: 362000, label: 'Viral reads' },
+                { source: 'classified', target: 'other', value: 1848000, label: 'Other reads' }
             ]
         };
     },
@@ -976,75 +1262,45 @@ const Charts = {
      */
     getMockTreemapData() {
         return [
-            { 
-                name: 'Escherichia coli O157:H7', 
-                value: 45.2, 
-                reads: 3420000, 
-                confidence: 95, 
-                risk: 'High', 
+            {
+                name: 'Escherichia coli',
+                value: 45.2,
+                reads: 3420000,
+                confidence: 95,
+                risk: 'High',
                 color: '#EF4444',
                 amrGenes: 5,
                 virulenceFactors: 12
             },
-            { 
-                name: 'Staphylococcus aureus (MRSA)', 
-                value: 18.6, 
-                reads: 1410000, 
-                confidence: 87, 
-                risk: 'High', 
+            {
+                name: 'Staphylococcus aureus',
+                value: 18.6,
+                reads: 1410000,
+                confidence: 87,
+                risk: 'High',
                 color: '#F97316',
                 amrGenes: 7,
                 virulenceFactors: 8
             },
-            { 
-                name: 'Pseudomonas aeruginosa', 
-                value: 8.3, 
-                reads: 630000, 
-                confidence: 82, 
-                risk: 'Medium', 
+            {
+                name: 'Pseudomonas aeruginosa',
+                value: 8.3,
+                reads: 630000,
+                confidence: 82,
+                risk: 'Medium',
                 color: '#F59E0B',
                 amrGenes: 4,
                 virulenceFactors: 6
             },
-            { 
-                name: 'Klebsiella pneumoniae (KPC+)', 
-                value: 5.1, 
-                reads: 390000, 
-                confidence: 78, 
-                risk: 'High', 
+            {
+                name: 'Klebsiella pneumoniae',
+                value: 5.1,
+                reads: 390000,
+                confidence: 78,
+                risk: 'High',
                 color: '#EAB308',
                 amrGenes: 3,
                 virulenceFactors: 4
-            },
-            { 
-                name: 'Enterococcus faecium', 
-                value: 4.2, 
-                reads: 318000, 
-                confidence: 75, 
-                risk: 'Medium', 
-                color: '#84CC16',
-                amrGenes: 2,
-                virulenceFactors: 3
-            },
-            { 
-                name: 'Commensal bacteria', 
-                value: 12.4, 
-                reads: 940000, 
-                confidence: 70, 
-                risk: 'Low', 
-                color: '#10B981',
-                amrGenes: 0,
-                virulenceFactors: 0
-            },
-            { 
-                name: 'Unclassified reads', 
-                value: 6.2, 
-                reads: 470000, 
-                confidence: null, 
-                risk: 'Unknown', 
-                color: '#9CA3AF',
-                amrGenes: null,
-                virulenceFactors: null
             }
         ];
     },
@@ -1058,74 +1314,40 @@ const Charts = {
             axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
             pathogens: [
                 {
-                    name: 'Escherichia coli O157:H7',
+                    name: 'Escherichia coli',
                     color: '#EF4444',
                     metrics: {
-                        'Abundance': 45.2,
-                        'Confidence': 95,
-                        'Virulence': 12,
-                        'AMR': 5,
-                        'Risk': 9
+                        Abundance: 45.2,
+                        Confidence: 95,
+                        Virulence: 12,
+                        AMR: 5,
+                        Risk: 9
                     }
                 },
                 {
-                    name: 'Staphylococcus aureus (MRSA)',
+                    name: 'Staphylococcus aureus',
                     color: '#F97316',
                     metrics: {
-                        'Abundance': 18.6,
-                        'Confidence': 87,
-                        'Virulence': 8,
-                        'AMR': 7,
-                        'Risk': 8
+                        Abundance: 18.6,
+                        Confidence: 87,
+                        Virulence: 8,
+                        AMR: 7,
+                        Risk: 8
                     }
                 },
                 {
                     name: 'Pseudomonas aeruginosa',
                     color: '#F59E0B',
                     metrics: {
-                        'Abundance': 8.3,
-                        'Confidence': 82,
-                        'Virulence': 6,
-                        'AMR': 4,
-                        'Risk': 6
-                    }
-                },
-                {
-                    name: 'Klebsiella pneumoniae (KPC+)',
-                    color: '#EAB308',
-                    metrics: {
-                        'Abundance': 5.1,
-                        'Confidence': 78,
-                        'Virulence': 4,
-                        'AMR': 3,
-                        'Risk': 7
+                        Abundance: 8.3,
+                        Confidence: 82,
+                        Virulence: 6,
+                        AMR: 4,
+                        Risk: 6
                     }
                 }
             ]
         };
-    },
-
-    /**
-     * Transform backend API response to chart-ready format
-     * @param {object} apiResponse - Raw API response
-     * @param {string} chartType - 'sunburst' | 'sankey' | 'treemap' | 'radar'
-     * @returns {object} Chart-ready data
-     */
-    transformApiData(apiResponse, chartType) {
-        // This method will transform real API responses when backend is integrated
-        // For now, returns mock data
-        switch (chartType) {
-            case 'sunburst':
-                return this.getMockSunburstData();
-            case 'sankey':
-                return this.getMockSankeyData();
-            case 'treemap':
-                return this.getMockTreemapData();
-            case 'radar':
-                return this.getMockRadarData();
-            default:
-                return null;
-        }
     }
 };
 
@@ -1134,4 +1356,3 @@ document.addEventListener('DOMContentLoaded', () => Charts.init());
 
 // Export for global access
 window.Charts = Charts;
-

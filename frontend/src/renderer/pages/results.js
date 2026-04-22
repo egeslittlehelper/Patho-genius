@@ -86,6 +86,26 @@ const ResultsPage = {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => this.filterAnalyses(e.target.value));
         }
+
+        // Detail tabs
+        document.addEventListener('click', (e) => {
+            const btn = e.target.closest('.tab-btn');
+            if (!btn) return;
+
+            const tab = btn.dataset.tab;
+            if (!tab) return;
+
+            document.querySelectorAll('#results-detail-view .tab-btn')
+                .forEach(b => b.classList.remove('active'));
+
+            document.querySelectorAll('#results-detail-view .tab-content')
+                .forEach(c => c.classList.remove('active'));
+
+            btn.classList.add('active');
+
+            const target = document.getElementById(`tab-${tab}`);
+            if (target) target.classList.add('active');
+        });
     },
 
     /**
@@ -309,26 +329,27 @@ const ResultsPage = {
      */
     async viewAnalysis(analysisId) {
         this.state.selectedAnalysisId = analysisId;
-        
+        this.state.currentResult = null;
+
         try {
-            // Try to load from API
             if (window.api?.analysis?.getResults) {
                 const result = await window.api.analysis.getResults(analysisId);
                 if (result) {
-                    this.state.currentResult = result;
+                    this.state.currentResult = result.result || result.results || result.data || result;
+                    console.log("RAW BACKEND RESPONSE:", result);
                 }
             }
-            
-            // Fallback to finding in completed analyses or use mock
+
             if (!this.state.currentResult) {
                 const analysis = this.state.completedAnalyses.find(a => a.id === analysisId);
-                this.state.currentResult = analysis?.results || this.getMockResult();
+                this.state.currentResult = analysis?.results || analysis || this.getMockResult();
             }
         } catch (error) {
             console.error('Failed to load result:', error);
             this.state.currentResult = this.getMockResult();
         }
 
+        console.log("FINAL RESULT USED:", this.state.currentResult)
         this.showDetailView();
     },
 
@@ -347,6 +368,18 @@ const ResultsPage = {
         if (detailView) detailView.classList.remove('hidden');
         
         // Update detail view content
+        document.querySelectorAll('#results-detail-view .tab-btn')
+            .forEach(b => b.classList.remove('active'));
+
+        document.querySelectorAll('#results-detail-view .tab-content')
+            .forEach(c => c.classList.remove('active'));
+
+        const firstBtn = document.querySelector('#results-detail-view .tab-btn[data-tab="overview"]');
+        const firstTab = document.getElementById('tab-overview');
+
+        if (firstBtn) firstBtn.classList.add('active');
+        if (firstTab) firstTab.classList.add('active');
+
         this.updateDetailView();
     },
 
@@ -357,11 +390,11 @@ const ResultsPage = {
         const result = this.state.currentResult;
         if (!result) return;
 
-        // Update title
         const nameEl = document.getElementById('detail-analysis-name');
         const subtitleEl = document.getElementById('results-subtitle');
-        
+
         if (nameEl) nameEl.textContent = result.analysis_name || result.sample_id || 'Analysis Result';
+
         const when = result.completed_at || result.processed_date;
         if (subtitleEl) {
             subtitleEl.textContent = when
@@ -369,11 +402,248 @@ const ResultsPage = {
                 : 'Analysis result';
         }
 
-        // Render pathogen cards
+        this.updateOverviewCards(result);
+        this.updateClinicalSummary(result);
+        this.updateQualityTab(result);
         this.renderPathogenCards();
-        
-        // Render charts
+        this.renderPathogenDetails(result);
         this.renderCharts(result);
+    },
+
+    /**
+     * Update overview cards with summary data
+     */
+    updateOverviewCards(result) {
+        const summary = result?.summary || {};
+        const quality = result?.quality || {};
+        const pathogens = result?.pathogens || [];
+
+        const totalReadsValue = document.getElementById('summary-total-reads-value');
+        const totalReadsSub = document.getElementById('summary-total-reads-sub');
+
+        const speciesValue = document.getElementById('summary-species-value');
+        const speciesSub = document.getElementById('summary-species-sub');
+
+        const pathogensValue = document.getElementById('summary-pathogens-value');
+        const pathogensSub = document.getElementById('summary-pathogens-sub');
+
+        const amrValue = document.getElementById('summary-amr-value');
+        const amrSub = document.getElementById('summary-amr-sub');
+
+        if (totalReadsValue) totalReadsValue.textContent = this.formatReads(summary.total_reads || 0);
+        if (totalReadsSub) {
+            totalReadsSub.textContent = quality.high_quality_rate != null
+                ? `↑ ${quality.high_quality_rate}% high quality`
+                : 'Quality data unavailable';
+        }
+
+        if (speciesValue) speciesValue.textContent = summary.species_detected ?? '—';
+        if (speciesSub) {
+            speciesSub.textContent = summary.classification_rate != null
+                ? `${summary.classification_rate}% classified`
+                : 'Classification data unavailable';
+        }
+
+        if (pathogensValue) {
+            const total = summary.pathogens_detected ?? pathogens.length ?? 0;
+            pathogensValue.textContent = `${total} Detected`;
+        }
+
+        if (pathogensSub) {
+            const criticalCount = pathogens.filter(p => (p.risk_level || '').toLowerCase() === 'high').length;
+            pathogensSub.textContent = criticalCount > 0
+                ? `${criticalCount} high-risk pathogen${criticalCount > 1 ? 's' : ''}`
+                : 'No high-risk pathogens';
+        }
+
+        if (amrValue) amrValue.textContent = `${summary.amr_genes ?? 0} Total`;
+        if (amrSub) {
+            const hasAmr = Number(summary.amr_genes || 0) > 0;
+            amrSub.textContent = hasAmr ? 'Multi-drug resistant markers present' : 'No AMR markers detected';
+        }
+    },
+
+    /**
+     * Update clinical summary with pathogen data
+     */
+    updateClinicalSummary(result) {
+        const pathogens = result?.pathogens || [];
+        const summaryBox = document.getElementById('clinical-summary-text');
+        const secondaryBox = document.getElementById('clinical-summary-secondary');
+        const criticalAlert = document.getElementById('clinical-critical-alert');
+        const recommendation = document.getElementById('clinical-recommendation');
+
+        if (!summaryBox || !secondaryBox || !criticalAlert || !recommendation) return;
+
+        if (pathogens.length === 0) {
+            summaryBox.innerHTML = 'No pathogens were detected in this analysis.';
+            secondaryBox.innerHTML = 'No co-infection pattern could be inferred from the available results.';
+            criticalAlert.innerHTML = '<strong>No critical alert:</strong> No high-risk pathogens detected.';
+            recommendation.innerHTML = '<strong>Recommendation:</strong> Review sample quality and confirm with laboratory workflow.';
+            return;
+        }
+
+        const sorted = [...pathogens].sort((a, b) => Number(b.abundance || 0) - Number(a.abundance || 0));
+        const top = sorted[0];
+        const second = sorted[1];
+
+        summaryBox.innerHTML = `
+            Metagenomic analysis indicates a <strong>${sorted.length > 1 ? 'polymicrobial pattern' : 'dominant pathogen signal'}</strong>
+            led by <strong>${top.name}${top.strain ? ` ${top.strain}` : ''}</strong>
+            (${top.confidence ?? 'N/A'}% confidence, ${top.abundance ?? 0}% relative abundance, ${this.formatReads(top.reads || 0)} reads).
+        `;
+
+        secondaryBox.innerHTML = second
+            ? `A secondary signal from <strong>${second.name}${second.strain ? ` ${second.strain}` : ''}</strong> was also detected (${second.confidence ?? 'N/A'}% confidence, ${second.abundance ?? 0}% abundance).`
+            : 'No strong secondary pathogen signal was detected.';
+
+        const criticalCount = sorted.filter(p => (p.risk_level || '').toLowerCase() === 'high').length;
+        criticalAlert.innerHTML = criticalCount > 0
+            ? `<strong>CRITICAL ALERT:</strong> ${criticalCount} high-risk pathogen${criticalCount > 1 ? 's were' : ' was'} detected. Review immediately with confirmatory testing.`
+            : '<strong>No critical alert:</strong> No high-risk pathogens detected.';
+
+        const totalAmr = sorted.reduce((sum, p) => sum + Number(p.amr_genes || 0), 0);
+        recommendation.innerHTML = totalAmr > 0
+            ? '<strong>Clinical Recommendation:</strong> Review antimicrobial resistance markers and confirm with susceptibility testing.'
+            : '<strong>Clinical Recommendation:</strong> Use this report as decision support only and confirm findings with laboratory tests.';
+    },
+
+    /**
+     * Update quality metrics tab with quality data
+    */
+    updateQualityTab(result) {
+        const quality = result?.quality || {};
+        const summary = result?.summary || {};
+
+        const avgQuality = document.getElementById('qc-average-quality-value');
+        const avgQualitySub = document.getElementById('qc-average-quality-sub');
+        const avgQualityBar = document.getElementById('qc-average-quality-bar');
+
+        const classRate = document.getElementById('qc-classification-rate-value');
+        const classRateSub = document.getElementById('qc-classification-rate-sub');
+        const classRateBar = document.getElementById('qc-classification-rate-bar');
+
+        const coverage = document.getElementById('qc-coverage-value');
+        const coverageSub = document.getElementById('qc-coverage-sub');
+        const coverageBar = document.getElementById('qc-coverage-bar');
+
+        // Average Read Quality
+        if (avgQuality) {
+            avgQuality.textContent = quality.average_quality != null ? `Q${quality.average_quality}` : 'N/A';
+        }
+
+        if (avgQualitySub) {
+            if (quality.high_quality_rate != null) {
+                avgQualitySub.textContent = `${quality.high_quality_rate}% reads passed high-quality threshold`;
+            } else if (quality.average_quality != null) {
+                avgQualitySub.textContent = 'Average quality score from analysis output';
+            } else {
+                avgQualitySub.textContent = 'Quality data unavailable';
+            }
+        }
+
+        if (avgQualityBar) {
+            avgQualityBar.style.width = `${Math.min(100, Number(quality.average_quality || 0) * 2.5)}%`;
+        }
+
+        // Classification Rate
+        if (classRate) {
+            classRate.textContent = summary.classification_rate != null ? `${summary.classification_rate}%` : 'N/A';
+        }
+
+        if (classRateSub) {
+            if (summary.classified_reads != null && summary.total_reads != null) {
+                classRateSub.textContent = `${this.formatReads(summary.classified_reads)} of ${this.formatReads(summary.total_reads)} reads classified`;
+            } else if (summary.classified_reads != null) {
+                classRateSub.textContent = `${this.formatReads(summary.classified_reads)} classified reads`;
+            } else {
+                classRateSub.textContent = 'Classification data unavailable';
+            }
+        }
+
+        if (classRateBar) {
+            classRateBar.style.width = `${Math.min(100, Number(summary.classification_rate || 0))}%`;
+        }
+
+        // Mean Coverage Depth
+        if (coverage) {
+            coverage.textContent = quality.mean_coverage != null ? `${quality.mean_coverage}x` : 'N/A';
+        }
+
+        if (coverageSub) {
+            if (quality.mean_coverage != null) {
+                coverageSub.textContent = 'Mean sequencing depth across detected targets';
+            } else {
+                coverageSub.textContent = 'Coverage data unavailable';
+            }
+        }
+
+        if (coverageBar) {
+            coverageBar.style.width = `${Math.min(100, Number(quality.mean_coverage || 0) / 2)}%`;
+        }
+    },
+
+    /**
+     * Render pathogen details in the UI
+     */
+    renderPathogenDetails(result) {
+        const container = document.getElementById('tab-pathogens');
+        if (!container) return;
+
+        const pathogens = result?.pathogens || [];
+
+        if (!pathogens.length) {
+            container.innerHTML = `
+                <div class="card">
+                    <p class="text-muted">No pathogen detail data available.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = pathogens.map(p => {
+            const risk = (p.risk_level || 'low').toLowerCase();
+            return `
+                <div class="pathogen-detail-card">
+                    <div class="pathogen-detail-header">
+                        <div>
+                            <h3>${p.name}</h3>
+                            <p class="pathogen-strain">Strain: ${p.strain || 'Unknown'}</p>
+                        </div>
+                        <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
+                    </div>
+
+                    <div class="pathogen-detail-stats">
+                        <div class="detail-stat">
+                            <span class="detail-label">Relative Abundance</span>
+                            <span class="detail-value">${p.abundance ?? 0}%</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-label">Read Count</span>
+                            <span class="detail-value">${this.formatReads(p.reads || 0)}</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-label">Confidence Score</span>
+                            <span class="detail-value text-primary">${p.confidence ?? 'N/A'}%</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-label">AMR Genes Detected</span>
+                            <span class="detail-value">${p.amr_genes || 0}</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger-light">
+                        <strong>Virulence Factors</strong>
+                        <p>${p.virulence_genes || 0} virulence gene(s) reported for this pathogen.</p>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Taxonomy</strong>
+                        <p>Tax ID: ${p.tax_id || 'Unknown'}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
     },
 
     /**
@@ -386,50 +656,32 @@ const ResultsPage = {
             return;
         }
 
-        // Prepare treemap data from pathogens
-        const treemapData = result.pathogens?.map(p => ({
-            name: p.name,
-            value: p.abundance,
-            reads: p.reads,
-            confidence: p.confidence ?? 0,
-            risk: this.capitalize(p.risk_level || 'low'),
-            color: this.getRiskColorShaded(p.risk_level, `${p.name}|${p.strain || ''}|${p.tax_id || ''}`)
-        })) || [];
-
-        // Add unclassified if available
-        if (result.summary?.classification_rate) {
-            const unclassifiedPercent = 100 - result.summary.classification_rate;
-            if (unclassifiedPercent > 0) {
-                const otherPercent = unclassifiedPercent - treemapData.reduce((sum, p) => sum + p.value, 0);
-                if (otherPercent > 0) {
-                    treemapData.push({
-                        name: 'Other/Unclassified',
-                        value: Math.max(0, 100 - treemapData.reduce((sum, p) => sum + p.value, 0)),
-                        color: '#9CA3AF'
-                    });
-                }
-            }
-        }
+        const treemapData = Charts.transformApiData(result, 'treemap');
+        const sunburstData = Charts.transformApiData(result, 'sunburst');
+        const sankeyData = Charts.transformApiData(result, 'sankey');
+        const radarData = Charts.transformApiData(result, 'radar');
 
         // Render treemap
         setTimeout(() => {
-            Charts.renderTreemap('abundance-treemap-chart', treemapData.length > 0 ? treemapData : null);
+            Charts.renderTreemap('abundance-treemap-chart', treemapData);
         }, 100);
 
         // Render sunburst with taxonomy data
         setTimeout(() => {
-            Charts.renderSunburst('sunburst-chart');
+            Charts.renderSunburst('sunburst-chart', sunburstData);
         }, 150);
 
         // Render sankey diagram
         setTimeout(() => {
-            Charts.renderSankey('sankey-chart');
+            Charts.renderSankey('sankey-chart', sankeyData);
         }, 200);
 
         // Render radar chart for comparative analysis
         setTimeout(() => {
-            Charts.renderRadar('radar-chart');
+            Charts.renderRadar('radar-chart', radarData);
         }, 250);
+        // console.log('RADAR DATA BEFORE RENDER:', radarData);
+        // console.log('RADAR PATHOGEN COUNT:', radarData?.pathogens?.length);
     },
 
     /**
@@ -634,47 +886,51 @@ const ResultsPage = {
             return;
         }
 
-        container.innerHTML = pathogens.slice(0, 4).map(p => {
+        container.innerHTML = pathogens.map(p => {
             const conf = p.confidence ?? 75;
             const risk = p.risk_level || 'low';
+
             return `
-            <div class="pathogen-card ${risk === 'high' ? 'pathogen-card-critical' : ''}">
-                <div class="pathogen-header">
-                    <div>
-                        <h4>${p.name}</h4>
-                        <span class="pathogen-strain">${p.strain || 'Unknown strain'}</span>
+                <div class="pathogen-card ${risk === 'high' ? 'pathogen-card-critical' : ''}">
+                    <div class="pathogen-header">
+                        <div>
+                            <h4>${p.name}</h4>
+                            <span class="pathogen-strain">${p.strain || 'Unknown strain'}</span>
+                        </div>
+                        <div class="confidence-badge confidence-${this.getConfidenceLevel(conf)}">
+                            <span class="confidence-value">${conf}%</span>
+                            <span class="confidence-label">Confidence</span>
+                        </div>
                     </div>
-                    <div class="confidence-badge confidence-${this.getConfidenceLevel(conf)}">
-                        <span class="confidence-value">${conf}%</span>
-                        <span class="confidence-label">Confidence</span>
+
+                    <div class="pathogen-metrics-row">
+                        <div class="pathogen-metric-item">
+                            <span class="metric-value-lg">${p.abundance ?? 0}%</span>
+                            <span class="metric-label">Abundance</span>
+                        </div>
+                        <div class="pathogen-metric-item">
+                            <span class="metric-value-lg">${this.formatReads(p.reads || 0)}</span>
+                            <span class="metric-label">Reads</span>
+                        </div>
+                        <div class="pathogen-metric-item">
+                            <span class="metric-value-lg ${(p.amr_genes || 0) > 0 ? 'text-danger' : ''}">${p.amr_genes || 0}</span>
+                            <span class="metric-label">AMR Genes</span>
+                        </div>
+                    </div>
+
+                    <div class="pathogen-confidence-bar">
+                        <div class="confidence-bar-track">
+                            <div class="confidence-bar-fill confidence-fill-${this.getConfidenceLevel(conf)}" style="width: ${conf}%"></div>
+                        </div>
+                        <span class="confidence-bar-label">${this.getConfidenceLabel(conf)}</span>
+                    </div>
+
+                    <div class="pathogen-footer">
+                        <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
+                        ${p.virulence_genes ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
                     </div>
                 </div>
-                <div class="pathogen-metrics-row">
-                    <div class="pathogen-metric-item">
-                        <span class="metric-value-lg">${p.abundance}%</span>
-                        <span class="metric-label">Abundance</span>
-                    </div>
-                    <div class="pathogen-metric-item">
-                        <span class="metric-value-lg">${this.formatReads(p.reads)}</span>
-                        <span class="metric-label">Reads</span>
-                    </div>
-                    <div class="pathogen-metric-item">
-                        <span class="metric-value-lg ${(p.amr_genes || 0) > 0 ? 'text-danger' : ''}">${p.amr_genes || 0}</span>
-                        <span class="metric-label">AMR Genes</span>
-                    </div>
-                </div>
-                <div class="pathogen-confidence-bar">
-                    <div class="confidence-bar-track">
-                        <div class="confidence-bar-fill confidence-fill-${this.getConfidenceLevel(conf)}" style="width: ${conf}%"></div>
-                    </div>
-                    <span class="confidence-bar-label">${this.getConfidenceLabel(conf)}</span>
-                </div>
-                <div class="pathogen-footer">
-                    <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
-                    ${p.virulence_genes ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
-                </div>
-            </div>
-        `;
+            `;
         }).join('');
     },
 

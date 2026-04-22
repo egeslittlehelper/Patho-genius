@@ -1,0 +1,107 @@
+{
+  "analysis_name": "aa",
+  "sample_type": "clinical",
+  "completed_at": "2026-04-22T09:06:41.819Z",
+  "sample_id": "mock",
+  "processed_date": "2026-04-22 09:06:41",
+  "classifier": "CLARK-l",
+  "summary": {
+    "total_reads": 11890000,
+    "classified_reads": 7560000,
+    "classification_rate": 63.6,
+    "species_detected": 342,
+    "pathogens_detected": 7,
+    "amr_genes": 24
+  },
+  "quality": {
+    "average_quality": 31,
+    "high_quality_rate": 91.24,
+    "mean_coverage": 131
+  },
+  "pathogens": [
+    {
+      "name": "Escherichia coli",
+      "strain": "O157:H7",
+      "tax_id": 83334,
+      "abundance": 45.2,
+      "reads": 3420000,
+      "confidence": 95,
+      "amr_genes": 5,
+      "virulence_genes": 12,
+      "risk_level": "high"
+    },
+    {
+      "name": "Staphylococcus aureus",
+      "strain": "MRSA USA300",
+      "tax_id": 46170,
+      "abundance": 18.6,
+      "reads": 1410000,
+      "confidence": 87,
+      "amr_genes": 7,
+      "virulence_genes": 8,
+      "risk_level": "high"
+    },
+    {
+      "name": "Pseudomonas aeruginosa",
+      "strain": "PAO1",
+      "tax_id": 208964,
+      "abundance": 8.3,
+      "reads": 630000,
+      "confidence": 82,
+      "amr_genes": 4,
+      "virulence_genes": 6,
+      "risk_level": "medium"
+    },
+    {
+      "name": "Klebsiella pneumoniae",
+      "strain": "KPC+",
+      "tax_id": 573,
+      "abundance": 5.1,
+      "reads": 390000,
+      "confidence": 78,
+      "amr_genes": 3,
+      "virulence_genes": 4,
+      "risk_level": "high"
+    },
+    {
+      "name": "Acinetobacter baumannii",
+      "strain": "CRAB",
+      "tax_id": 470,
+      "abundance": 3.4,
+      "reads": 250000,
+      "confidence": 75,
+      "amr_genes": 4,
+      "virulence_genes": 2,
+      "risk_level": "high"
+    },
+    {
+      "name": "Enterococcus faecium",
+      "strain": "VRE",
+      "tax_id": 1352,
+      "abundance": 2.1,
+      "reads": 150000,
+      "confidence": 71,
+      "amr_genes": 1,
+      "virulence_genes": 1,
+      "risk_level": "medium"
+    },
+    {
+      "name": "Candida albicans",
+      "strain": "SC5314",
+      "tax_id": 5476,
+      "abundance": 1.2,
+      "reads": 90000,
+      "confidence": 68,
+      "amr_genes": 0,
+      "virulence_genes": 3,
+      "risk_level": "low"
+    }
+  ],
+  "pathogens_detected": [],
+  "taxonomy": {
+    "bacteria": 71,
+    "viruses": 4.8,
+    "proteobacteria": 48,
+    "firmicutes": 18
+  }
+}
