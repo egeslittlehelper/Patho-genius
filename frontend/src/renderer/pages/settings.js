@@ -5,8 +5,7 @@
 
 const SettingsPage = {
     isEventsBound: false,
-    
-    // Default settings
+
     defaults: {
         localAiEnabled: true,
         confidenceThreshold: 0.7,
@@ -17,49 +16,40 @@ const SettingsPage = {
         notificationsEnabled: true,
         autoSaveInterval: 5
     },
-    
-    // Current settings
-    settings: {},
 
-    /**
-     * Initialize settings page
-     */
+    settings: {},
+    cachedUsers: [], // Holds the last-loaded user list for filtering
+
     init() {
-        console.log('⚙️ SettingsPage initializing...');
-        
         if (!this.isEventsBound) {
             this.bindEvents();
             this.isEventsBound = true;
         }
-        
+
         this.loadSettings();
         this.updateUI();
         this.applyTheme();
-        
-        // Initialize account security section (hide for guests)
         this.initAccountSecuritySection();
-        
-        // Initialize admin section if user is admin
         this.initAdminSection();
-        
-        console.log('SettingsPage initialized');
     },
 
-    /**
-     * Bind event listeners
-     */
     bindEvents() {
-        // AI Toggle
-        const aiToggle = document.getElementById('toggle-local-ai');
-        if (aiToggle) {
-            aiToggle.addEventListener('change', (e) => {
-                this.settings.localAiEnabled = e.target.checked;
+        const toggleMap = {
+            'toggle-local-ai':       'localAiEnabled',
+            'toggle-low-confidence': 'showLowConfidenceResults',
+            'toggle-encryption':     'encryptLocalData',
+            'toggle-notifications':  'notificationsEnabled'
+        };
+
+        Object.entries(toggleMap).forEach(([id, key]) => {
+            const el = document.getElementById(id);
+            if (el) el.addEventListener('change', (e) => {
+                this.settings[key] = e.target.checked;
                 this.saveSettings();
                 this.showSavedNotification();
             });
-        }
+        });
 
-        // Confidence Threshold
         const confidenceSelect = document.getElementById('settings-confidence-threshold');
         if (confidenceSelect) {
             confidenceSelect.addEventListener('change', (e) => {
@@ -69,7 +59,6 @@ const SettingsPage = {
             });
         }
 
-        // Min Read Count
         const minReadInput = document.getElementById('settings-min-read-count');
         if (minReadInput) {
             minReadInput.addEventListener('change', (e) => {
@@ -79,37 +68,6 @@ const SettingsPage = {
             });
         }
 
-        // Show Low Confidence
-        const lowConfidenceToggle = document.getElementById('toggle-low-confidence');
-        if (lowConfidenceToggle) {
-            lowConfidenceToggle.addEventListener('change', (e) => {
-                this.settings.showLowConfidenceResults = e.target.checked;
-                this.saveSettings();
-                this.showSavedNotification();
-            });
-        }
-
-        // Encryption Toggle
-        const encryptToggle = document.getElementById('toggle-encryption');
-        if (encryptToggle) {
-            encryptToggle.addEventListener('change', (e) => {
-                this.settings.encryptLocalData = e.target.checked;
-                this.saveSettings();
-                this.showSavedNotification();
-            });
-        }
-
-        // Notifications Toggle
-        const notifyToggle = document.getElementById('toggle-notifications');
-        if (notifyToggle) {
-            notifyToggle.addEventListener('change', (e) => {
-                this.settings.notificationsEnabled = e.target.checked;
-                this.saveSettings();
-                this.showSavedNotification();
-            });
-        }
-
-        // Dark Mode Toggle
         const darkModeToggle = document.getElementById('toggle-dark-mode');
         if (darkModeToggle) {
             darkModeToggle.addEventListener('change', (e) => {
@@ -120,25 +78,15 @@ const SettingsPage = {
             });
         }
 
-        // Reset to Defaults button
         const resetBtn = document.getElementById('reset-settings-btn');
-        if (resetBtn) {
-            resetBtn.addEventListener('click', () => this.resetToDefaults());
-        }
+        if (resetBtn) resetBtn.addEventListener('click', () => this.resetToDefaults());
 
-        // Export Settings button
         const exportBtn = document.getElementById('export-settings-btn');
-        if (exportBtn) {
-            exportBtn.addEventListener('click', () => this.exportSettings());
-        }
+        if (exportBtn) exportBtn.addEventListener('click', () => this.exportSettings());
 
-        // Import Settings button
         const importBtn = document.getElementById('import-settings-btn');
-        if (importBtn) {
-            importBtn.addEventListener('click', () => this.importSettings());
-        }
+        if (importBtn) importBtn.addEventListener('click', () => this.importSettings());
 
-        // Change Password form
         const changePasswordForm = document.getElementById('change-password-form');
         if (changePasswordForm) {
             changePasswordForm.addEventListener('submit', (e) => {
@@ -148,104 +96,95 @@ const SettingsPage = {
         }
     },
 
-    /**
-     * Load settings from storage
-     */
+    /* ─── Settings load / save ─────────────────────────────── */
+
     loadSettings() {
         try {
             const saved = localStorage.getItem('pathogenius_settings');
-            if (saved) {
-                this.settings = { ...this.defaults, ...JSON.parse(saved) };
-            } else {
-                this.settings = { ...this.defaults };
-            }
-        } catch (error) {
-            console.error('Failed to load settings:', error);
+            this.settings = saved ? { ...this.defaults, ...JSON.parse(saved) } : { ...this.defaults };
+        } catch {
             this.settings = { ...this.defaults };
+        }
+        // Async: pull from Firebase and override with latest (non-blocking)
+        this._loadFirebaseSettings();
+    },
+
+    async _loadFirebaseSettings() {
+        const isGuest = window.App?.state?.isGuestMode;
+        if (isGuest || !window.api?.settings?.load) return;
+        try {
+            const result = await window.api.settings.load();
+            if (result.success && result.settings) {
+                this.settings = { ...this.defaults, ...result.settings };
+                localStorage.setItem('pathogenius_settings', JSON.stringify(this.settings));
+                this.updateUI();
+                this.applyTheme();
+            }
+        } catch (err) {
+            console.warn('Firebase settings load failed:', err);
         }
     },
 
-    /**
-     * Save settings to storage
-     */
     saveSettings() {
         try {
             localStorage.setItem('pathogenius_settings', JSON.stringify(this.settings));
-            
-            // Notify other components of settings change
-            window.dispatchEvent(new CustomEvent('settingsChanged', { 
-                detail: this.settings 
-            }));
-        } catch (error) {
-            console.error('Failed to save settings:', error);
+            window.dispatchEvent(new CustomEvent('settingsChanged', { detail: this.settings }));
+            // Sync to Firebase in background — guests skip this
+            const isGuest = window.App?.state?.isGuestMode;
+            if (!isGuest && window.api?.settings?.save) {
+                window.api.settings.save(this.settings)
+                    .catch(err => console.warn('Settings sync failed:', err));
+            }
+        } catch (err) {
+            console.error('Failed to save settings:', err);
         }
     },
 
-    /**
-     * Update UI with current settings
-     */
+    /* ─── UI helpers ────────────────────────────────────────── */
+
     updateUI() {
-        // AI Toggle
-        const aiToggle = document.getElementById('toggle-local-ai');
-        if (aiToggle) aiToggle.checked = this.settings.localAiEnabled;
+        const set = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.checked = val;
+        };
+        const setVal = (id, val) => {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        };
 
-        // Confidence Threshold
-        const confidenceSelect = document.getElementById('settings-confidence-threshold');
-        if (confidenceSelect) confidenceSelect.value = this.settings.confidenceThreshold;
+        set('toggle-local-ai', this.settings.localAiEnabled);
+        set('toggle-low-confidence', this.settings.showLowConfidenceResults);
+        set('toggle-encryption', this.settings.encryptLocalData);
+        set('toggle-notifications', this.settings.notificationsEnabled);
+        set('toggle-dark-mode', this.settings.theme === 'dark');
+        setVal('settings-confidence-threshold', this.settings.confidenceThreshold);
+        setVal('settings-min-read-count', this.settings.minReadCount);
 
-        // Min Read Count
-        const minReadInput = document.getElementById('settings-min-read-count');
-        if (minReadInput) minReadInput.value = this.settings.minReadCount;
-
-        // Show Low Confidence
-        const lowConfidenceToggle = document.getElementById('toggle-low-confidence');
-        if (lowConfidenceToggle) lowConfidenceToggle.checked = this.settings.showLowConfidenceResults;
-
-        // Encryption Toggle
+        // Hide entire encryption card for guests (no account = no encryption key)
+        const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
         const encryptToggle = document.getElementById('toggle-encryption');
-        if (encryptToggle) encryptToggle.checked = this.settings.encryptLocalData;
-
-        // Notifications Toggle
-        const notifyToggle = document.getElementById('toggle-notifications');
-        if (notifyToggle) notifyToggle.checked = this.settings.notificationsEnabled;
-
-        // Dark Mode Toggle
-        const darkModeToggle = document.getElementById('toggle-dark-mode');
-        if (darkModeToggle) darkModeToggle.checked = this.settings.theme === 'dark';
+        if (encryptToggle) {
+            const encryptCard = encryptToggle.closest('.card');
+            if (encryptCard) encryptCard.classList.toggle('hidden', !!isGuest);
+        }
     },
 
-    /**
-     * Apply the current theme
-     */
     applyTheme() {
-        const body = document.body;
-        if (this.settings.theme === 'dark') {
-            body.classList.add('dark-mode');
-        } else {
-            body.classList.remove('dark-mode');
-        }
+        document.body.classList.toggle('dark-mode', this.settings.theme === 'dark');
     },
 
-    /**
-     * Reset to default settings
-     */
     resetToDefaults() {
-        if (confirm('Reset all settings to defaults? This cannot be undone.')) {
-            this.settings = { ...this.defaults };
-            this.saveSettings();
-            this.updateUI();
-            this.applyTheme();
-            this.showSavedNotification('Settings reset to defaults');
-        }
+        if (!confirm('Reset all settings to defaults? This cannot be undone.')) return;
+        this.settings = { ...this.defaults };
+        this.saveSettings();
+        this.updateUI();
+        this.applyTheme();
+        this.showSavedNotification('Settings reset to defaults');
     },
 
-    /**
-     * Export settings to file
-     */
     exportSettings() {
-        const dataStr = JSON.stringify(this.settings, null, 2);
-        const dataBlob = new Blob([dataStr], { type: 'application/json' });
-        const url = URL.createObjectURL(dataBlob);
+        const blob = new Blob([JSON.stringify(this.settings, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
         const link = document.createElement('a');
         link.href = url;
         link.download = 'pathogenius_settings.json';
@@ -253,292 +192,158 @@ const SettingsPage = {
         URL.revokeObjectURL(url);
     },
 
-    /**
-     * Import settings from file
-     */
     async importSettings() {
         const input = document.createElement('input');
         input.type = 'file';
         input.accept = '.json';
-        
         input.onchange = async (e) => {
             const file = e.target.files[0];
             if (!file) return;
-            
             try {
-                const text = await file.text();
-                const imported = JSON.parse(text);
+                const imported = JSON.parse(await file.text());
                 this.settings = { ...this.defaults, ...imported };
                 this.saveSettings();
                 this.updateUI();
                 this.applyTheme();
                 this.showSavedNotification('Settings imported successfully');
-            } catch (error) {
+            } catch {
                 alert('Failed to import settings: Invalid file format');
             }
         };
-        
         input.click();
     },
 
-    /**
-     * Show saved notification
-     */
     showSavedNotification(message = 'Settings saved') {
-        const notification = document.getElementById('settings-saved-notification');
-        if (notification) {
-            notification.textContent = message;
-            notification.classList.remove('hidden');
-            setTimeout(() => {
-                notification.classList.add('hidden');
-            }, 2000);
-        }
+        const el = document.getElementById('settings-saved-notification');
+        if (!el) return;
+        el.textContent = message;
+        el.classList.remove('hidden');
+        setTimeout(() => el.classList.add('hidden'), 2000);
     },
 
-    /**
-     * Get a specific setting value
-     * @param {string} key - Setting key
-     * @returns {any} Setting value
-     */
     get(key) {
         this.loadSettings();
         return this.settings[key] ?? this.defaults[key];
     },
 
-    /**
-     * Check if local AI is enabled
-     * @returns {boolean}
-     */
     isLocalAiEnabled() {
         return this.get('localAiEnabled');
     },
 
-    
-    // CHANGE PASSWORD
+    /* ─── Account security ──────────────────────────────────── */
 
-    /**
-     * Initialize account security section visibility
-     */
     initAccountSecuritySection() {
         const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
-        const accountSection = document.getElementById('account-security-section');
-        
-        if (accountSection) {
-            accountSection.classList.toggle('hidden', isGuest);
-        }
+        const section = document.getElementById('account-security-section');
+        if (section) section.classList.toggle('hidden', isGuest);
     },
 
-    /**
-     * Handle change password form submission
-     */
     async handleChangePassword() {
         const currentPassword = document.getElementById('current-password')?.value;
-        const newPassword = document.getElementById('new-password')?.value;
+        const newPassword     = document.getElementById('new-password')?.value;
         const confirmPassword = document.getElementById('confirm-new-password')?.value;
-        const submitBtn = document.getElementById('change-password-btn');
+        const submitBtn       = document.getElementById('change-password-btn');
 
-        // Clear previous messages
         this.hideChangePasswordMessages();
 
-        // Validate inputs
-        if (!currentPassword) {
-            this.showChangePasswordError('Please enter your current password.');
-            return;
-        }
+        if (!currentPassword) { this.showChangePasswordError('Please enter your current password.'); return; }
+        if (!newPassword || newPassword.length < 12) { this.showChangePasswordError('New password must be at least 12 characters.'); return; }
+        if (newPassword !== confirmPassword) { this.showChangePasswordError('New passwords do not match.'); return; }
+        if (currentPassword === newPassword) { this.showChangePasswordError('New password must be different from current password.'); return; }
 
-        if (!newPassword || newPassword.length < 6) {
-            this.showChangePasswordError('New password must be at least 6 characters.');
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            this.showChangePasswordError('New passwords do not match.');
-            return;
-        }
-
-        if (currentPassword === newPassword) {
-            this.showChangePasswordError('New password must be different from current password.');
-            return;
-        }
-
-        // Disable button during request
         if (submitBtn) {
             submitBtn.disabled = true;
-            submitBtn.innerHTML = `
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;" class="icon-spin">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                </svg>
-                Updating...
-            `;
+            submitBtn.textContent = 'Updating...';
         }
 
         try {
-            // Call API to change password
-            if (window.api?.auth?.changePassword) {
-                const result = await window.api.auth.changePassword(currentPassword, newPassword);
-                if (!result.success) {
-                    throw new Error(result.message || 'Password change failed');
-                }
-            } else {
-                // Mock successful change for development
-                await new Promise(resolve => setTimeout(resolve, 1000));
-            }
+            const result = await window.api.auth.changePassword(currentPassword, newPassword);
+            if (!result.success) throw new Error(result.error || 'Password change failed');
 
-            // Show success message
             this.showChangePasswordSuccess('Password updated successfully!');
-
-            // Clear form
-            document.getElementById('current-password').value = '';
-            document.getElementById('new-password').value = '';
+            document.getElementById('current-password').value     = '';
+            document.getElementById('new-password').value         = '';
             document.getElementById('confirm-new-password').value = '';
-
         } catch (error) {
             console.error('Failed to change password:', error);
-            this.showChangePasswordError(error.message || 'Failed to change password. Please check your current password and try again.');
+            this.showChangePasswordError(error.message || 'Failed to change password. Please check your current password.');
         } finally {
             if (submitBtn) {
                 submitBtn.disabled = false;
-                submitBtn.innerHTML = `
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
-                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                    </svg>
-                    Update Password
-                `;
+                submitBtn.textContent = 'Update Password';
             }
         }
     },
 
-    /**
-     * Show error message in change password form
-     */
     showChangePasswordError(message) {
-        const errorEl = document.getElementById('change-password-error');
-        const successEl = document.getElementById('change-password-success');
-        
-        if (errorEl) {
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-        }
-        if (successEl) {
-            successEl.classList.add('hidden');
-        }
+        const err = document.getElementById('change-password-error');
+        const ok  = document.getElementById('change-password-success');
+        if (err) { err.textContent = message; err.classList.remove('hidden'); }
+        if (ok)  ok.classList.add('hidden');
     },
 
-    /**
-     * Show success message in change password form
-     */
     showChangePasswordSuccess(message) {
-        const errorEl = document.getElementById('change-password-error');
-        const successEl = document.getElementById('change-password-success');
-        
-        if (successEl) {
-            successEl.textContent = message;
-            successEl.classList.remove('hidden');
-        }
-        if (errorEl) {
-            errorEl.classList.add('hidden');
-        }
-
-        // Auto-hide after 5 seconds
-        setTimeout(() => {
-            if (successEl) successEl.classList.add('hidden');
-        }, 5000);
+        const err = document.getElementById('change-password-error');
+        const ok  = document.getElementById('change-password-success');
+        if (ok) { ok.textContent = message; ok.classList.remove('hidden'); }
+        if (err) err.classList.add('hidden');
+        setTimeout(() => { if (ok) ok.classList.add('hidden'); }, 5000);
     },
 
-    /**
-     * Hide all change password messages
-     */
     hideChangePasswordMessages() {
-        const errorEl = document.getElementById('change-password-error');
-        const successEl = document.getElementById('change-password-success');
-        
-        if (errorEl) errorEl.classList.add('hidden');
-        if (successEl) successEl.classList.add('hidden');
+        const err = document.getElementById('change-password-error');
+        const ok  = document.getElementById('change-password-success');
+        if (err) err.classList.add('hidden');
+        if (ok)  ok.classList.add('hidden');
     },
 
-    // ============================================
-    // ADMIN USER MANAGEMENT
-    // ============================================
+    /* ─── Admin user management ─────────────────────────────── */
 
-    /**
-     * Initialize admin user management section
-     */
     initAdminSection() {
-        const currentUser = window.App?.state?.currentUser || window.currentUser;
-        const adminSection = document.getElementById('admin-user-management');
-        
-        // Only show for admins
+        const currentUser = window.App?.state?.currentUser;
         const isAdmin = currentUser?.role === 'admin' || currentUser?.role === 'Admin';
-        
-        if (adminSection) {
-            adminSection.classList.toggle('hidden', !isAdmin);
-        }
-        
+        const section = document.getElementById('admin-user-management');
+        if (section) section.classList.toggle('hidden', !isAdmin);
         if (isAdmin) {
             this.loadUserList();
             this.bindAdminEvents();
         }
     },
 
-    /**
-     * Bind admin-specific events
-     */
     bindAdminEvents() {
-        // User search
         const searchInput = document.getElementById('user-search-input');
         if (searchInput) {
             searchInput.addEventListener('input', (e) => this.filterUsers(e.target.value));
         }
-
-        // Reset password form
-        const resetForm = document.getElementById('admin-reset-password-form');
-        if (resetForm) {
-            resetForm.addEventListener('submit', (e) => {
-                e.preventDefault();
-                this.submitPasswordReset();
-            });
-        }
     },
 
-    /**
-     * Load user list from API or mock data
-     */
     async loadUserList() {
         const tbody = document.getElementById('user-list-body');
         if (!tbody) return;
 
+        tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">Loading...</td></tr>`;
+
         try {
-            let users;
-            if (window.api?.admin?.getUsers) {
-                users = await window.api.admin.getUsers();
-            } else {
-                // Mock user data
-                users = this.getMockUsers();
-            }
-            
-            this.renderUserList(users);
+            const result = await window.api.admin.getUsers();
+            if (!result.success) throw new Error(result.error);
+            this.cachedUsers = result.users || [];
+            this.renderUserList(this.cachedUsers);
         } catch (error) {
             console.error('Failed to load users:', error);
-            tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">Failed to load users</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">Failed to load users: ${error.message}</td></tr>`;
         }
     },
 
-    /**
-     * Render user list
-     * @param {array} users - Array of user objects
-     */
     renderUserList(users) {
         const tbody = document.getElementById('user-list-body');
         if (!tbody) return;
 
-        if (users.length === 0) {
+        const currentUid = window.App?.state?.currentUser?.uid;
+
+        if (!users || users.length === 0) {
             tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">No users found</td></tr>`;
             return;
         }
-
-        const currentUserId = window.App?.state?.currentUser?.id || window.currentUser?.id;
 
         tbody.innerHTML = users.map(user => `
             <tr>
@@ -548,174 +353,123 @@ const SettingsPage = {
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
-                        ${user.username}
-                        ${user.id === currentUserId ? '<span class="you-badge">(You)</span>' : ''}
+                        ${user.username || user.email}
+                        ${user.uid === currentUid ? '<span class="you-badge">(You)</span>' : ''}
                     </div>
                 </td>
                 <td class="text-muted">${user.email || '—'}</td>
                 <td>
-                    <span class="user-role-badge ${user.role.toLowerCase()}">${user.role}</span>
+                    <span class="user-role-badge ${(user.role || 'user').toLowerCase()}">${user.role || 'user'}</span>
+                    ${user.status === 'suspended' ? '<span class="user-role-badge" style="background:#FEE2E2;color:#EF4444;margin-left:4px;">Suspended</span>' : ''}
                 </td>
-                <td class="text-muted">${user.lastLogin ? this.formatDate(user.lastLogin) : 'Never'}</td>
+                <td class="text-muted">${user.createdAt ? this.formatDate(user.createdAt) : '—'}</td>
                 <td>
-                    ${user.id !== currentUserId && user.role !== 'Admin' ? `
-                        <button class="btn btn-outline btn-sm" onclick="SettingsPage.openResetPasswordModal('${user.id}', '${user.username}')">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
-                                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
-                                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
-                            </svg>
-                            Reset Password
-                        </button>
+                    ${user.uid !== currentUid ? `
+                        <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                            ${user.status === 'suspended'
+                                ? `<button class="btn btn-outline btn-sm" onclick="SettingsPage.activateUser('${user.uid}')">Activate</button>`
+                                : `<button class="btn btn-outline btn-sm" onclick="SettingsPage.suspendUser('${user.uid}')">Suspend</button>`
+                            }
+                            <button class="btn btn-outline btn-sm" onclick="SettingsPage.sendPasswordReset('${user.uid}', '${user.email}')">
+                                Reset Password
+                            </button>
+                            ${user.role !== 'admin'
+                                ? `<button class="btn btn-outline btn-sm" onclick="SettingsPage.makeAdmin('${user.uid}')">Make Admin</button>`
+                                : `<button class="btn btn-outline btn-sm" onclick="SettingsPage.removeAdmin('${user.uid}')">Remove Admin</button>`
+                            }
+                        </div>
                     ` : '<span class="text-muted">—</span>'}
                 </td>
             </tr>
         `).join('');
     },
 
-    /**
-     * Filter users by search term
-     * @param {string} term - Search term
-     */
     filterUsers(term) {
-        const users = this.getMockUsers();
-        const filtered = users.filter(user => 
-            user.username.toLowerCase().includes(term.toLowerCase()) ||
-            (user.email && user.email.toLowerCase().includes(term.toLowerCase()))
+        const lower = term.toLowerCase();
+        const filtered = (this.cachedUsers || []).filter(u =>
+            (u.username || '').toLowerCase().includes(lower) ||
+            (u.email || '').toLowerCase().includes(lower)
         );
         this.renderUserList(filtered);
     },
 
-    /**
-     * Refresh user list
-     */
     refreshUserList() {
         this.loadUserList();
     },
 
-    /**
-     * Open reset password modal
-     * @param {string} userId - User ID
-     * @param {string} username - Username for display
-     */
-    openResetPasswordModal(userId, username) {
-        const modal = document.getElementById('reset-password-modal');
-        const userIdInput = document.getElementById('reset-user-id');
-        const userDisplay = document.getElementById('reset-user-display');
-        const errorEl = document.getElementById('reset-password-error');
-        
-        if (modal) modal.classList.remove('hidden');
-        if (userIdInput) userIdInput.value = userId;
-        if (userDisplay) userDisplay.textContent = username;
-        if (errorEl) errorEl.classList.add('hidden');
-        
-        // Clear password fields
-        const newPassword = document.getElementById('new-temp-password');
-        const confirmPassword = document.getElementById('confirm-temp-password');
-        if (newPassword) newPassword.value = '';
-        if (confirmPassword) confirmPassword.value = '';
-        if (newPassword) newPassword.focus();
+    async suspendUser(uid) {
+        if (!confirm('Suspend this user? They will not be able to log in.')) return;
+        const result = await window.api.admin.suspendUser(uid);
+        if (result.success) {
+            this.loadUserList();
+        } else {
+            alert('Failed to suspend user: ' + result.error);
+        }
     },
 
-    /**
-     * Close reset password modal
-     */
+    async activateUser(uid) {
+        const result = await window.api.admin.activateUser(uid);
+        if (result.success) {
+            this.loadUserList();
+        } else {
+            alert('Failed to activate user: ' + result.error);
+        }
+    },
+
+    async sendPasswordReset(uid, email) {
+        if (!confirm(`Send a password reset email to "${email}"?\n\nThey will receive a link to set a new password.`)) return;
+        const result = await window.api.admin.sendPasswordReset(email);
+        if (result.success) {
+            alert(`Password reset email sent to ${email}.`);
+        } else {
+            alert('Failed to send reset email: ' + result.error);
+        }
+    },
+
+    async makeAdmin(uid) {
+        if (!confirm('Grant admin role to this user? They will have access to user management.')) return;
+        const result = await window.api.admin.updateUserRole(uid, 'admin');
+        if (result.success) {
+            this.loadUserList();
+        } else {
+            alert('Failed to update role: ' + result.error);
+        }
+    },
+
+    async removeAdmin(uid) {
+        if (!confirm('Remove admin role from this user?')) return;
+        const result = await window.api.admin.updateUserRole(uid, 'user');
+        if (result.success) {
+            this.loadUserList();
+        } else {
+            alert('Failed to update role: ' + result.error);
+        }
+    },
+
+    // Legacy modal methods kept so existing HTML onclick attributes still resolve
+    openResetPasswordModal(userId, username) {
+        const user = this.cachedUsers?.find(u => u.uid === userId);
+        const email = user?.email || '';
+        this.sendPasswordReset(userId, email);
+    },
+
     closeResetPasswordModal() {
         const modal = document.getElementById('reset-password-modal');
         if (modal) modal.classList.add('hidden');
     },
 
-    /**
-     * Submit password reset
-     */
     async submitPasswordReset() {
-        const userId = document.getElementById('reset-user-id')?.value;
-        const newPassword = document.getElementById('new-temp-password')?.value;
-        const confirmPassword = document.getElementById('confirm-temp-password')?.value;
-        const errorEl = document.getElementById('reset-password-error');
-
-        // Validate
-        if (!newPassword || newPassword.length < 6) {
-            this.showResetError('Password must be at least 6 characters');
-            return;
-        }
-
-        if (newPassword !== confirmPassword) {
-            this.showResetError('Passwords do not match');
-            return;
-        }
-
-        try {
-            if (window.api?.admin?.resetUserPassword) {
-                await window.api.admin.resetUserPassword(userId, newPassword);
-            }
-            
-            this.closeResetPasswordModal();
-            alert('Password has been reset successfully. The user will need to use this new password on their next login.');
-            
-        } catch (error) {
-            console.error('Failed to reset password:', error);
-            this.showResetError('Failed to reset password. Please try again.');
-        }
+        this.closeResetPasswordModal();
     },
 
-    /**
-     * Show error in reset password modal
-     * @param {string} message - Error message
-     */
     showResetError(message) {
-        const errorEl = document.getElementById('reset-password-error');
-        if (errorEl) {
-            errorEl.textContent = message;
-            errorEl.classList.remove('hidden');
-        }
+        const el = document.getElementById('reset-password-error');
+        if (el) { el.textContent = message; el.classList.remove('hidden'); }
     },
 
-    /**
-     * Format date for display (delegating to Utils)
-     * @param {string} dateStr - Date string
-     * @returns {string} Formatted date
-     */
     formatDate(dateStr) {
         return Utils.formatDate(dateStr);
-    },
-
-    /**
-     * Get mock users for development
-     * @returns {array} Mock user list
-     */
-    getMockUsers() {
-        return [
-            {
-                id: 'user-001',
-                username: 'admin',
-                email: 'admin@pathogenius.local',
-                role: 'Admin',
-                lastLogin: '2025-12-18T09:30:00Z'
-            },
-            {
-                id: 'user-002',
-                username: 'dr.smith',
-                email: 'smith@hospital.org',
-                role: 'Researcher',
-                lastLogin: '2025-12-17T14:45:00Z'
-            },
-            {
-                id: 'user-003',
-                username: 'lab_tech_1',
-                email: 'labtech@pathogenius.local',
-                role: 'Researcher',
-                lastLogin: '2025-12-16T11:20:00Z'
-            },
-            {
-                id: 'user-004',
-                username: 'viewer_account',
-                email: 'viewer@example.com',
-                role: 'Viewer',
-                lastLogin: null
-            }
-        ];
     }
 };
 
 window.SettingsPage = SettingsPage;
-

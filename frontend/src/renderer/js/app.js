@@ -69,25 +69,21 @@ const App = {
      */
     async checkExistingSession() {
         try {
-            if (window.api?.auth?.getSession) {
-                const session = await window.api.auth.getSession();
-                
-                if (session.isAuthenticated && session.user) {
-                    console.log('Existing session found:', session.user.displayName);
-                    this.setUser(session.user, session.isGuest);
+            // Try to restore a persistent session from the OS keychain
+            if (window.api?.auth?.restoreSession) {
+                const result = await window.api.auth.restoreSession();
+                if (result.success && result.user) {
+                    console.log('Session restored:', result.user.displayName);
+                    this.setUser(result.user, false);
                     this.navigateTo('dashboard');
                     return;
                 }
-                
-                if (session.expired) {
-                    console.log('Session expired, requiring re-login');
-                }
             }
         } catch (error) {
-            console.error('Session check error:', error);
+            console.error('Session restore error:', error);
         }
-        
-        // No valid session, show login
+
+        // No valid session — show login
         this.navigateTo('login');
     },
 
@@ -503,9 +499,8 @@ const App = {
         }
         
         try {
-            // Call auth service if available
             if (window.api?.auth?.logout) {
-                await window.api.auth.logout();
+                await window.api.auth.logout(isGuest);
             }
         } catch (error) {
             console.error('Logout error:', error);
