@@ -10,6 +10,7 @@ Workflow:
   2. clark_abundance_report – estimate abundance (Docker or local Python)
   3. clark_to_json          – local JSON conversion for the Electron UI
 """
+#TEST
 
 import os
 import csv
@@ -173,35 +174,81 @@ rule clark_lite_classify:
             )
 
             # 4) Run CU-CLARK-L on the Nano (GPU classification)
-            #    cuCLARK-l may report a non-fatal CUDA error during cleanup
-            #    even after classification completes. We ignore the exit code
-            #    and verify the output file exists instead.
+            #    Launch with nohup in background so it survives SSH disconnects.
+            #    First-time runs build .tsk index (30+ min for 903 genomes),
+            #    which exceeds SSH keepalive timeouts if run inline.
+            _remote_out = f"{params.remote_ws}/{params.sample}.clark.csv"
+            _remote_log = f"{params.remote_ws}/cuclark.log"
+
             shell(
-                'echo [EDGE] Running CU-CLARK-L GPU classification on Jetson Nano... && '
+                'echo [EDGE] Launching CU-CLARK-L on Jetson Nano (background)... && '
                 'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
-                '-o ServerAliveInterval=15 {params.ssh_target} '
-                '"{params.cuclark}/exe/cuCLARK-l '
+                '{params.ssh_target} '
+                '"nohup {params.cuclark}/exe/cuCLARK-l '
                 '-T {params.remote_db}/targets.txt '
                 '-D {params.remote_db}/ '
                 '-O {params.remote_ws}/{params.sample}.fastq '
                 '-R {params.remote_ws}/{params.sample}.clark '
                 '-n {params.threads} '
-                '-k {params.kmer} || true"'
+                '-k {params.kmer} '
+                '> {params.remote_ws}/cuclark.log 2>&1 &"'
             )
 
-            # Verify that cuCLARK-l actually produced output
+            # Poll until classification completes or process exits
             import subprocess as _sp2
-            _verify = _sp2.run(
-                ["ssh", "-o", "StrictHostKeyChecking=no", "-o", f"BatchMode={SSH_BATCH_OPT}",
-                 "-o", "ConnectTimeout=10",
-                 params.ssh_target,
-                 f"test -f {params.remote_ws}/{params.sample}.clark.csv"],
-                capture_output=True, text=True, timeout=15
-            )
-            if _verify.returncode != 0:
+            import time as _time
+
+            _MAX_WAIT = 7200   # 2 hours
+            _POLL     = 30     # check every 30 seconds
+            _elapsed  = 0
+            _ssh_base = [
+                "ssh", "-o", "StrictHostKeyChecking=no",
+                "-o", f"BatchMode={SSH_BATCH_OPT}",
+                "-o", "ConnectTimeout=10",
+                params.ssh_target,
+            ]
+
+            print(f"[EDGE] Polling for completion (max {_MAX_WAIT // 60} min)...")
+            while _elapsed < _MAX_WAIT:
+                _time.sleep(_POLL)
+                _elapsed += _POLL
+
+                try:
+                    _check = _sp2.run(
+                        _ssh_base + [
+                            f"test -f {_remote_out} && echo DONE || "
+                            f"(pgrep -f cuCLARK-l > /dev/null 2>&1 && echo RUNNING || echo FAILED)"
+                        ],
+                        capture_output=True, text=True, timeout=30
+                    )
+                    _status = _check.stdout.strip().split('\n')[-1]
+                except Exception as _poll_err:
+                    print(f"[EDGE] Poll SSH error ({_elapsed}s): {_poll_err}")
+                    continue   # transient network blip — retry
+
+                if _elapsed % 120 < _POLL:
+                    print(f"[EDGE] Status: {_status}  ({_elapsed // 60} min elapsed)")
+
+                if _status == "DONE":
+                    print(f"[EDGE] Classification complete after {_elapsed}s")
+                    break
+                elif _status == "FAILED":
+                    # Process exited but no output — read last log lines
+                    try:
+                        _log = _sp2.run(
+                            _ssh_base + [f"tail -20 {_remote_log}"],
+                            capture_output=True, text=True, timeout=15
+                        )
+                        print(f"[EDGE] CU-CLARK-L log tail:\n{_log.stdout}")
+                    except Exception:
+                        pass
+                    raise RuntimeError(
+                        "CU-CLARK-L process exited without producing output. "
+                        f"Check {_remote_log} on the Jetson Nano."
+                    )
+            else:
                 raise RuntimeError(
-                    f"CU-CLARK-L did not produce output file "
-                    f"{params.remote_ws}/{params.sample}.clark.csv on the Jetson Nano"
+                    f"CU-CLARK-L timed out after {_MAX_WAIT // 60} minutes"
                 )
 
             # 4) Download classification CSV back

@@ -1,12 +1,36 @@
 .idea/
 # Ignore large taxonomy files
 *.dmp
-Patho-genius/results/clark
-Patho-genius/fastQ_reads
+# Virtual Environment
+.venv/
+venv/
+ENV/
 
+# PyCharm / JetBrains IDE
+.idea/
 
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Bioinformatics Data
+fastQ_reads/
+kraken_db/
+clark_db/
+data/*.fastq
+data/*.fq
+*.fasta
 *.fai
 *.fastq
 *.fq
 *.fna
 genomes/
+
+
+# Snakemake internal files
+.snakemake/
+
+Patho-genius/clark_db_sync_test.tar
+Patho-genius/results/
+frontend/results/

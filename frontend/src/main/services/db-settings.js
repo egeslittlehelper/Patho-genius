@@ -182,13 +182,25 @@ async function buildCustomDb(folderPath) {
                 console.error(`[build_clark_db ERROR] ${data.toString().trim()}`);
             });
 
-            buildProc.on('close', (code) => {
+            buildProc.on('close', async (code) => {
                 console.log(`build_clark_db.py exited with code ${code}`);
                 if (code === 0) {
                     // Update settings isBuilt to true
                     const settings = loadSettings();
                     settings.isBuilt = true;
                     saveSettings(settings);
+
+                    // Sync to Jetson Nano if configured
+                    try {
+                        const syncResult = await syncDbToJetson();
+                        if (syncResult.skipped) {
+                            console.log('[DB Build] Jetson sync skipped (no GPU config)');
+                        }
+                    } catch (syncError) {
+                        console.error('[DB Build] Warning: Jetson sync failed:', syncError.message);
+                        console.error('[DB Build] CPU classification will still work. Fix Jetson connectivity and re-import to sync.');
+                    }
+
                     resolve({ success: true });
                 } else {
                     reject(new Error(`Database build failed with exit code ${code}`));
@@ -229,12 +241,122 @@ function getDefaultDbInfo() {
     return { path: clarkDb, isBuilt, genomeCount };
 }
 
+// ---------------------------------------------------------------------------
+// Helper: spawn a command and return a promise
+// ---------------------------------------------------------------------------
+function runCommand(cmd, args, opts = {}) {
+    return new Promise((resolve, reject) => {
+        const proc = spawn(cmd, args, {
+            cwd: opts.cwd || WORKFLOW_DIR,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            ...opts,
+        });
+        let stdout = '';
+        let stderr = '';
+        proc.stdout.on('data', (d) => { stdout += d.toString(); });
+        proc.stderr.on('data', (d) => { stderr += d.toString(); });
+        proc.on('close', (code) => {
+            if (code === 0) resolve(stdout.trim());
+            else reject(new Error(`${cmd} exited with code ${code}: ${stderr.trim()}`));
+        });
+        proc.on('error', reject);
+    });
+}
+
+// ---------------------------------------------------------------------------
+// Sync custom database to Jetson Nano (GPU path)
+// ---------------------------------------------------------------------------
+
+/**
+ * Sync the local clark_db/ directory to the Jetson Nano so CU-CLARK-L
+ * can classify against the same custom reference database.
+ *
+ * Flow:
+ *   1. Create a tar.gz archive of clark_db/ locally
+ *   2. SSH: clean stale .tsk index files + old Custom/ on the Nano
+ *   3. SCP: upload the tar.gz to the Nano
+ *   4. SSH: extract, fix targets.txt paths (/db/ → remote_db), cleanup
+ *
+ * If jetson_nano config is missing in config.yaml, sync is skipped silently.
+ */
+async function syncDbToJetson() {
+    // Read Jetson config from config.yaml
+    const configPath = path.join(WORKFLOW_DIR, 'config.yaml');
+    const doc = yaml.load(fs.readFileSync(configPath, 'utf8'));
+
+    const jetson = doc.jetson_nano;
+    if (!jetson || !jetson.host || !jetson.user || !jetson.remote_db) {
+        console.log('[DB Sync] No Jetson Nano config found — skipping GPU sync');
+        return { success: true, skipped: true };
+    }
+
+    const sshTarget = `${jetson.user}@${jetson.host}`;
+    const remoteDb  = jetson.remote_db;
+    const batchMode = jetson.ssh_batch_mode !== false ? 'yes' : 'no';
+    const sshOpts   = [
+        '-o', 'StrictHostKeyChecking=no',
+        '-o', `BatchMode=${batchMode}`,
+        '-o', 'ConnectTimeout=15',
+        '-o', 'ServerAliveInterval=15',
+    ];
+
+    const clarkDb = path.join(WORKFLOW_DIR, 'clark_db');
+    const tarFile = path.join(WORKFLOW_DIR, 'clark_db_sync.tar');
+
+    console.log(`[DB Sync] Syncing clark_db to ${sshTarget}:${remoteDb} ...`);
+
+    try {
+        // 1) Create tar archive of clark_db locally (NO gzip — bsdtar gzip
+        //    on 3 GB of FASTA text takes 20+ min; uncompressed tar is instant)
+        console.log('[DB Sync] Step 1/4 — Creating archive...');
+        await runCommand('tar', ['-cf', tarFile, '-C', clarkDb, '.']);
+
+        // 2) SSH: clean stale index files and old Custom/ directory on Nano
+        console.log('[DB Sync] Step 2/4 — Cleaning remote...');
+        await runCommand('ssh', [
+            ...sshOpts, sshTarget,
+            `rm -rf ${remoteDb}/Custom ${remoteDb}/*.tsk.* && mkdir -p ${remoteDb}`,
+        ]);
+
+        // 3) SCP: upload the tar to the Nano
+        const tarSizeMB = (fs.statSync(tarFile).size / (1024 * 1024)).toFixed(1);
+        console.log(`[DB Sync] Step 3/4 — Uploading archive (${tarSizeMB} MB)...`);
+        await runCommand('scp', [
+            ...sshOpts, tarFile,
+            `${sshTarget}:/tmp/clark_db_sync.tar`,
+        ]);
+
+        // 4) SSH: extract, fix targets.txt paths, cleanup temp file
+        //    targets.txt has Docker paths like /db/Custom/file.fasta
+        //    Nano needs absolute paths like /home/pathogen/cuclark_db/Custom/file.fasta
+        console.log('[DB Sync] Step 4/4 — Extracting on Jetson Nano...');
+        await runCommand('ssh', [
+            ...sshOpts, sshTarget,
+            `tar -xf /tmp/clark_db_sync.tar -C ${remoteDb} && ` +
+            `rm -f /tmp/clark_db_sync.tar && ` +
+            `sed -i 's|/db/|${remoteDb}/|g' ${remoteDb}/targets.txt`,
+        ]);
+
+        // Cleanup local tar
+        try { fs.unlinkSync(tarFile); } catch { /* ignore */ }
+
+        console.log('[DB Sync] Custom database synced to Jetson Nano');
+        return { success: true };
+
+    } catch (e) {
+        // Cleanup local tar on error
+        try { fs.unlinkSync(tarFile); } catch { /* ignore */ }
+        throw e;
+    }
+}
+
 module.exports = {
     loadSettings,
     saveSettings,
     getCustomDbPath,
     setCustomDbPath,
     buildCustomDb,
+    syncDbToJetson,
     clearCustomDb,
     getDefaultDbInfo,
     isFastaFile,
