@@ -1,9 +1,19 @@
+# Dependencies
 node_modules/
 dist/
+
+# OS
 .DS_Store
+
+# Logs
 *.log
+
+# IDE
 *.code-workspace
+
+# Runtime configs (contain local paths)
 *config.json
 *results.json
 
-
+# Analysis results (large, generated at runtime)
+results/

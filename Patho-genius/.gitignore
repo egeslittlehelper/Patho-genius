@@ -3,27 +3,30 @@
 venv/
 ENV/
 
-# PyCharm / JetBrains IDE
-.idea/
-
 # Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Bioinformatics Data
+# IDE
+.idea/
+
+# Bioinformatics data (large)
 fastQ_reads/
-kraken_db/
 clark_db/
-data/*.fastq
-data/*.fq
-*.fasta
-*.fai
+genomes/
 *.fastq
 *.fq
+*.fasta
 *.fna
-genomes/
+*.fa
+*.fai
+*.dmp
+*.tsk.*
+*.tar
+*.tar.gz
+clark_db_sync*
 
-
-# Snakemake internal files
+# Pipeline runtime
+results/
 .snakemake/

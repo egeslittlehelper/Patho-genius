@@ -1,36 +1,50 @@
+# ─── IDE / Editor ──────────────────────────────────────────────
 .idea/
-# Ignore large taxonomy files
-*.dmp
-# Virtual Environment
+.vscode/
+*.code-workspace
+
+# ─── Python ────────────────────────────────────────────────────
 .venv/
 venv/
 ENV/
-
-# PyCharm / JetBrains IDE
-.idea/
-
-# Python cache
 __pycache__/
 *.py[cod]
 *$py.class
 
-# Bioinformatics Data
-fastQ_reads/
-kraken_db/
-clark_db/
-data/*.fastq
-data/*.fq
-*.fasta
-*.fai
+# ─── Node / Electron ──────────────────────────────────────────
+node_modules/
+
+# ─── OS ────────────────────────────────────────────────────────
+.DS_Store
+Thumbs.db
+
+# ─── Bioinformatics data (large files) ────────────────────────
 *.fastq
 *.fq
+*.fasta
 *.fna
+*.fa
+*.fai
+*.dmp
+*.tsk.*
+*.tar
+*.tar.gz
+
+# Genome / reference data directories
 genomes/
+Marine FASTQ/
+reads_mapping.tsv/
 
-
-# Snakemake internal files
-.snakemake/
-
-Patho-genius/clark_db_sync_test.tar
+# ─── Pipeline runtime ─────────────────────────────────────────
+# CLARK database (built locally, not versioned)
+Patho-genius/clark_db/
+Patho-genius/fastQ_reads/
 Patho-genius/results/
+Patho-genius/.snakemake/
+Patho-genius/clark_db_sync*.tar*
+
+# Frontend analysis results (generated at runtime)
 frontend/results/
+
+# ─── Misc ──────────────────────────────────────────────────────
+*.log
