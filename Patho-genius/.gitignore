@@ -17,9 +17,12 @@ kraken_db/
 clark_db/
 data/*.fastq
 data/*.fq
+*.fasta
+*.fai
 *.fastq
 *.fq
 *.fna
+genomes/
 
 
 # Snakemake internal files

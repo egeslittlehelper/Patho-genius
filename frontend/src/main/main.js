@@ -389,7 +389,6 @@ ipcMain.handle('cloud:check-connection', async () => {
 });
 
 ipcMain.handle('cloud:get-results', async () => {
-    console.log('Fetching cloud results...');
     // TODO: Implement actual cloud API call
     // This would fetch from your cloud storage/API
     return [];

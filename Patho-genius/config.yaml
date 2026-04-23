@@ -1,52 +1,21 @@
-# ─────────────────────────────────────────────────────────────────────────────
-# Pathogenius Dual-Engine Pipeline Configuration
-# ─────────────────────────────────────────────────────────────────────────────
-# Supports two classification engines:
-#   cpu  →  CLARK-l via Docker (runs locally)
-#   gpu  →  CU-CLARK-L on Jetson Nano via Tailscale SSH (GPU-accelerated)
-#
-# The engine is selected from the Electron UI and passed to Snakemake
-# via --config engine=cpu|gpu. Default is "cpu".
-# ─────────────────────────────────────────────────────────────────────────────
-
-# Classification engine: "cpu" (Docker CLARK-l) or "gpu" (Jetson Nano CU-CLARK-L)
-engine: "cpu"
-
+engine: cpu
 paths:
-  # Relative paths (workspace-relative, portable across machines)
-  db_host_windows: "./clark_db"           # Local reference DB (CPU mode + build_clark_db.py)
-  data_host_windows: "./fastQ_reads"      # Local FASTQ input directory
-
-# Sample basename for inputs: fastQ_reads/{sample}.fastq and results/clark/{sample}.json
-sample: "SRR7497167_1"
-
-# ─── CLARK-l / CU-CLARK-L Classification Parameters ───────────────────────────
+  db_host_windows: ./clark_db
+  data_host_windows: ./fastQ_reads
+sample: SRR7497167_1
 clark:
-  image: "quay.io/biocontainers/clark:1.2.6.1--h4ac6f70_3"  # Docker image (CPU mode only)
+  image: quay.io/biocontainers/clark:1.2.6.1--h4ac6f70_3
   threads: 8
-  kmer_length: 27   # Default k-mer length for CLARK-l
-  sampling_factor: 2  # Sampling factor for CLARK-l (higher = faster, less sensitive)
-
-# ─── Jetson Nano Edge Device (GPU mode only, Tailscale SSH) ───────────────────
-# The Jetson Nano runs CU-CLARK-L natively with GPU acceleration.
-# The reference database is already stored on the device.
+  kmer_length: 27
+  sampling_factor: 2
 jetson_nano:
-  host: "100.71.242.74"                            # Tailscale IP of the Jetson Nano
-  remote_db: "/home/pathogen/cuclark_db"            # CLARK reference database on the Nano
-  remote_workspace: "/home/pathogen/pathogenius_ws" # Temp workspace for FASTQ & results
-  cuclark_dir: "/home/pathogen/cuclark"             # CU-CLARK installation directory
-
-# ── Genome Sources ─────────────────────────────────────────────────────────────
-# Each entry is a directory of FASTA files (.fna / .fasta / .fa / .fsa / .gz).
-# If a reads_mapping (.tsv or .tsv.gz) is supplied, contig-based taxid lookup
-# is used for any file whose headers look like SPAdes NODE contigs.
-# All other files fall back to NCBI organism-name / accession lookup.
+  host: 100.71.242.74
+  remote_db: /home/pathogen/cuclark_db
+  remote_workspace: /home/pathogen/pathogenius_ws
+  cuclark_dir: /home/pathogen/cuclark
   user: pathogen
   ssh_batch_mode: true
 genome_sources:
-  - path: "./clark_db"          # existing named-pathogen genomes (.fna)
-
-  # Example: add another source with reads_mapping for SPAdes contigs
-  # - path: "./my_genomes/simulation/genomes"
-  #   reads_mapping: "./my_reads/reads_mapping.tsv.gz"
-  - path: C:/Users/egeni/OneDrive/Desktop/Eges_Codes/CS_491/example data/marmgCAMI2_genomes/simulation_short_read/genomes
+  - path: ./clark_db
+  - path: C:\Users\yalid\Desktop\Pathogenius2\genomes
+    reads_mapping: C:\Users\yalid\Desktop\Pathogenius2\reads_mapping.tsv\reads_mapping.tsv

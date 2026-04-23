@@ -93,9 +93,6 @@ def _first_header(path: Path) -> str | None:
     return None
 
 
-def _is_node_header(header: str) -> bool:
-    """True if this looks like a SPAdes assembly contig header."""
-    return header.startswith("NODE_")
 
 
 def _parse_accession(header: str) -> str | None:
@@ -189,6 +186,23 @@ def extract_accession_from_fasta(fasta_path: Path) -> str | None:
 # Taxid resolution — reads_mapping strategy
 # ---------------------------------------------------------------------------
 
+def _strip_read_prefix(read_id: str) -> str:
+    """Strip the numeric prefix from reads like '5RNODE_411_...-63' → 'RNODE_411_...'.
+    Also strip the position suffix ('-63') → canonical contig name."""
+    # Remove leading digits (e.g. '5RNODE_...' → 'RNODE_...')
+    name = read_id.lstrip("0123456789")
+    # Remove trailing position suffix (e.g. 'RNODE_100_...-5' → 'RNODE_100_...')
+    name = name.rsplit("-", 1)[0]
+    return name
+
+
+def _is_contig_header(header_id: str) -> bool:
+    """Return True if the header looks like a SPAdes/assembly contig.
+    Matches NODE_*, RNODE_*, and digit-prefixed variants like 0RNODE_*."""
+    clean = header_id.lstrip("0123456789")
+    return clean.startswith("NODE_") or clean.startswith("RNODE_")
+
+
 def _load_reads_mapping(mapping_path: Path) -> tuple[dict, dict]:
     """
     Parse a reads_mapping .tsv or .tsv.gz.
@@ -197,12 +211,13 @@ def _load_reads_mapping(mapping_path: Path) -> tuple[dict, dict]:
       #anonymous_read_id  genome_id  tax_id  read_id
 
     read_id examples:
-      NODE_53_length_21423_cov_84.979292-1386/1   <- SPAdes contig + position
-      CP009288.1-10831/1                          <- NCBI accession + position
+      NODE_53_length_21423_cov_84.979292-1386/1    <- SPAdes contig + position
+      5RNODE_411_length_4317_cov_4.49267-63        <- digit-prefixed RNODE contig
+      CP009288.1-10831/1                           <- NCBI accession + position
 
     Returns:
       genome_taxid : { genome_id  -> taxid }
-      contig_genome: { contig_name -> genome_id }   (NODE-based reads only)
+      contig_genome: { contig_name -> genome_id }   (NODE/RNODE-based reads)
     """
     print(f"   📖 Parsing reads mapping: {mapping_path.name} …")
     genome_taxid:  dict[str, str] = {}
@@ -222,9 +237,10 @@ def _load_reads_mapping(mapping_path: Path) -> tuple[dict, dict]:
             if genome_id not in genome_taxid:
                 genome_taxid[genome_id] = tax_id
 
-            if read_id.startswith("NODE_"):
-                # contig name = read_id up to the last "-<position>" suffix
-                contig = read_id.rsplit("-", 1)[0]
+            # Index both NODE_* and RNODE_* (with digit prefix stripped)
+            stripped = read_id.lstrip("0123456789")
+            if stripped.startswith("NODE_") or stripped.startswith("RNODE_"):
+                contig = _strip_read_prefix(read_id)
                 if contig not in contig_genome:
                     contig_genome[contig] = genome_id
 
@@ -238,11 +254,13 @@ def _taxid_from_mapping(
     contig_genome: dict,
 ) -> str | None:
     """
-    Scan FASTA headers; return the taxid as soon as one NODE contig is found
-    in contig_genome.
+    Scan FASTA headers; return the taxid as soon as one NODE/RNODE contig
+    is found in contig_genome.
     """
     for header in _fasta_headers(fasta_path):
-        contig = header.split()[0]
+        raw_id = header.split()[0]
+        # Canonicalize: strip digit prefix (e.g. '0RNODE_...' → 'RNODE_...')
+        contig = raw_id.lstrip("0123456789")
         gid = contig_genome.get(contig)
         if gid:
             return genome_taxid.get(gid)
@@ -374,8 +392,8 @@ def process_source(source: dict) -> dict[Path, str]:
 
         taxid = None
 
-        # Strategy 1: reads_mapping (for NODE-based SPAdes contigs)
-        if contig_genome and _is_node_header(first_hdr.split()[0]):
+        # Strategy 1: reads_mapping (for NODE/RNODE-based SPAdes contigs)
+        if contig_genome and _is_contig_header(first_hdr.split()[0]):
             taxid = _taxid_from_mapping(fasta, genome_taxid, contig_genome)
             if taxid:
                 print(f"   [mapping] {fasta.name} → taxid {taxid}")
@@ -455,7 +473,7 @@ def write_clark_metadata(all_file_taxids: dict[Path, str]) -> None:
         for fasta, taxid in all_file_taxids.items():
             # Use real accession for NCBI-header files, stem for NODE-based
             first_hdr = _first_header(fasta)
-            if first_hdr and _is_node_header(first_hdr.split()[0]):
+            if first_hdr and _is_contig_header(first_hdr.split()[0]):
                 accession = fasta.stem
             else:
                 accession = extract_accession_from_fasta(fasta) or fasta.stem
@@ -471,30 +489,33 @@ def write_clark_metadata(all_file_taxids: dict[Path, str]) -> None:
 
 def build_clark_targets(image: str) -> None:
     """
-    Run set_targets.sh to produce targets.txt (and .settings inside the
-    container — we don't need .settings because the Snakefile calls
-    CLARK-l directly with -T).
+    Generate targets.txt from the .custom.fileToAccssnTaxID file.
+
+    Previous approach used Docker set_targets.sh --species, but that only
+    retains species-level taxids, discarding many valid custom genomes.
+    We now generate targets.txt directly for complete coverage.
     """
-    print("\n🔨 Running set_targets.sh inside Docker …")
+    print("\n🔨 Building targets.txt …")
 
-    db_abs = DB_DIR.resolve().as_posix()
+    accssn_file = DB_DIR / ".custom.fileToAccssnTaxID"
+    targets_file = DB_DIR / "targets.txt"
 
-    cmd = [
-        "docker", "run", "--rm",
-        "-v", f"{db_abs}:/db",
-        "-w", CLARK_DIR,
-        image,
-        "sh", "-c",
-        "./set_targets.sh /db custom --species",
-    ]
+    if not accssn_file.exists():
+        raise RuntimeError(".custom.fileToAccssnTaxID not found — run write_clark_metadata first")
 
-    subprocess.run(cmd, check=True)
-    targets = DB_DIR / "targets.txt"
-    if targets.exists() and targets.stat().st_size > 0:
-        lines = targets.read_text().strip().splitlines()
+    lines = []
+    for line in accssn_file.read_text().splitlines():
+        parts = line.strip().split("\t")
+        if len(parts) >= 3:
+            fasta_path, _accession, taxid = parts[0], parts[1], parts[2]
+            lines.append(f"{fasta_path}\t{taxid}")
+
+    targets_file.write_text("\n".join(lines) + "\n")
+
+    if lines:
         print(f"   ✅ targets.txt created ({len(lines)} targets)")
     else:
-        raise RuntimeError("set_targets.sh finished but targets.txt is missing or empty!")
+        raise RuntimeError("targets.txt is empty — no file-to-taxid mappings found")
 
 
 # ---------------------------------------------------------------------------
@@ -531,6 +552,12 @@ def main():
 
     # Pre-create CLARK metadata to bypass the 4.5 GB nucl_accss download
     write_clark_metadata(all_file_taxids)
+
+    # Remove stale CLARK index files so the next classification run rebuilds
+    # from the updated targets.txt (CLARK reuses cached .tsk if present)
+    for tsk_file in DB_DIR.glob("*.tsk.*"):
+        print(f"   🗑️  Removing stale index: {tsk_file.name}")
+        tsk_file.unlink()
 
     # Run set_targets.sh to produce targets.txt
     build_clark_targets(image)

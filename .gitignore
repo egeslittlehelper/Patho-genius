@@ -3,3 +3,10 @@
 *.dmp
 Patho-genius/results/clark
 Patho-genius/fastQ_reads
+
+
+*.fai
+*.fastq
+*.fq
+*.fna
+genomes/

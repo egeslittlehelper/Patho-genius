@@ -351,6 +351,7 @@ function runSnakemakeWorkflow(analysisId, config) {
         '--cores',
         threads,
         '--nolock',
+        '--rerun-incomplete',
         '--config',
         sampleArg,
         engineArg,

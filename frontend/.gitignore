@@ -7,3 +7,5 @@ dist/
 *results.json
 *.fastq
 *.fasta
+*.fai
+

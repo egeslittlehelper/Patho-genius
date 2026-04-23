@@ -153,9 +153,10 @@ contextBridge.exposeInMainWorld('api', {
         /**
          * Import custom FASTA files to extend database
          * @param {string} folderPath - Path to folder with FASTA files
+         * @param {string} [mappingFile] - Optional reads_mapping .tsv file path
          */
-        import: (folderPath) => 
-            ipcRenderer.invoke('app:import-database', folderPath),
+        import: (folderPath, mappingFile) =>
+            ipcRenderer.invoke('app:import-database', folderPath, mappingFile),
         
         /**
          * Check for database updates

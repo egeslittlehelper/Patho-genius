@@ -170,7 +170,8 @@ async function buildCustomDb(folderPath) {
             const pythonExec = process.platform === 'win32' ? 'python' : 'python3';
             const buildProc = spawn(pythonExec, ['build_clark_db.py'], {
                 cwd: WORKFLOW_DIR,
-                stdio: ['ignore', 'pipe', 'pipe'] // capture stdout/stderr
+                stdio: ['ignore', 'pipe', 'pipe'], // capture stdout/stderr
+                env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
             });
             
             buildProc.stdout.on('data', (data) => {
