@@ -537,6 +537,14 @@ def main():
 
     ensure_directories()
 
+    # Clean Custom/ before each build so old genomes don't accumulate
+    if CUSTOM_DIR.exists():
+        old_count = len(list(CUSTOM_DIR.iterdir()))
+        if old_count > 0:
+            print(f"🧹 Cleaning {old_count} old files from {CUSTOM_DIR} ...")
+            shutil.rmtree(CUSTOM_DIR)
+            CUSTOM_DIR.mkdir(parents=True, exist_ok=True)
+
     # Process each genome source
     all_file_taxids: dict[Path, str] = {}
     for source in sources:

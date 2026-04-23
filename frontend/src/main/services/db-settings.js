@@ -1,8 +1,12 @@
 /**
- * DB-SETTINGS.JS — Persistent Custom Database Settings
- * ═══════════════════════════════════════════════════════
- * Stores the user-selected custom genome folder path and its discovered
- * FASTA/FNA files in a JSON file so it survives app restarts.
+ * DB-SETTINGS.JS — Named Reference Database Manager
+ * ═══════════════════════════════════════════════════
+ * Stores an array of named custom reference databases (genomes folder +
+ * reads-mapping TSV) with per-database Jetson Nano sync status.
+ *
+ * Only ONE database can be "active" at a time — the one whose content is
+ * currently materialised in clark_db/.  Creating / building a new database
+ * makes it the active one and deactivates all others.
  */
 
 const fs = require('fs');
@@ -14,45 +18,40 @@ const REPO_ROOT = path.join(__dirname, '..', '..', '..', '..');
 const SETTINGS_FILE = path.join(REPO_ROOT, 'frontend', 'db-settings.json');
 const WORKFLOW_DIR = path.join(REPO_ROOT, 'Patho-genius');
 
-/** File extensions recognized as FASTA genome files */
+/** File extensions recognised as FASTA genome files */
 const FASTA_EXTENSIONS = new Set(['.fna', '.fasta', '.fa', '.fsa']);
 
-/**
- * Check if a filename is a recognized FASTA file (plain or gzipped).
- */
 function isFastaFile(fileName) {
     const lower = fileName.toLowerCase();
     const ext = path.extname(lower);
-
-    // Direct match: .fna, .fasta, .fa, .fsa
     if (FASTA_EXTENSIONS.has(ext)) return true;
-
-    // Gzipped: .fna.gz, .fasta.gz, etc.
     if (ext === '.gz') {
         const innerExt = path.extname(path.basename(lower, '.gz'));
         return FASTA_EXTENSIONS.has(innerExt);
     }
-
     return false;
 }
 
-/**
- * Load settings from disk. Returns defaults if file doesn't exist.
- */
+// ---------------------------------------------------------------------------
+// Persistence helpers
+// ---------------------------------------------------------------------------
+
 function loadSettings() {
     try {
         if (fs.existsSync(SETTINGS_FILE)) {
-            return JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+            const raw = JSON.parse(fs.readFileSync(SETTINGS_FILE, 'utf-8'));
+            // Migrate from legacy single-DB format
+            if (!raw.databases) {
+                return { databases: [] };
+            }
+            return raw;
         }
     } catch (err) {
         console.error('Failed to read db-settings.json:', err.message);
     }
-    return { customDbPath: null, customDbMapping: null, customDbFiles: [], lastUpdated: null, isBuilt: false };
+    return { databases: [] };
 }
 
-/**
- * Save settings to disk.
- */
 function saveSettings(settings) {
     try {
         fs.writeFileSync(SETTINGS_FILE, JSON.stringify(settings, null, 2));
@@ -61,154 +60,176 @@ function saveSettings(settings) {
     }
 }
 
+// ---------------------------------------------------------------------------
+// Database CRUD
+// ---------------------------------------------------------------------------
+
 /**
- * Get the stored custom database folder path (or null).
+ * Return the full list of named databases.
  */
-function getCustomDbPath() {
-    return loadSettings().customDbPath;
+function listDatabases() {
+    return loadSettings().databases;
 }
 
 /**
- * Scan a folder for FASTA/FNA files and persist the path and mapping file.
- * Returns { success, path, files: [{ name, size }], totalSize }.
+ * Return the currently active database (the one clark_db/ was built from), or null.
  */
-function setCustomDbPath(folderPath, mappingFile = null) {
-    if (!fs.existsSync(folderPath)) {
-        return { success: false, error: `Folder not found: ${folderPath}` };
-    }
+function getActiveDatabase() {
+    return listDatabases().find(db => db.isActive) || null;
+}
 
-    const stat = fs.statSync(folderPath);
-    if (!stat.isDirectory()) {
-        return { success: false, error: 'Selected path is not a directory' };
+/**
+ * Scan a genomes folder and register a new named database.
+ * Does NOT build yet — call buildDatabase() for that.
+ * Returns the new database record or an error.
+ */
+function addDatabase(name, genomesPath, mappingFile, syncToJetson) {
+    if (!name || !name.trim()) {
+        return { success: false, error: 'Database name is required' };
+    }
+    if (!fs.existsSync(genomesPath) || !fs.statSync(genomesPath).isDirectory()) {
+        return { success: false, error: `Genomes folder not found: ${genomesPath}` };
+    }
+    if (mappingFile && !fs.existsSync(mappingFile)) {
+        return { success: false, error: `Mapping file not found: ${mappingFile}` };
     }
 
     // Scan for FASTA files
     let entries;
-    try {
-        entries = fs.readdirSync(folderPath);
-    } catch (err) {
-        return { success: false, error: `Cannot read folder: ${err.message}` };
-    }
+    try { entries = fs.readdirSync(genomesPath); }
+    catch (err) { return { success: false, error: `Cannot read folder: ${err.message}` }; }
 
     const fastaFiles = [];
     let totalSize = 0;
-
     for (const entry of entries) {
         if (!isFastaFile(entry)) continue;
-        const fullPath = path.join(folderPath, entry);
+        const fullPath = path.join(genomesPath, entry);
         try {
-            const fileStat = fs.statSync(fullPath);
-            if (fileStat.isFile()) {
-                fastaFiles.push({ name: entry, size: fileStat.size });
-                totalSize += fileStat.size;
+            const stat = fs.statSync(fullPath);
+            if (stat.isFile()) {
+                fastaFiles.push({ name: entry, size: stat.size });
+                totalSize += stat.size;
             }
-        } catch {
-            // skip unreadable files
-        }
+        } catch { /* skip */ }
     }
 
     if (fastaFiles.length === 0) {
-        return {
-            success: false,
-            error: 'No FASTA files found (.fasta, .fna, .fa, .fsa, or .gz variants)',
-        };
+        return { success: false, error: 'No FASTA files found (.fasta, .fna, .fa, .fsa, or .gz)' };
     }
 
-    const settings = {
-        customDbPath: folderPath,
-        customDbMapping: mappingFile,
-        customDbFiles: fastaFiles,
+    const id = 'db_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6);
+    const record = {
+        id,
+        name: name.trim(),
+        genomesPath,
+        mappingFile: mappingFile || null,
+        files: fastaFiles,
+        genomeCount: fastaFiles.length,
         totalSize,
-        lastUpdated: new Date().toISOString(),
-        isBuilt: false
+        isBuilt: false,
+        isActive: false,
+        syncToJetson: !!syncToJetson,
+        syncedToJetson: false,
+        createdAt: new Date().toISOString(),
     };
+
+    const settings = loadSettings();
+    settings.databases.push(record);
     saveSettings(settings);
 
-    return {
-        success: true,
-        path: folderPath,
-        files: fastaFiles,
-        totalSize,
-    };
+    return { success: true, database: record };
 }
 
 /**
- * Clear the custom database path.
+ * Remove a named database by ID.
  */
-function clearCustomDb() {
-    saveSettings({ customDbPath: null, customDbMapping: null, customDbFiles: [], lastUpdated: null, isBuilt: false });
+function removeDatabase(id) {
+    const settings = loadSettings();
+    settings.databases = settings.databases.filter(db => db.id !== id);
+    saveSettings(settings);
+    return { success: true };
 }
 
+// ---------------------------------------------------------------------------
+// Build & Sync
+// ---------------------------------------------------------------------------
+
 /**
- * Update config.yaml with custom database folder and run build script.
+ * Build clark_db/ from the named database's genomes + mapping.
+ * This makes the database "active" and deactivates all others.
  */
-async function buildCustomDb(folderPath) {
+async function buildDatabase(databaseId) {
+    const settings = loadSettings();
+    const db = settings.databases.find(d => d.id === databaseId);
+    if (!db) return Promise.reject(new Error('Database not found'));
+
+    // Update config.yaml with this database's genome sources
+    const configPath = path.join(WORKFLOW_DIR, 'config.yaml');
+    const doc = yaml.load(fs.readFileSync(configPath, 'utf8'));
+
+    const customSource = { path: db.genomesPath };
+    if (db.mappingFile) {
+        customSource.reads_mapping = db.mappingFile;
+    }
+    doc.genome_sources = [
+        { path: './clark_db' },
+        customSource,
+    ];
+    fs.writeFileSync(configPath, yaml.dump(doc));
+
+    // Run build_clark_db.py
     return new Promise((resolve, reject) => {
-        try {
-            // Update config.yaml
-            const configPath = path.join(WORKFLOW_DIR, 'config.yaml');
-            let configContent = fs.readFileSync(configPath, 'utf8');
-            const doc = yaml.load(configContent);
+        console.log(`[DB Build] Building database "${db.name}" from ${db.genomesPath} ...`);
+        const pythonExec = process.platform === 'win32' ? 'python' : 'python3';
+        const proc = spawn(pythonExec, ['build_clark_db.py'], {
+            cwd: WORKFLOW_DIR,
+            stdio: ['ignore', 'pipe', 'pipe'],
+            env: { ...process.env, PYTHONIOENCODING: 'utf-8' },
+        });
 
-            const settings = loadSettings();
-            
-            const customSource = { path: folderPath };
-            if (settings.customDbMapping) {
-                customSource.reads_mapping = settings.customDbMapping;
+        proc.stdout.on('data', d => console.log(`[build_clark_db] ${d.toString().trim()}`));
+        proc.stderr.on('data', d => console.error(`[build_clark_db ERROR] ${d.toString().trim()}`));
+
+        proc.on('close', async (code) => {
+            console.log(`build_clark_db.py exited with code ${code}`);
+            if (code !== 0) {
+                return reject(new Error(`Database build failed with exit code ${code}`));
             }
 
-            // Ensure the genome_sources array contains both default and the new custom folder
-            doc.genome_sources = [
-                { path: "./clark_db" },
-                customSource
-            ];
+            // Mark as built & active
+            const s = loadSettings();
+            for (const d of s.databases) {
+                d.isActive = (d.id === databaseId);
+            }
+            const rec = s.databases.find(d => d.id === databaseId);
+            if (rec) {
+                rec.isBuilt = true;
+            }
+            saveSettings(s);
 
-            // Write back to config.yaml
-            fs.writeFileSync(configPath, yaml.dump(doc));
-
-            console.log('Spawning build_clark_db.py...');
-            const pythonExec = process.platform === 'win32' ? 'python' : 'python3';
-            const buildProc = spawn(pythonExec, ['build_clark_db.py'], {
-                cwd: WORKFLOW_DIR,
-                stdio: ['ignore', 'pipe', 'pipe'], // capture stdout/stderr
-                env: { ...process.env, PYTHONIOENCODING: 'utf-8' }
-            });
-            
-            buildProc.stdout.on('data', (data) => {
-                console.log(`[build_clark_db] ${data.toString().trim()}`);
-            });
-            
-            buildProc.stderr.on('data', (data) => {
-                console.error(`[build_clark_db ERROR] ${data.toString().trim()}`);
-            });
-
-            buildProc.on('close', async (code) => {
-                console.log(`build_clark_db.py exited with code ${code}`);
-                if (code === 0) {
-                    // Update settings isBuilt to true
-                    const settings = loadSettings();
-                    settings.isBuilt = true;
-                    saveSettings(settings);
-
-                    // Sync to Jetson Nano if configured
-                    try {
-                        const syncResult = await syncDbToJetson();
-                        if (syncResult.skipped) {
-                            console.log('[DB Build] Jetson sync skipped (no GPU config)');
-                        }
-                    } catch (syncError) {
-                        console.error('[DB Build] Warning: Jetson sync failed:', syncError.message);
-                        console.error('[DB Build] CPU classification will still work. Fix Jetson connectivity and re-import to sync.');
+            // Optionally sync to Jetson
+            if (db.syncToJetson) {
+                try {
+                    const syncResult = await syncDbToJetson();
+                    if (syncResult.skipped) {
+                        console.log('[DB Build] Jetson sync skipped (no GPU config in config.yaml)');
+                    } else {
+                        // Mark synced
+                        const s2 = loadSettings();
+                        const rec2 = s2.databases.find(d => d.id === databaseId);
+                        if (rec2) rec2.syncedToJetson = true;
+                        saveSettings(s2);
                     }
-
-                    resolve({ success: true });
-                } else {
-                    reject(new Error(`Database build failed with exit code ${code}`));
+                } catch (err) {
+                    console.error('[DB Build] Jetson sync failed:', err.message);
+                    console.error('[DB Build] CPU classification will still work.');
                 }
-            });
-        } catch (e) {
-            reject(e);
-        }
+            }
+
+            resolve({ success: true });
+        });
+
+        proc.on('error', reject);
     });
 }
 
@@ -266,21 +287,7 @@ function runCommand(cmd, args, opts = {}) {
 // ---------------------------------------------------------------------------
 // Sync custom database to Jetson Nano (GPU path)
 // ---------------------------------------------------------------------------
-
-/**
- * Sync the local clark_db/ directory to the Jetson Nano so CU-CLARK-L
- * can classify against the same custom reference database.
- *
- * Flow:
- *   1. Create a tar.gz archive of clark_db/ locally
- *   2. SSH: clean stale .tsk index files + old Custom/ on the Nano
- *   3. SCP: upload the tar.gz to the Nano
- *   4. SSH: extract, fix targets.txt paths (/db/ → remote_db), cleanup
- *
- * If jetson_nano config is missing in config.yaml, sync is skipped silently.
- */
 async function syncDbToJetson() {
-    // Read Jetson config from config.yaml
     const configPath = path.join(WORKFLOW_DIR, 'config.yaml');
     const doc = yaml.load(fs.readFileSync(configPath, 'utf8'));
 
@@ -306,19 +313,15 @@ async function syncDbToJetson() {
     console.log(`[DB Sync] Syncing clark_db to ${sshTarget}:${remoteDb} ...`);
 
     try {
-        // 1) Create tar archive of clark_db locally (NO gzip — bsdtar gzip
-        //    on 3 GB of FASTA text takes 20+ min; uncompressed tar is instant)
         console.log('[DB Sync] Step 1/4 — Creating archive...');
         await runCommand('tar', ['-cf', tarFile, '-C', clarkDb, '.']);
 
-        // 2) SSH: clean stale index files and old Custom/ directory on Nano
         console.log('[DB Sync] Step 2/4 — Cleaning remote...');
         await runCommand('ssh', [
             ...sshOpts, sshTarget,
             `rm -rf ${remoteDb}/Custom ${remoteDb}/*.tsk.* && mkdir -p ${remoteDb}`,
         ]);
 
-        // 3) SCP: upload the tar to the Nano
         const tarSizeMB = (fs.statSync(tarFile).size / (1024 * 1024)).toFixed(1);
         console.log(`[DB Sync] Step 3/4 — Uploading archive (${tarSizeMB} MB)...`);
         await runCommand('scp', [
@@ -326,9 +329,6 @@ async function syncDbToJetson() {
             `${sshTarget}:/tmp/clark_db_sync.tar`,
         ]);
 
-        // 4) SSH: extract, fix targets.txt paths, cleanup temp file
-        //    targets.txt has Docker paths like /db/Custom/file.fasta
-        //    Nano needs absolute paths like /home/pathogen/cuclark_db/Custom/file.fasta
         console.log('[DB Sync] Step 4/4 — Extracting on Jetson Nano...');
         await runCommand('ssh', [
             ...sshOpts, sshTarget,
@@ -337,28 +337,64 @@ async function syncDbToJetson() {
             `sed -i 's|/db/|${remoteDb}/|g' ${remoteDb}/targets.txt`,
         ]);
 
-        // Cleanup local tar
         try { fs.unlinkSync(tarFile); } catch { /* ignore */ }
-
         console.log('[DB Sync] Custom database synced to Jetson Nano');
         return { success: true };
 
     } catch (e) {
-        // Cleanup local tar on error
         try { fs.unlinkSync(tarFile); } catch { /* ignore */ }
         throw e;
     }
 }
 
+// ---------------------------------------------------------------------------
+// Legacy compat: clearCustomDb / setCustomDbPath / getCustomDbPath
+// ---------------------------------------------------------------------------
+function clearCustomDb() {
+    const settings = loadSettings();
+    settings.databases = settings.databases.filter(db => !db.isActive);
+    saveSettings(settings);
+}
+
+function getCustomDbPath() {
+    const active = getActiveDatabase();
+    return active ? active.genomesPath : null;
+}
+
+function setCustomDbPath(folderPath, mappingFile = null) {
+    // Legacy: creates a temporary unnamed database
+    const result = addDatabase('Custom Database', folderPath, mappingFile, false);
+    return result;
+}
+
+// Legacy buildCustomDb — now delegates to buildDatabase
+async function buildCustomDb(folderPath) {
+    const active = getActiveDatabase();
+    if (!active) {
+        // Find the most recently added database that matches this folder
+        const dbs = listDatabases();
+        const match = dbs.find(db => db.genomesPath === folderPath) || dbs[dbs.length - 1];
+        if (match) return buildDatabase(match.id);
+        throw new Error('No database found to build');
+    }
+    return buildDatabase(active.id);
+}
+
 module.exports = {
     loadSettings,
     saveSettings,
+    listDatabases,
+    getActiveDatabase,
+    addDatabase,
+    removeDatabase,
+    buildDatabase,
+    syncDbToJetson,
+    getDefaultDbInfo,
+    isFastaFile,
+    // Legacy
     getCustomDbPath,
     setCustomDbPath,
     buildCustomDb,
-    syncDbToJetson,
     clearCustomDb,
-    getDefaultDbInfo,
-    isFastaFile,
     WORKFLOW_DIR,
 };

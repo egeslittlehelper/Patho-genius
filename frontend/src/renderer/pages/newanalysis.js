@@ -17,9 +17,12 @@ const AnalysisPage = {
         engine: 'cpu',
         inputFiles: []
     },
+
+    // Cached database list from backend
+    availableDatabases: [],
     
     isAnalyzing: false,
-    isEventsBound: false, // Prevent duplicate event binding
+    isEventsBound: false,
 
     /**
      * Initialize analysis page
@@ -27,13 +30,13 @@ const AnalysisPage = {
     init() {
         console.log('AnalysisPage initializing...');
         
-        // Only bind events once to prevent duplicate dialogs
         if (!this.isEventsBound) {
             this.bindEvents();
             this.isEventsBound = true;
         }
         
         this.reset();
+        this.loadDatabases();
         console.log('AnalysisPage initialized');
     },
 
@@ -53,7 +56,7 @@ const AnalysisPage = {
             startBtn.addEventListener('click', () => this.startAnalysis());
         }
 
-        // Database selector — validate custom DB
+        // Database selector — validate selection
         const dbSelect = document.getElementById('database-select');
         if (dbSelect) {
             dbSelect.addEventListener('change', () => this.onDatabaseChange());
@@ -72,6 +75,8 @@ const AnalysisPage = {
             document.querySelectorAll('.engine-card').forEach(c => c.classList.remove('selected'));
             card.classList.add('selected');
             this.config.engine = engine;
+            // Re-populate dropdown for new engine
+            this.populateDatabaseDropdown();
         });
 
         // Upload zone drag-drop
@@ -90,10 +95,72 @@ const AnalysisPage = {
                 e.preventDefault();
                 uploadZone.style.borderColor = '';
                 uploadZone.style.backgroundColor = '';
-                // Handle dropped files in Electron context
                 this.handleDroppedFiles(e.dataTransfer.files);
             });
         }
+    },
+
+    /**
+     * Load named databases from backend
+     */
+    async loadDatabases() {
+        try {
+            if (window.api?.database?.list) {
+                this.availableDatabases = await window.api.database.list();
+            }
+        } catch (error) {
+            console.error('Failed to load databases:', error);
+            this.availableDatabases = [];
+        }
+        this.populateDatabaseDropdown();
+    },
+
+    /**
+     * Populate the database dropdown based on current engine selection.
+     * GPU engine: only show databases with syncedToJetson=true
+     * CPU engine: show all databases
+     */
+    populateDatabaseDropdown() {
+        const select = document.getElementById('database-select');
+        if (!select) return;
+
+        // Remember current selection
+        const currentVal = select.value;
+
+        // Clear custom options (keep "default")
+        while (select.options.length > 1) {
+            select.remove(1);
+        }
+
+        const isGpu = this.config.engine === 'gpu';
+
+        // Filter databases by engine compatibility
+        const compatible = this.availableDatabases.filter(db => {
+            if (!db.isBuilt) return false;
+            if (isGpu && !db.syncedToJetson) return false;
+            return true;
+        });
+
+        // Add compatible databases as options
+        for (const db of compatible) {
+            const opt = document.createElement('option');
+            opt.value = db.id;
+            let label = db.name;
+            if (db.isActive) label += ' (Active)';
+            if (db.syncedToJetson) label += ' ⚡';
+            opt.textContent = label;
+            select.appendChild(opt);
+        }
+
+        // Restore selection if still valid
+        const allValues = Array.from(select.options).map(o => o.value);
+        if (allValues.includes(currentVal)) {
+            select.value = currentVal;
+        } else {
+            select.value = 'default';
+        }
+
+        this.config.database = select.value;
     },
 
     /**
@@ -101,13 +168,11 @@ const AnalysisPage = {
      */
     nextStep() {
         if (this.currentStep < this.totalSteps) {
-            // Validate current step
             if (!this.validateStep(this.currentStep)) return;
             
             this.currentStep++;
             this.updateWizardUI();
             
-            // Update review on last step
             if (this.currentStep === 3) {
                 this.updateReview();
             }
@@ -161,7 +226,6 @@ const AnalysisPage = {
      * Update wizard UI to reflect current step
      */
     updateWizardUI() {
-        // Update step indicators
         document.querySelectorAll('.step').forEach((step, index) => {
             const stepNum = index + 1;
             step.classList.remove('active', 'completed');
@@ -172,7 +236,6 @@ const AnalysisPage = {
             }
         });
 
-        // Show/hide step content
         document.querySelectorAll('.wizard-step').forEach((content, index) => {
             content.classList.toggle('active', index + 1 === this.currentStep);
         });
@@ -186,7 +249,6 @@ const AnalysisPage = {
         this.config.sampleType = document.getElementById('sample-type')?.value || 'clinical';
         this.config.database = document.getElementById('database-select')?.value || 'default';
         this.config.confidenceThreshold = parseFloat(document.getElementById('confidence-threshold')?.value || '0.7');
-        // Read engine from radio buttons
         const engineRadio = document.querySelector('input[name="engine"]:checked');
         if (engineRadio) this.config.engine = engineRadio.value;
     },
@@ -204,9 +266,6 @@ const AnalysisPage = {
         document.getElementById('review-engine').textContent = this.getEngineLabel(this.config.engine);
     },
 
-    /**
-     * Get sample type display label
-     */
     getSampleTypeLabel(value) {
         const labels = {
             'clinical': 'Clinical Sample',
@@ -217,47 +276,38 @@ const AnalysisPage = {
         return labels[value] || value;
     },
 
-    /**
-     * Get database display label
-     */
     getDatabaseLabel(value) {
-        const labels = {
-            'default': 'Default Database (Built-in)',
-            'custom': 'Custom Database'
-        };
-        return labels[value] || value;
+        if (value === 'default') return 'Default Database (Built-in)';
+        // Look up named database
+        const db = this.availableDatabases.find(d => d.id === value);
+        if (db) {
+            let label = db.name;
+            if (db.syncedToJetson) label += ' ⚡';
+            return label;
+        }
+        return value;
     },
 
     /**
-     * Handle database dropdown change — validate custom DB
+     * Handle database dropdown change
      */
     async onDatabaseChange() {
         const select = document.getElementById('database-select');
         const warning = document.getElementById('custom-db-warning');
-        if (!select || !warning) return;
+        const notActiveWarning = document.getElementById('db-not-active-warning');
+        if (!select) return;
 
-        if (select.value === 'custom') {
-            // Check if custom DB is set
-            try {
-                if (window.api?.database?.getInfo) {
-                    const info = await window.api.database.getInfo();
-                    if (!info.customDb || !info.customDb.path) {
-                        warning.classList.remove('hidden');
-                    } else {
-                        warning.classList.add('hidden');
-                    }
-                }
-            } catch (e) {
-                warning.classList.remove('hidden');
+        if (warning) warning.classList.add('hidden');
+        if (notActiveWarning) notActiveWarning.classList.add('hidden');
+
+        if (select.value !== 'default') {
+            const db = this.availableDatabases.find(d => d.id === select.value);
+            if (db && !db.isActive && notActiveWarning) {
+                notActiveWarning.classList.remove('hidden');
             }
-        } else {
-            warning.classList.add('hidden');
         }
     },
 
-    /**
-     * Get engine display label
-     */
     getEngineLabel(value) {
         const labels = {
             'cpu': '🖥️ CPU — CLARK-l (Docker, local)',
@@ -276,8 +326,7 @@ const AnalysisPage = {
             if (window.api?.files?.selectFiles) {
                 files = await window.api.files.selectFiles();
             } else {
-                console.warn('File API not available - running outside Electron');
-                // Mock for development
+                console.warn('File API not available');
                 files = ['mock_sample_001.fastq', 'mock_sample_002.fastq'];
             }
 
@@ -290,11 +339,7 @@ const AnalysisPage = {
         }
     },
 
-    /**
-     * Handle dropped files
-     */
     handleDroppedFiles(fileList) {
-        // In Electron, dropped files have path property
         const paths = Array.from(fileList).map(f => f.path || f.name);
         if (paths.length > 0) {
             this.config.inputFiles = paths;
@@ -302,9 +347,6 @@ const AnalysisPage = {
         }
     },
 
-    /**
-     * Display selected files
-     */
     displayFiles() {
         const fileListEl = document.getElementById('file-list');
         const uploadZone = document.getElementById('upload-zone');
@@ -336,16 +378,10 @@ const AnalysisPage = {
         }
     },
 
-    /**
-     * Get filename from path
-     */
     getFileName(path) {
         return path.split(/[\\/]/).pop();
     },
 
-    /**
-     * Clear selected files
-     */
     clearFiles() {
         this.config.inputFiles = [];
         this.displayFiles();
@@ -353,38 +389,30 @@ const AnalysisPage = {
     },
 
     /**
-     * Start analysis - sends config to Snakemake via main process
+     * Start analysis
      */
     async startAnalysis() {
         if (this.isAnalyzing) return;
 
         this.collectConfig();
 
-        // Final validation
         if (this.config.inputFiles.length === 0) {
             alert('No files selected');
             return;
         }
 
-        // Custom DB validation
-        if (this.config.database === 'custom') {
-            try {
-                if (window.api?.database?.getInfo) {
-                    const info = await window.api.database.getInfo();
-                    if (!info.customDb || !info.customDb.isBuilt) {
-                        alert('The custom database has not been correctly implemented or built. Please check the Database Management page.');
-                        return;
-                    }
-                }
-            } catch (error) {
-                console.error('Failed to validate custom DB:', error);
+        // Validate named database if selected
+        if (this.config.database !== 'default') {
+            const db = this.availableDatabases.find(d => d.id === this.config.database);
+            if (!db || !db.isBuilt) {
+                alert('The selected database has not been built. Please build it first in Database Management.');
+                return;
             }
         }
 
         console.log('Starting Snakemake analysis with config:', this.config);
         this.isAnalyzing = true;
 
-        // Prepare Snakemake config object
         const snakemakeConfig = {
             analysis_name: this.config.analysisName,
             sample_type: this.config.sampleType,
@@ -393,25 +421,21 @@ const AnalysisPage = {
             confidence_threshold: this.config.confidenceThreshold,
             engine: this.config.engine,
             timestamp: new Date().toISOString(),
-            // Snakemake-specific settings
-            threads: 4,  // Will be determined by system
+            threads: 4,
             output_dir: `results/${this.config.analysisName}_${Date.now()}`
         };
 
         try {
-            // Call backend via IPC
             if (window.api?.analysis?.start) {
                 const result = await window.api.analysis.start(snakemakeConfig);
                 
                 if (result.success) {
                     console.log('Analysis started:', result.analysisId);
-                    // Navigate to results or show progress
                     App.navigateTo('results');
                 } else {
                     alert(result.error || 'Failed to start analysis');
                 }
             } else {
-                // Mock for development
                 console.log('Snakemake config prepared:', snakemakeConfig);
                 setTimeout(() => {
                     this.isAnalyzing = false;
@@ -427,7 +451,7 @@ const AnalysisPage = {
     },
 
     /**
-     * Reset wizard to initial state
+     * Reset wizard
      */
     reset() {
         this.currentStep = 1;
@@ -441,7 +465,6 @@ const AnalysisPage = {
         };
         this.isAnalyzing = false;
         
-        // Reset form fields
         const nameInput = document.getElementById('analysis-name');
         if (nameInput) nameInput.value = '';
         

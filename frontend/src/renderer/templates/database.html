@@ -3,10 +3,11 @@
     <header class="page-header">
         <div>
             <h1>Database Management</h1>
-            <p class="page-subtitle">Manage reference databases for pathogen detection and taxonomic classification</p>
+            <p class="page-subtitle">Create and manage reference databases for pathogen detection</p>
         </div>
     </header>
 
+    <!-- Default Database Info -->
     <div class="card database-card-primary">
         <div class="database-header">
             <div class="database-icon">
@@ -18,92 +19,117 @@
             </div>
             <div class="database-title">
                 <h3>Default Reference Database</h3>
-                <p id="default-db-subtitle">Built-in pathogen genomes</p>
+                <p>Built-in CLARK pathogen reference (clark_db/)</p>
             </div>
-            <span class="status-badge" id="default-db-status">
+            <span class="status-badge status-active" id="default-db-status">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg>
-                <span id="default-db-status-text">Checking...</span>
+                Active
             </span>
         </div>
-        <div class="database-stats">
+        <div class="database-stats" id="default-db-stats">
             <div class="db-stat">
-                <span class="db-stat-label">Genomes</span>
+                <span class="db-stat-label">Total Genomes</span>
                 <span class="db-stat-value" id="default-db-genomes">—</span>
             </div>
             <div class="db-stat">
-                <span class="db-stat-label">Index</span>
+                <span class="db-stat-label">Index Status</span>
                 <span class="db-stat-value" id="default-db-index">—</span>
             </div>
-            <div class="db-stat">
-                <span class="db-stat-label">Source</span>
-                <span class="db-stat-value">Default_References</span>
-            </div>
         </div>
     </div>
 
-    <!-- Custom Database Section -->
-    <div class="card">
-        <h3 class="card-title">
-            Custom Reference Database
-            <span class="status-badge hidden" id="custom-db-status" style="margin-left: 10px; font-size: 0.8em;">
-                <span id="custom-db-status-text">Not Built</span>
-            </span>
-        </h3>
-        <p class="text-muted">Select a folder containing FASTA genome files (.fasta, .fna, .fa, .fsa, or gzipped variants) to use as a custom database in analysis.</p>
-        
-        <!-- No custom DB set -->
-        <div id="custom-db-empty">
-            <div class="upload-zone upload-zone-sm" id="db-upload-zone">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path>
-                </svg>
-                <p>Select a folder containing genome FASTA / FNA files</p>
-                <button class="btn btn-primary btn-sm" id="import-db-btn">Select Genome Folder</button>
-            </div>
-        </div>
+    <!-- Create Reference Database -->
+    <div class="card" id="create-db-card">
+        <h3 class="card-title">Create Reference Database</h3>
+        <p class="text-muted" style="margin-bottom: 20px;">Upload a genomes folder and a reads-mapping TSV to build a new CLARK reference database</p>
 
-        <!-- Custom DB is set -->
-        <div id="custom-db-info" class="hidden">
-            <div class="custom-db-path-row">
-                <div class="custom-db-details">
-                    <span class="custom-db-label">Genome Folder:</span>
-                    <span class="custom-db-path" id="custom-db-path-display" title="">—</span>
+        <!-- Step 1: Select files -->
+        <div id="create-db-step1">
+            <div class="create-db-inputs">
+                <div class="create-db-input-row">
+                    <div class="create-db-input-info">
+                        <span class="create-db-input-label">Genomes Folder</span>
+                        <span class="create-db-input-value" id="genomes-folder-path">No folder selected</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="select-genomes-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"></path></svg>
+                        Browse Folder
+                    </button>
                 </div>
-                <div class="custom-db-actions">
-                    <button class="btn btn-outline btn-sm" id="change-db-btn">Change</button>
-                    <button class="btn btn-outline btn-sm btn-danger-outline" id="clear-db-btn">Clear</button>
+                <div class="create-db-input-row">
+                    <div class="create-db-input-info">
+                        <span class="create-db-input-label">Reads Mapping File (TSV)</span>
+                        <span class="create-db-input-value" id="mapping-file-path">No file selected</span>
+                    </div>
+                    <button class="btn btn-outline btn-sm" id="select-mapping-btn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        Browse File
+                    </button>
                 </div>
             </div>
-            <div class="custom-db-file-summary">
-                <span id="custom-db-file-count">0 files</span> &bull;
-                <span id="custom-db-total-size">0 MB</span>
-            </div>
-            <div class="custom-db-file-list" id="custom-db-file-list">
-                <!-- Populated by JS -->
-            </div>
-        </div>
-    </div>
-
-    <!-- Custom Species Management -->
-    <div class="card">
-        <div class="card-header-row">
-            <h3 class="card-title">Custom Species</h3>
-            <div class="card-actions">
-                <div class="search-box" style="width: 200px;">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
-                    <input type="text" placeholder="Search species..." id="species-search">
-                </div>
-                <button class="btn btn-primary btn-sm" id="add-fasta-btn">
-                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
-                        <line x1="12" y1="5" x2="12" y2="19"></line>
-                        <line x1="5" y1="12" x2="19" y2="12"></line>
-                    </svg>
-                    Add FASTA
+            <div class="wizard-actions" style="margin-top: 20px;">
+                <div></div>
+                <button class="btn btn-primary" id="create-db-next-btn" disabled>
+                    Next: Configure
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="9 18 15 12 9 6"></polyline></svg>
                 </button>
             </div>
         </div>
-        <p class="text-muted" style="margin-bottom: 16px;">User-added species and custom reference sequences</p>
-        <div id="custom-species-list">
+
+        <!-- Step 2: Name + Jetson toggle -->
+        <div id="create-db-step2" class="hidden">
+            <div class="form-grid">
+                <div class="form-group">
+                    <label for="db-name-input">Database Name</label>
+                    <input type="text" id="db-name-input" class="input-field" placeholder="e.g., Hospital_Pathogens_2025">
+                </div>
+            </div>
+            <div class="jetson-toggle-card">
+                <div class="jetson-toggle-info">
+                    <span class="jetson-toggle-title">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:20px;height:20px;">
+                            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+                        </svg>
+                        Sync to Jetson Nano (GPU)
+                    </span>
+                    <span class="jetson-toggle-desc">Send this database to the Jetson Nano for GPU-accelerated classification with CU-CLARK-L. Required for GPU workflow.</span>
+                </div>
+                <label class="toggle-switch">
+                    <input type="checkbox" id="jetson-sync-toggle">
+                    <span class="toggle-slider"></span>
+                </label>
+            </div>
+            <div class="wizard-actions" style="margin-top: 20px;">
+                <button class="btn btn-outline" id="create-db-back-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="15 18 9 12 15 6"></polyline></svg>
+                    Back
+                </button>
+                <button class="btn btn-primary btn-lg" id="build-db-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
+                    Build Database
+                </button>
+            </div>
+        </div>
+
+        <!-- Building indicator -->
+        <div id="create-db-building" class="hidden">
+            <div class="building-indicator">
+                <div class="building-spinner"></div>
+                <div class="building-info">
+                    <span class="building-title">Building database...</span>
+                    <span class="building-desc">This may take several minutes. Indexing genomes and building CLARK reference.</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Your Reference Databases -->
+    <div class="card">
+        <div class="card-header-row">
+            <h3 class="card-title">Your Reference Databases</h3>
+        </div>
+        <p class="text-muted" style="margin-bottom: 16px;">Named databases available for analysis. GPU databases are synced to the Jetson Nano.</p>
+        <div id="databases-list">
             <!-- Populated by JavaScript -->
         </div>
     </div>

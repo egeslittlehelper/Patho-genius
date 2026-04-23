@@ -1,0 +1,274 @@
+{
+  "databases": [
+    {
+      "id": "db_mobsid6msxz6",
+      "name": "marine",
+      "genomesPath": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\genomes",
+      "mappingFile": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\reads_mapping.tsv\\reads_mapping.tsv",
+      "files": [
+        {
+          "name": "10_S10_contigs.fasta",
+          "size": 4517083
+        },
+        {
+          "name": "10_S9_contigs.fasta",
+          "size": 3523106
+        },
+        {
+          "name": "11_S11_contigs.fasta",
+          "size": 5717162
+        },
+        {
+          "name": "12_S12_contigs.fasta",
+          "size": 3395904
+        },
+        {
+          "name": "12_S1_contigs.fasta",
+          "size": 4648078
+        },
+        {
+          "name": "13_S13_contigs.fasta",
+          "size": 3251042
+        },
+        {
+          "name": "14_S2_contigs.fasta",
+          "size": 4645687
+        },
+        {
+          "name": "15_S3_contigs.fasta",
+          "size": 4553723
+        },
+        {
+          "name": "18_S4_contigs.fasta",
+          "size": 5516413
+        },
+        {
+          "name": "19_S5_contigs.fasta",
+          "size": 5522916
+        },
+        {
+          "name": "1_S1_contigs.fasta",
+          "size": 4226259
+        },
+        {
+          "name": "20_S10_contigs.fasta",
+          "size": 3467333
+        },
+        {
+          "name": "26_S2_contigs.fasta",
+          "size": 4117449
+        },
+        {
+          "name": "2_S2_contigs.fasta",
+          "size": 4224840
+        },
+        {
+          "name": "2_S8_contigs.fasta",
+          "size": 4568093
+        },
+        {
+          "name": "33_S3_contigs.fasta",
+          "size": 3070620
+        },
+        {
+          "name": "35_S4_contigs.fasta",
+          "size": 3262526
+        },
+        {
+          "name": "38_S5_contigs.fasta",
+          "size": 3683792
+        },
+        {
+          "name": "3_S3_contigs.fasta",
+          "size": 4223280
+        },
+        {
+          "name": "4_S4_contigs.fasta",
+          "size": 4106759
+        },
+        {
+          "name": "5_S5_contigs.fasta",
+          "size": 3984024
+        },
+        {
+          "name": "6_S6_contigs.fasta",
+          "size": 4101816
+        },
+        {
+          "name": "8_S8_contigs.fasta",
+          "size": 4513054
+        },
+        {
+          "name": "9_S9_contigs.fasta",
+          "size": 5162378
+        },
+        {
+          "name": "A1_S1_contigs.fasta",
+          "size": 4030291
+        },
+        {
+          "name": "A2_S2_contigs.fasta",
+          "size": 3849044
+        },
+        {
+          "name": "A3_S3_contigs.fasta",
+          "size": 4256572
+        },
+        {
+          "name": "A4_S4_contigs.fasta",
+          "size": 3897012
+        },
+        {
+          "name": "A5_S5_contigs.fasta",
+          "size": 4069437
+        },
+        {
+          "name": "A6_S6_contigs.fasta",
+          "size": 4099601
+        }
+      ],
+      "genomeCount": 30,
+      "totalSize": 126205294,
+      "isBuilt": true,
+      "isActive": false,
+      "syncToJetson": false,
+      "syncedToJetson": false,
+      "createdAt": "2026-04-23T18:03:20.254Z"
+    },
+    {
+      "id": "db_mobvayd660f7",
+      "name": "Marine Jetson",
+      "genomesPath": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\genomes",
+      "mappingFile": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\reads_mapping.tsv\\reads_mapping.tsv",
+      "files": [
+        {
+          "name": "10_S10_contigs.fasta",
+          "size": 4517083
+        },
+        {
+          "name": "10_S9_contigs.fasta",
+          "size": 3523106
+        },
+        {
+          "name": "11_S11_contigs.fasta",
+          "size": 5717162
+        },
+        {
+          "name": "12_S12_contigs.fasta",
+          "size": 3395904
+        },
+        {
+          "name": "12_S1_contigs.fasta",
+          "size": 4648078
+        },
+        {
+          "name": "13_S13_contigs.fasta",
+          "size": 3251042
+        },
+        {
+          "name": "14_S2_contigs.fasta",
+          "size": 4645687
+        },
+        {
+          "name": "15_S3_contigs.fasta",
+          "size": 4553723
+        },
+        {
+          "name": "18_S4_contigs.fasta",
+          "size": 5516413
+        },
+        {
+          "name": "19_S5_contigs.fasta",
+          "size": 5522916
+        },
+        {
+          "name": "1_S1_contigs.fasta",
+          "size": 4226259
+        },
+        {
+          "name": "20_S10_contigs.fasta",
+          "size": 3467333
+        },
+        {
+          "name": "26_S2_contigs.fasta",
+          "size": 4117449
+        },
+        {
+          "name": "2_S2_contigs.fasta",
+          "size": 4224840
+        },
+        {
+          "name": "2_S8_contigs.fasta",
+          "size": 4568093
+        },
+        {
+          "name": "33_S3_contigs.fasta",
+          "size": 3070620
+        },
+        {
+          "name": "35_S4_contigs.fasta",
+          "size": 3262526
+        },
+        {
+          "name": "38_S5_contigs.fasta",
+          "size": 3683792
+        },
+        {
+          "name": "3_S3_contigs.fasta",
+          "size": 4223280
+        },
+        {
+          "name": "4_S4_contigs.fasta",
+          "size": 4106759
+        },
+        {
+          "name": "5_S5_contigs.fasta",
+          "size": 3984024
+        },
+        {
+          "name": "6_S6_contigs.fasta",
+          "size": 4101816
+        },
+        {
+          "name": "8_S8_contigs.fasta",
+          "size": 4513054
+        },
+        {
+          "name": "9_S9_contigs.fasta",
+          "size": 5162378
+        },
+        {
+          "name": "A1_S1_contigs.fasta",
+          "size": 4030291
+        },
+        {
+          "name": "A2_S2_contigs.fasta",
+          "size": 3849044
+        },
+        {
+          "name": "A3_S3_contigs.fasta",
+          "size": 4256572
+        },
+        {
+          "name": "A4_S4_contigs.fasta",
+          "size": 3897012
+        },
+        {
+          "name": "A5_S5_contigs.fasta",
+          "size": 4069437
+        },
+        {
+          "name": "A6_S6_contigs.fasta",
+          "size": 4099601
+        }
+      ],
+      "genomeCount": 30,
+      "totalSize": 126205294,
+      "isBuilt": true,
+      "isActive": true,
+      "syncToJetson": true,
+      "syncedToJetson": true,
+      "createdAt": "2026-04-23T19:21:33.306Z"
+    }
+  ]
+}

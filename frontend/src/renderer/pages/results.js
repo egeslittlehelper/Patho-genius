@@ -17,7 +17,8 @@ const ResultsPage = {
         runningAnalyses: [],
         completedAnalyses: [],
         cloudResults: [],
-        currentSource: 'local' // 'local' or 'cloud'
+        currentSource: 'local', // 'local' or 'cloud'
+        localCopyIds: new Set() // analysisIds that have been downloaded to local this session
     },
     
     isEventsBound: false, // Prevent duplicate event binding
@@ -86,6 +87,15 @@ const ResultsPage = {
         if (searchInput) {
             searchInput.addEventListener('input', (e) => this.filterAnalyses(e.target.value));
         }
+
+        // Re-render pathogen cards and update AI card visibility when settings change
+        window.addEventListener('settingsChanged', () => {
+            if (this.state.view === 'detail' && this.state.currentResult) {
+                this.renderPathogenCards();
+                const aiCard = document.getElementById('ai-summary-card');
+                if (aiCard) aiCard.classList.toggle('hidden', !this._getSetting('localAiEnabled', true));
+            }
+        });
     },
 
     /**
@@ -265,22 +275,38 @@ const ResultsPage = {
      * Update a running analysis with progress data
      */
     updateRunningAnalysis(data) {
-        const { analysisId, progress, status, message, results, analysis_name, sample_type, completed_at } = data;
+        const { analysisId, progress, status, message } = data;
         
         const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
         if (analysis) {
             analysis.progress = progress;
             analysis.status = status;
             analysis.message = message;
-            if (results) analysis.results = results;
-            if (analysis_name) analysis.analysis_name = analysis_name;
-            if (sample_type) analysis.sample_type = sample_type;
-            if (completed_at) analysis.completed_at = completed_at;
             
             // If completed, move to completed list
             if (status === 'completed' || status === 'failed') {
                 this.state.runningAnalyses = this.state.runningAnalyses.filter(a => a.id !== analysisId);
                 this.state.completedAnalyses.unshift(analysis);
+
+                // Desktop notification if enabled
+                const notificationsEnabled = window.SettingsPage?.settings?.notificationsEnabled ?? true;
+                if (notificationsEnabled && 'Notification' in window) {
+                    if (Notification.permission === 'granted') {
+                        new Notification('Pathogenius', {
+                            body: status === 'completed'
+                                ? `Analysis "${analysis.config?.analysis_name || analysisId}" completed.`
+                                : `Analysis "${analysis.config?.analysis_name || analysisId}" failed.`
+                        });
+                    } else if (Notification.permission !== 'denied') {
+                        Notification.requestPermission().then(perm => {
+                            if (perm === 'granted') {
+                                new Notification('Pathogenius', {
+                                    body: `Analysis "${analysis.config?.analysis_name || analysisId}" ${status}.`
+                                });
+                            }
+                        });
+                    }
+                }
             }
             
             this.renderRunningAnalyses();
@@ -360,20 +386,208 @@ const ResultsPage = {
         // Update title
         const nameEl = document.getElementById('detail-analysis-name');
         const subtitleEl = document.getElementById('results-subtitle');
-        
-        if (nameEl) nameEl.textContent = result.analysis_name || result.sample_id || 'Analysis Result';
-        const when = result.completed_at || result.processed_date;
-        if (subtitleEl) {
-            subtitleEl.textContent = when
-                ? `Completed on ${this.formatDate(when)}`
-                : 'Analysis result';
-        }
+
+        if (nameEl) nameEl.textContent = result.analysis_name || 'Analysis Result';
+        const classifierLabel = result.classifier ? ` · ${result.classifier}` : '';
+        if (subtitleEl) subtitleEl.textContent = `Completed on ${this.formatDate(result.completed_at)}${classifierLabel}`;
 
         // Render pathogen cards
         this.renderPathogenCards();
         
         // Render charts
         this.renderCharts(result);
+
+        // Show/hide AI summary card based on setting (read localStorage as fallback)
+        const aiCard = document.getElementById('ai-summary-card');
+        const localAiEnabled = this._getSetting('localAiEnabled', true);
+        if (aiCard) aiCard.classList.toggle('hidden', !localAiEnabled);
+
+        // Reset AI summary section
+        this.resetAISummary();
+
+        // Check LLM status
+        if (localAiEnabled) this.updateLLMStatus();
+    },
+
+    /**
+     * Reset AI summary content when switching analyses
+     */
+    resetAISummary() {
+        const content = document.getElementById('ai-summary-content');
+        const btn = document.getElementById('generate-summary-btn');
+        if (content) {
+            content.innerHTML = '<p class="text-muted" style="font-style: italic;">Click "Generate Summary" to analyze results with the local MedGemma AI model.</p>';
+        }
+        if (btn) {
+            btn.disabled = false;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg> Generate Summary`;
+        }
+    },
+
+    /**
+     * Check and display LLM model status
+     */
+    async updateLLMStatus() {
+        const indicator = document.getElementById('llm-status-indicator');
+        if (!indicator) return;
+
+        try {
+            if (!window.api?.llm?.getStatus) {
+                indicator.textContent = 'LLM API unavailable';
+                indicator.style.color = 'var(--danger)';
+                return;
+            }
+            const status = await window.api.llm.getStatus();
+            if (status.isLoaded) {
+                indicator.textContent = 'Model ready';
+                indicator.style.color = 'var(--success)';
+            } else if (status.isLoading) {
+                indicator.textContent = 'Model loading...';
+                indicator.style.color = 'var(--warning)';
+            } else if (status.loadError) {
+                indicator.textContent = 'Model error';
+                indicator.style.color = 'var(--danger)';
+            } else {
+                indicator.textContent = 'Model not loaded';
+                indicator.style.color = 'var(--text-muted)';
+            }
+        } catch {
+            indicator.textContent = '';
+        }
+    },
+
+    /**
+     * Generate AI clinical summary using the local LLM
+     */
+    /**
+     * Read a setting from SettingsPage or localStorage fallback
+     */
+    _getSetting(key, defaultVal) {
+        if (window.SettingsPage?.settings && key in window.SettingsPage.settings) {
+            return window.SettingsPage.settings[key];
+        }
+        try {
+            const saved = JSON.parse(localStorage.getItem('pathogenius_settings') || '{}');
+            return key in saved ? saved[key] : defaultVal;
+        } catch { return defaultVal; }
+    },
+
+    async generateAISummary() {
+        const result = this.state.currentResult;
+        if (!result) return;
+        if (!this._getSetting('localAiEnabled', true)) return;
+
+        const content = document.getElementById('ai-summary-content');
+        const btn = document.getElementById('generate-summary-btn');
+        if (!content || !btn) return;
+
+        // Disable button and show loading state
+        btn.disabled = true;
+        btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16" class="icon-spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Generating...`;
+
+        content.innerHTML = `
+            <div style="display: flex; align-items: center; gap: 12px; padding: 16px 0;">
+                <svg viewBox="0 0 24 24" fill="none" stroke="var(--primary)" stroke-width="2" width="24" height="24" class="icon-spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg>
+                <span class="text-muted">Generating clinical summary — this may take a moment...</span>
+            </div>
+            <div id="ai-summary-stream" class="summary-text" style="white-space: pre-wrap; min-height: 60px;"></div>
+        `;
+
+        const streamEl = document.getElementById('ai-summary-stream');
+
+        try {
+            // Check LLM status first
+            if (!window.api?.llm) {
+                throw new Error('LLM service is not available.');
+            }
+
+            const status = await window.api.llm.getStatus();
+
+            // If model isn't loaded, try loading it
+            if (!status.isLoaded && !status.isLoading) {
+                content.querySelector('.text-muted').textContent = 'Loading AI model into memory — first run may take a minute...';
+                await window.api.llm.loadModel();
+            } else if (status.isLoading) {
+                content.querySelector('.text-muted').textContent = 'AI model is loading, please wait...';
+                // Poll until loaded
+                await new Promise((resolve, reject) => {
+                    const poll = setInterval(async () => {
+                        const s = await window.api.llm.getStatus();
+                        if (s.isLoaded) { clearInterval(poll); resolve(); }
+                        if (s.loadError) { clearInterval(poll); reject(new Error(s.loadError)); }
+                    }, 1000);
+                });
+            } else if (status.loadError) {
+                throw new Error(`Model failed to load: ${status.loadError}`);
+            }
+
+            // Set up streaming token listener
+            let fullText = '';
+            window.api.llm.removeTokenListener();
+            window.api.llm.onToken((chunk) => {
+                fullText += chunk;
+                if (streamEl) {
+                    streamEl.textContent = fullText;
+                    // Auto-scroll parent if needed
+                    streamEl.scrollTop = streamEl.scrollHeight;
+                }
+            });
+
+            // Hide the loading spinner once streaming starts
+            const loadingMsg = content.querySelector('.text-muted');
+
+            // Call generate summary
+            const response = await window.api.llm.generateSummary(result);
+
+            // Clean up token listener
+            window.api.llm.removeTokenListener();
+
+            if (!response.success) {
+                throw new Error(response.error || 'Summary generation failed.');
+            }
+
+            // Render final formatted summary
+            const finalText = response.response || fullText;
+            content.innerHTML = `
+                <div class="summary-text" style="white-space: pre-wrap; line-height: 1.7;">${this.escapeHtml(finalText)}</div>
+                <div style="margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--border-light); display: flex; justify-content: space-between; align-items: center;">
+                    <span class="text-muted" style="font-size: 0.8rem;">Generated by MedGemma (local model) — not a clinical diagnosis</span>
+                    <button class="btn btn-outline btn-sm" onclick="ResultsPage.generateAISummary()">Regenerate</button>
+                </div>
+            `;
+
+            // Update button
+            btn.disabled = false;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg> Regenerate`;
+
+            this.updateLLMStatus();
+
+        } catch (error) {
+            console.error('AI Summary generation failed:', error);
+            window.api?.llm?.removeTokenListener?.();
+
+            content.innerHTML = `
+                <div class="alert alert-danger" style="margin: 0;">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20" height="20"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg>
+                    <div>
+                        <strong>Failed to generate summary</strong>
+                        <p style="margin: 4px 0 0;">${this.escapeHtml(error.message)}</p>
+                    </div>
+                </div>
+            `;
+
+            btn.disabled = false;
+            btn.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16"><path d="M12 2L2 7l10 5 10-5-10-5z"></path><path d="M2 17l10 5 10-5"></path><path d="M2 12l10 5 10-5"></path></svg> Retry`;
+        }
+    },
+
+    /**
+     * Escape HTML to prevent XSS
+     */
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
     },
 
     /**
@@ -391,8 +605,8 @@ const ResultsPage = {
             name: p.name,
             value: p.abundance,
             reads: p.reads,
-            confidence: p.confidence ?? 0,
-            risk: this.capitalize(p.risk_level || 'low'),
+            confidence: p.confidence,
+            risk: this.capitalize(p.risk_level),
             color: this.getRiskColorShaded(p.risk_level, `${p.name}|${p.strain || ''}|${p.tax_id || ''}`)
         })) || [];
 
@@ -593,13 +807,17 @@ const ResultsPage = {
             if (window.api?.analysis?.delete) {
                 const result = await window.api.analysis.delete(analysisId);
                 if (result.success) {
+                    // Remove from localCopyIds so the cloud tab reverts to "Cloud only"
+                    this.state.localCopyIds.delete(analysisId);
+                    // Update cloud results state too (no re-fetch needed)
+                    const idx = this.state.cloudResults.findIndex(r => r.id === analysisId);
+                    if (idx !== -1) this.state.cloudResults[idx].localCopy = false;
                     this.loadAnalyses();
                 }
             } else {
-                // Mock for development
                 this.state.completedAnalyses = this.state.completedAnalyses.filter(a => a.id !== analysisId);
+                this.state.localCopyIds.delete(analysisId);
                 this.renderAnalysisHistory();
-                console.log('Analysis deleted:', analysisId);
             }
         } catch (error) {
             console.error('Failed to delete analysis:', error);
@@ -634,59 +852,70 @@ const ResultsPage = {
             return;
         }
 
-        container.innerHTML = pathogens.slice(0, 4).map(p => {
-            const conf = p.confidence ?? 75;
-            const risk = p.risk_level || 'low';
-            return `
-            <div class="pathogen-card ${risk === 'high' ? 'pathogen-card-critical' : ''}">
+        // Apply confidence threshold filter from settings
+        const threshold = this._getSetting('confidenceThreshold', 0.7) * 100;
+        const showLow = this._getSetting('showLowConfidenceResults', false);
+        const minReads = this._getSetting('minReadCount', 100);
+
+        const filtered = pathogens.filter(p =>
+            (showLow || p.confidence == null || p.confidence >= threshold) &&
+            (p.reads == null || p.reads >= minReads)
+        );
+
+        if (filtered.length === 0) {
+            container.innerHTML = '<p class="text-muted">No pathogens meet the current confidence threshold.</p>';
+            return;
+        }
+
+        container.innerHTML = filtered.slice(0, 4).map(p => `
+            <div class="pathogen-card ${p.risk_level === 'high' ? 'pathogen-card-critical' : ''}">
                 <div class="pathogen-header">
                     <div>
                         <h4>${p.name}</h4>
                         <span class="pathogen-strain">${p.strain || 'Unknown strain'}</span>
                     </div>
-                    <div class="confidence-badge confidence-${this.getConfidenceLevel(conf)}">
-                        <span class="confidence-value">${conf}%</span>
+                    <div class="confidence-badge confidence-${this.getConfidenceLevel(p.confidence)}">
+                        <span class="confidence-value">${p.confidence != null ? p.confidence + '%' : '—'}</span>
                         <span class="confidence-label">Confidence</span>
                     </div>
                 </div>
                 <div class="pathogen-metrics-row">
                     <div class="pathogen-metric-item">
-                        <span class="metric-value-lg">${p.abundance}%</span>
+                        <span class="metric-value-lg">${p.abundance != null ? p.abundance + '%' : '—'}</span>
                         <span class="metric-label">Abundance</span>
                     </div>
                     <div class="pathogen-metric-item">
-                        <span class="metric-value-lg">${this.formatReads(p.reads)}</span>
+                        <span class="metric-value-lg">${p.reads != null ? this.formatReads(p.reads) : '—'}</span>
                         <span class="metric-label">Reads</span>
                     </div>
+                    ${p.amr_genes != null ? `
                     <div class="pathogen-metric-item">
-                        <span class="metric-value-lg ${(p.amr_genes || 0) > 0 ? 'text-danger' : ''}">${p.amr_genes || 0}</span>
+                        <span class="metric-value-lg ${p.amr_genes > 0 ? 'text-danger' : ''}">${p.amr_genes}</span>
                         <span class="metric-label">AMR Genes</span>
-                    </div>
+                    </div>` : ''}
                 </div>
                 <div class="pathogen-confidence-bar">
                     <div class="confidence-bar-track">
-                        <div class="confidence-bar-fill confidence-fill-${this.getConfidenceLevel(conf)}" style="width: ${conf}%"></div>
+                        <div class="confidence-bar-fill confidence-fill-${this.getConfidenceLevel(p.confidence)}" style="width: ${p.confidence || 0}%"></div>
                     </div>
-                    <span class="confidence-bar-label">${this.getConfidenceLabel(conf)}</span>
+                    <span class="confidence-bar-label">${this.getConfidenceLabel(p.confidence)}</span>
                 </div>
                 <div class="pathogen-footer">
-                    <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
-                    ${p.virulence_genes ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
+                    <span class="risk-badge risk-${p.risk_level || 'low'}">${this.capitalize(p.risk_level || 'unknown')} Risk</span>
+                    ${p.virulence_genes != null ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
                 </div>
             </div>
-        `;
-        }).join('');
+        `).join('');
     },
 
     /**
      * Get confidence label based on score
      */
     getConfidenceLabel(confidence) {
-        const c = confidence ?? 0;
-        if (c >= 90) return 'Very High Confidence';
-        if (c >= 80) return 'High Confidence';
-        if (c >= 70) return 'Moderate Confidence';
-        if (c >= 60) return 'Low Confidence';
+        if (confidence >= 90) return 'Very High Confidence';
+        if (confidence >= 80) return 'High Confidence';
+        if (confidence >= 70) return 'Moderate Confidence';
+        if (confidence >= 60) return 'Low Confidence';
         return 'Very Low Confidence';
     },
 
@@ -694,9 +923,8 @@ const ResultsPage = {
      * Get confidence level category
      */
     getConfidenceLevel(confidence) {
-        const c = confidence ?? 0;
-        if (c >= 90) return 'high';
-        if (c >= 70) return 'medium';
+        if (confidence >= 90) return 'high';
+        if (confidence >= 70) return 'medium';
         return 'low';
     },
 
@@ -735,10 +963,10 @@ const ResultsPage = {
      */
     getPathogenCount(analysis) {
         const count = analysis.results?.pathogens?.length ||
-                     analysis.results?.pathogens_detected?.length ||
                      analysis.pathogens?.length ||
-                     analysis.summary?.pathogens_detected || 0;
-        
+                     analysis.summary?.pathogens_detected ||
+                     analysis.summary?.species_detected || 0;
+
         if (count === 0) return '—';
         return `${count} detected`;
     },
@@ -747,8 +975,72 @@ const ResultsPage = {
      * Export results
      */
     async exportResult(format = 'pdf') {
-        console.log(`📤 Exporting as ${format}...`);
-        alert(`Export as ${format.toUpperCase()} - Feature coming with backend integration`);
+        const result = this.state.currentResult;
+        if (!result) { alert('No result loaded to export.'); return; }
+
+        if (format === 'json') {
+            const blob = new Blob([JSON.stringify(result, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `${result.analysis_name || 'analysis'}_results.json`;
+            a.click();
+            URL.revokeObjectURL(url);
+            return;
+        }
+
+        if (format === 'pdf') {
+            const name     = result.analysis_name || 'Analysis';
+            const date     = result.completed_at ? new Date(result.completed_at).toLocaleString() : '—';
+            const pathogens = result.pathogens || [];
+
+            const pathogenRows = pathogens.map(p => `
+                <tr>
+                    <td>${p.name || '—'}</td>
+                    <td>${p.strain || '—'}</td>
+                    <td>${p.abundance != null ? p.abundance + '%' : '—'}</td>
+                    <td>${p.reads != null ? p.reads.toLocaleString() : '—'}</td>
+                    <td>${p.confidence != null ? p.confidence + '%' : '—'}</td>
+                    <td>${(p.risk_level || '—').charAt(0).toUpperCase() + (p.risk_level || '').slice(1)}</td>
+                    <td>${p.amr_genes != null ? p.amr_genes : '—'}</td>
+                </tr>`).join('');
+
+            const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8">
+<title>Pathogenius Report — ${name}</title>
+<style>
+  body { font-family: Arial, sans-serif; margin: 40px; color: #111; }
+  h1 { color: #008080; }
+  h2 { margin-top: 32px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
+  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 13px; }
+  th { background: #f0f0f0; padding: 8px; text-align: left; border: 1px solid #ddd; }
+  td { padding: 6px 8px; border: 1px solid #ddd; }
+  .meta { color: #555; font-size: 13px; margin-top: 8px; }
+  @media print { body { margin: 20px; } }
+</style>
+</head><body>
+<h1>Pathogenius Analysis Report</h1>
+<p class="meta"><strong>Analysis:</strong> ${name}<br>
+<strong>Completed:</strong> ${date}<br>
+<strong>Sample Type:</strong> ${result.sample_type || '—'}</p>
+
+<h2>Detected Pathogens (${pathogens.length})</h2>
+${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
+<table>
+  <thead><tr><th>Name</th><th>Strain</th><th>Abundance</th><th>Reads</th><th>Confidence</th><th>Risk</th><th>AMR Genes</th></tr></thead>
+  <tbody>${pathogenRows}</tbody>
+</table>`}
+</body></html>`;
+
+            const win = window.open('', '_blank', 'width=900,height=700');
+            if (!win) { alert('Pop-up blocked. Please allow pop-ups for PDF export.'); return; }
+            win.document.write(html);
+            win.document.close();
+            win.onload = () => { win.focus(); win.print(); };
+            return;
+        }
+
+        alert(`Unknown export format: ${format}`);
     },
 
     // HELPER FUNCTIONS (delegating to Utils)
@@ -945,17 +1237,28 @@ const ResultsPage = {
                 statusBanner.classList.remove('connected', 'offline');
             }
 
-            // Try to fetch cloud results
+            // Fetch cloud results from Firebase Storage metadata
             if (window.api?.cloud?.getResults) {
-                const results = await window.api.cloud.getResults();
-                this.state.cloudResults = results;
-                
+                const response = await window.api.cloud.getResults();
+                if (response.success) {
+                    // Map Firestore metadata fields to display fields
+                    this.state.cloudResults = (response.results || []).map(r => ({
+                        id: r.analysisId,
+                        name: (r.sampleName && r.sampleName !== 'undefined') ? r.sampleName : (r.analysisId || 'Unknown'),
+                        uploadedAt: r.completedAt || r.updatedAt,
+                        sampleType: r.sampleType || '—',
+                        size: null,
+                        localCopy: this.state.localCopyIds.has(r.analysisId), // restored from session set
+                        cloudPath: r.cloudPath
+                    }));
+                } else {
+                    throw new Error(response.error || 'Failed to load cloud results');
+                }
                 if (statusText) statusText.textContent = 'Connected to cloud storage';
                 if (statusBanner) statusBanner.classList.add('connected');
             } else {
-                // Mock cloud data for development
-                this.state.cloudResults = this.getMockCloudResults();
-                if (statusText) statusText.textContent = 'Connected to cloud storage';
+                this.state.cloudResults = [];
+                if (statusText) statusText.textContent = 'Cloud storage unavailable';
                 if (statusBanner) statusBanner.classList.add('connected');
             }
 
@@ -1095,15 +1398,14 @@ const ResultsPage = {
                 }
             }
 
-            // Download from cloud
+            // Download from cloud (decrypts automatically in main process)
             if (window.api?.cloud?.downloadResult) {
-                await window.api.cloud.downloadResult(resultId);
-            } else {
-                // Simulate download delay
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const dlResult = await window.api.cloud.downloadResult(result.id);
+                if (!dlResult.success) throw new Error(dlResult.error || 'Download failed');
             }
 
-            // Mark as having local copy
+            // Mark as having local copy (persists across tab switches via localCopyIds)
+            this.state.localCopyIds.add(resultId);
             const resultIndex = this.state.cloudResults.findIndex(r => r.id === resultId);
             if (resultIndex !== -1) {
                 this.state.cloudResults[resultIndex].localCopy = true;
@@ -1111,8 +1413,8 @@ const ResultsPage = {
 
             // Refresh the view
             this.renderCloudResults();
-            
-            // Reload local analyses
+
+            // Reload local analyses so the downloaded result appears in the local tab
             await this.loadAnalyses();
 
             alert(`"${result.name}" has been downloaded successfully!`);
@@ -1157,19 +1459,14 @@ const ResultsPage = {
             statusText.innerHTML = `<span class="icon-spin">⏳</span> Uploading...`;
 
             if (window.api?.cloud?.uploadResult) {
-                await window.api.cloud.uploadResult(analysisId);
-            } else {
-                // Simulate upload
-                await new Promise(resolve => setTimeout(resolve, 2000));
+                const upResult = await window.api.cloud.uploadResult(analysisId);
+                if (!upResult.success) throw new Error(upResult.error || 'Upload failed');
             }
 
             // Mark as synced
             analysis.synced = true;
-
-            // Refresh views
             this.renderAnalysisHistory();
-            
-            alert(`"${analysis.analysis_name || analysis.id}" has been uploaded to cloud successfully!`);
+            alert(`"${analysis.analysis_name || analysis.id}" uploaded to cloud successfully!`);
 
         } catch (error) {
             console.error('Failed to upload result:', error);
@@ -1186,46 +1483,6 @@ const ResultsPage = {
         return Utils.formatBytes(bytes, 1);
     },
 
-    /**
-     * Get mock cloud results for development
-     * @returns {array} Mock cloud results
-     */
-    getMockCloudResults() {
-        return [
-            {
-                id: 'cloud-001',
-                name: 'Patient_Sample_2025_001',
-                uploadedAt: '2025-12-15T10:30:00Z',
-                sampleType: 'Clinical',
-                size: 45000000,
-                localCopy: false
-            },
-            {
-                id: 'cloud-002',
-                name: 'Environmental_Water_Q4',
-                uploadedAt: '2025-12-12T14:15:00Z',
-                sampleType: 'Environmental',
-                size: 32000000,
-                localCopy: true
-            },
-            {
-                id: 'cloud-003',
-                name: 'Food_Safety_Batch_12',
-                uploadedAt: '2025-12-10T09:45:00Z',
-                sampleType: 'Food Safety',
-                size: 28500000,
-                localCopy: false
-            },
-            {
-                id: 'cloud-004',
-                name: 'Research_Sample_Nov',
-                uploadedAt: '2025-11-28T16:20:00Z',
-                sampleType: 'Other',
-                size: 67000000,
-                localCopy: true
-            }
-        ];
-    }
 };
 
 window.ResultsPage = ResultsPage;

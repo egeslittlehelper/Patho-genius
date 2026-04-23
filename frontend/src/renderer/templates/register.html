@@ -61,7 +61,7 @@
                 <button type="submit" id="register-btn" class="btn-primary-large">Create Account</button>
             </form>
 
-            <!-- Email Verification Section -->
+            <!-- Email Verification Section — content injected by register.js -->
             <div id="email-verification-section" class="hidden">
                 <div class="verification-container">
                     <div class="verification-icon">
@@ -71,22 +71,8 @@
                         </svg>
                     </div>
                     <h3>Verify Your Email</h3>
-                    <p>We've sent a verification code to <strong id="verification-email"></strong></p>
-                    
-                    <div class="verification-code-inputs">
-                        <input type="text" maxlength="1" class="verification-code-input" data-index="0">
-                        <input type="text" maxlength="1" class="verification-code-input" data-index="1">
-                        <input type="text" maxlength="1" class="verification-code-input" data-index="2">
-                        <input type="text" maxlength="1" class="verification-code-input" data-index="3">
-                        <input type="text" maxlength="1" class="verification-code-input" data-index="4">
-                        <input type="text" maxlength="1" class="verification-code-input" data-index="5">
-                    </div>
-                    
-                    <button type="button" id="verify-email-btn" class="btn-primary-large" onclick="RegisterPage.verifyEmailCode()">Verify Email</button>
-                    
-                    <p class="resend-link">
-                        Didn't receive the code? <a href="#" onclick="RegisterPage.resendVerificationEmail(); return false;">Resend</a>
-                    </p>
+                    <p>We've sent a verification link to <strong id="verification-email"></strong></p>
+                    <!-- register.js injects the verify/resend buttons here -->
                 </div>
             </div>
 

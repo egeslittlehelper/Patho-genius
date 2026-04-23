@@ -1,333 +1,245 @@
 /**
- * PRELOAD.JS - Secure Context Bridge
+ * PRELOAD.JS - Secure Context Bridge (MERGED)
  * Purpose: Expose safe APIs from main process to renderer
  */
 
 const { contextBridge, ipcRenderer } = require('electron');
 
 contextBridge.exposeInMainWorld('api', {
-    
-    /* AUTHENTICATION */
+
+    /* AUTHENTICATION (Firebase) */
     auth: {
-        login: (username, password) => 
+        login: (username, password) =>
             ipcRenderer.invoke('auth:login', username, password),
-        
-        loginAsGuest: () => 
+
+        loginAsGuest: () =>
             ipcRenderer.invoke('auth:login-guest'),
-        
-        logout: () => 
-            ipcRenderer.invoke('auth:logout'),
-        
-        getSession: () => 
-            ipcRenderer.invoke('auth:get-session'),
-        
-        register: (userData) => 
+
+        logout: (isGuest) =>
+            ipcRenderer.invoke('auth:logout', isGuest),
+
+        register: (userData) =>
             ipcRenderer.invoke('auth:register', userData),
-        
-        requestPasswordReset: (emailOrUsername) => 
-            ipcRenderer.invoke('auth:request-password-reset', emailOrUsername),
-        
-        resetPassword: (token, newPassword) => 
-            ipcRenderer.invoke('auth:reset-password', token, newPassword),
-        
-        changePassword: (currentPassword, newPassword) => 
-            ipcRenderer.invoke('auth:change-password', currentPassword, newPassword)
+
+        restoreSession: () =>
+            ipcRenderer.invoke('auth:restore-session'),
+
+        getSession: () =>
+            ipcRenderer.invoke('auth:get-session'),
+
+        changePassword: (currentPassword, newPassword) =>
+            ipcRenderer.invoke('auth:change-password', currentPassword, newPassword),
+
+        requestPasswordReset: (email) =>
+            ipcRenderer.invoke('auth:request-password-reset', email),
+
+        resendVerification: (email, password) =>
+            ipcRenderer.invoke('auth:resend-verification', email, password),
+
+        checkVerification: (email, password) =>
+            ipcRenderer.invoke('auth:check-verification', email, password)
     },
 
     /* FILE SYSTEM */
     files: {
-        selectFile: () => 
+        selectFile: () =>
             ipcRenderer.invoke('app:select-file'),
-        
-        selectFiles: () => 
+
+        selectFiles: () =>
             ipcRenderer.invoke('app:select-files'),
-        
-        selectFolder: () => 
+
+        selectFolder: () =>
             ipcRenderer.invoke('app:select-folder'),
-            
-        selectMappingFile: () => 
+
+        selectMappingFile: () =>
             ipcRenderer.invoke('app:select-mapping-file')
     },
 
-    /* ANALYSIS (Snakemake Workflow) */
+    /* ANALYSIS (CLARK / CuCLARK Workflow) */
     analysis: {
-        /**
-         * Start a new analysis
-         * @param {object} config - Analysis configuration
-         * @param {string} config.analysis_name - Name for the analysis
-         * @param {string} config.sample_type - Sample type (clinical, environmental, etc.)
-         * @param {string[]} config.input_files - Array of FASTQ file paths
-         * @param {string} config.database - Reference database to use
-         * @param {number} config.confidence_threshold - Classification confidence (0-1)
-         */
-        start: (config) => 
+        start: (config) =>
             ipcRenderer.invoke('app:start-analysis', config),
-        
-        /**
-         * Get status of an analysis
-         * @param {string} analysisId
-         */
-        getStatus: (analysisId) => 
+
+        getStatus: (analysisId) =>
             ipcRenderer.invoke('app:get-analysis-status', analysisId),
-        
-        /**
-         * Get results of a completed analysis
-         * @param {string} analysisId
-         */
-        getResults: (analysisId) => 
+
+        getResults: (analysisId) =>
             ipcRenderer.invoke('app:get-analysis-results', analysisId),
-        
-        /**
-         * Get all analyses (history)
-         */
-        getAll: () => 
+
+        getAll: () =>
             ipcRenderer.invoke('app:get-all-analyses'),
-        
-        /**
-         * Cancel a running analysis
-         * @param {string} analysisId
-         */
-        cancel: (analysisId) => 
+
+        cancel: (analysisId) =>
             ipcRenderer.invoke('app:cancel-analysis', analysisId),
-        
-        /**
-         * Pause a running analysis
-         * @param {string} analysisId
-         */
-        pause: (analysisId) => 
+
+        pause: (analysisId) =>
             ipcRenderer.invoke('app:pause-analysis', analysisId),
-        
-        /**
-         * Resume a paused analysis
-         * @param {string} analysisId
-         */
-        resume: (analysisId) => 
+
+        resume: (analysisId) =>
             ipcRenderer.invoke('app:resume-analysis', analysisId),
-        
-        /**
-         * Delete an analysis
-         * @param {string} analysisId
-         */
-        delete: (analysisId) => 
+
+        delete: (analysisId) =>
             ipcRenderer.invoke('app:delete-analysis', analysisId),
-        
-        /**
-         * Listen for analysis progress updates
-         * @param {function} callback - Called with progress data
-         */
+
         onProgress: (callback) => {
             ipcRenderer.on('analysis:progress', (_event, data) => callback(data));
         },
-        
-        /**
-         * Listen for analysis completion
-         * @param {function} callback - Called when analysis completes
-         */
+
         onComplete: (callback) => {
             ipcRenderer.on('analysis:complete', (_event, data) => callback(data));
         },
-        
-        /**
-         * Remove progress listener
-         */
+
         removeProgressListener: () => {
             ipcRenderer.removeAllListeners('analysis:progress');
         },
-        
-        /**
-         * Remove completion listener
-         */
+
         removeCompleteListener: () => {
             ipcRenderer.removeAllListeners('analysis:complete');
         }
     },
 
-    /* DATABASE MANAGEMENT */
+    /* DATABASE MANAGEMENT (CLARK custom DB) */
     database: {
-        /**
-         * Get information about installed database
-         */
-        getInfo: () => 
+        getInfo: () =>
             ipcRenderer.invoke('app:get-database-info'),
-        
-        /**
-         * Import custom FASTA files to extend database
-         * @param {string} folderPath - Path to folder with FASTA files
-         * @param {string} [mappingFile] - Optional reads_mapping .tsv file path
-         */
+
+        list: () =>
+            ipcRenderer.invoke('app:list-databases'),
+
+        create: (config) =>
+            ipcRenderer.invoke('app:create-database', config),
+
+        remove: (databaseId) =>
+            ipcRenderer.invoke('app:delete-database', databaseId),
+
         import: (folderPath, mappingFile) =>
             ipcRenderer.invoke('app:import-database', folderPath, mappingFile),
-        
-        /**
-         * Check for database updates
-         */
-        checkUpdates: () => 
+
+        clearCustomDb: () =>
+            ipcRenderer.invoke('app:clear-custom-db'),
+
+        checkUpdates: () =>
             ipcRenderer.invoke('app:check-database-updates'),
-        
-        /**
-         * Add FASTA file to database
-         * @param {string} filePath - Path to FASTA file
-         * @param {object} metadata - Species metadata
-         */
-        addFasta: (filePath, metadata) => 
+
+        addFasta: (filePath, metadata) =>
             ipcRenderer.invoke('app:add-fasta', filePath, metadata),
-        
-        /**
-         * Remove species from database
-         * @param {string} speciesId - Species ID to remove
-         */
-        removeSpecies: (speciesId) => 
+
+        removeSpecies: (speciesId) =>
             ipcRenderer.invoke('app:remove-species', speciesId),
-        
-        /**
-         * Update species metadata
-         * @param {string} speciesId - Species ID
-         * @param {object} metadata - Updated metadata
-         */
-        updateSpecies: (speciesId, metadata) => 
-            ipcRenderer.invoke('app:update-species', speciesId, metadata),
-        
-        /**
-         * Clear custom database path
-         */
-        clearCustomDb: () => 
-            ipcRenderer.invoke('app:clear-custom-db')
+
+        updateSpecies: (speciesId, metadata) =>
+            ipcRenderer.invoke('app:update-species', speciesId, metadata)
     },
 
     /* SYSTEM INFORMATION */
     system: {
-        /**
-         * Get system resource stats (CPU, RAM, disk, GPU)
-         */
-        getStats: () => 
+        getStats: () =>
             ipcRenderer.invoke('app:get-system-stats'),
-        
-        /**
-         * Get Electron version
-         */
+
         getVersion: () => process.versions.electron,
-        
-        /**
-         * Get platform
-         */
         getPlatform: () => process.platform,
-        
-        /**
-         * Get Node.js version
-         */
         getNodeVersion: () => process.versions.node
     },
 
     /* ENCRYPTION */
     encryption: {
-        /**
-         * Initialize encryption with password
-         * @param {string} password - Encryption password
-         */
-        initialize: (password) => 
+        initialize: (password) =>
             ipcRenderer.invoke('app:init-encryption', password),
-        
-        /**
-         * Unlock encryption with password and salt
-         * @param {string} password - Encryption password
-         * @param {string} salt - Salt from initialization
-         */
-        unlock: (password, salt) => 
+
+        unlock: (password, salt) =>
             ipcRenderer.invoke('app:unlock-encryption', password, salt),
-        
-        /**
-         * Encrypt data
-         * @param {any} data - Data to encrypt
-         */
-        encrypt: (data) => 
+
+        encrypt: (data) =>
             ipcRenderer.invoke('app:encrypt-data', data),
-        
-        /**
-         * Decrypt data
-         * @param {string} encryptedData - Encrypted data
-         */
-        decrypt: (encryptedData) => 
+
+        decrypt: (encryptedData) =>
             ipcRenderer.invoke('app:decrypt-data', encryptedData),
-        
-        /**
-         * Disable encryption
-         */
-        disable: () => 
+
+        disable: () =>
             ipcRenderer.invoke('app:disable-encryption'),
-        
-        /**
-         * Check if encryption is enabled
-         */
-        isEnabled: () => 
+
+        isEnabled: () =>
             ipcRenderer.invoke('app:is-encryption-enabled')
     },
 
-    /* CLOUD SYNC */
-    cloud: {
-        /**
-         * Get all cloud-stored results
-         */
-        getResults: () => 
-            ipcRenderer.invoke('cloud:get-results'),
-        
-        /**
-         * Download a result from cloud to local
-         * @param {string} resultId - Cloud result ID
-         */
-        downloadResult: (resultId) => 
-            ipcRenderer.invoke('cloud:download-result', resultId),
-        
-        /**
-         * Upload a local result to cloud
-         * @param {string} analysisId - Local analysis ID
-         */
-        uploadResult: (analysisId) => 
-            ipcRenderer.invoke('cloud:upload-result', analysisId),
-        
-        /**
-         * Delete a result from cloud
-         * @param {string} resultId - Cloud result ID
-         */
-        deleteResult: (resultId) => 
-            ipcRenderer.invoke('cloud:delete-result', resultId),
-        
-        /**
-         * Check cloud connection status
-         */
-        checkConnection: () => 
-            ipcRenderer.invoke('cloud:check-connection')
+    /* SETTINGS (Firebase) */
+    settings: {
+        save: (settings) =>
+            ipcRenderer.invoke('settings:save', settings),
+
+        load: () =>
+            ipcRenderer.invoke('settings:load')
     },
 
-    /* ADMIN */
+    /* CLOUD SYNC (Firebase) */
+    cloud: {
+        checkConnection: () =>
+            ipcRenderer.invoke('cloud:check-connection'),
+
+        getResults: () =>
+            ipcRenderer.invoke('cloud:get-results'),
+
+        uploadResult: (analysisId) =>
+            ipcRenderer.invoke('cloud:upload-result', analysisId),
+
+        downloadResult: (analysisId) =>
+            ipcRenderer.invoke('cloud:download-result', analysisId),
+
+        deleteResult: (analysisId) =>
+            ipcRenderer.invoke('cloud:delete-result', analysisId),
+
+        syncMetadata: (analysisId, metadata) =>
+            ipcRenderer.invoke('cloud:sync-metadata', analysisId, metadata)
+    },
+
+    /* ADMIN (Firebase) */
     admin: {
-        /**
-         * Get all users (admin only)
-         */
-        getUsers: () => 
+        getUsers: () =>
             ipcRenderer.invoke('admin:get-users'),
-        
-        /**
-         * Reset a user's password (admin only)
-         * @param {string} userId - User ID
-         * @param {string} newPassword - New password
-         */
-        resetUserPassword: (userId, newPassword) => 
-            ipcRenderer.invoke('admin:reset-user-password', userId, newPassword),
-        
-        /**
-         * Update user role (admin only)
-         * @param {string} userId - User ID
-         * @param {string} newRole - New role
-         */
-        updateUserRole: (userId, newRole) => 
+
+        suspendUser: (uid) =>
+            ipcRenderer.invoke('admin:suspend-user', uid),
+
+        activateUser: (uid) =>
+            ipcRenderer.invoke('admin:activate-user', uid),
+
+        updateUserRole: (userId, newRole) =>
             ipcRenderer.invoke('admin:update-user-role', userId, newRole),
-        
-        /**
-         * Delete user (admin only)
-         * @param {string} userId - User ID
-         */
-        deleteUser: (userId) => 
+
+        sendPasswordReset: (email) =>
+            ipcRenderer.invoke('admin:send-password-reset', email),
+
+        getStats: () =>
+            ipcRenderer.invoke('admin:get-stats'),
+
+        resetUserPassword: (userId) =>
+            ipcRenderer.invoke('admin:reset-user-password', userId),
+
+        deleteUser: (userId) =>
             ipcRenderer.invoke('admin:delete-user', userId)
+    },
+
+    /* LLM (Local Model) */
+    llm: {
+        getStatus: () =>
+            ipcRenderer.invoke('llm:get-status'),
+
+        loadModel: () =>
+            ipcRenderer.invoke('llm:load-model'),
+
+        chat: (prompt) =>
+            ipcRenderer.invoke('llm:chat', prompt),
+
+        generateSummary: (resultData) =>
+            ipcRenderer.invoke('llm:generate-summary', resultData),
+
+        onToken: (callback) => {
+            ipcRenderer.on('llm:token', (_event, chunk) => callback(chunk));
+        },
+
+        removeTokenListener: () => {
+            ipcRenderer.removeAllListeners('llm:token');
+        }
     }
 });
 

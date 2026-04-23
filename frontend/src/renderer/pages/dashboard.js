@@ -62,7 +62,8 @@ const DashboardPage = {
     async loadData() {
         await Promise.all([
             this.loadSystemStats(),
-            this.checkRunningAnalyses()
+            this.checkRunningAnalyses(),
+            this.loadRecentAnalyses()
         ]);
     },
 
@@ -206,13 +207,12 @@ const DashboardPage = {
     updateSystemDisplay() {
         if (!this.systemStats) return;
 
-        const { memory, cpu, gpu, disk, network } = this.systemStats;
-        
+        const { memory, cpu, gpu, disk } = this.systemStats;
+
         // RAM
         if (memory) {
             const usedGB = (memory.used / (1000 ** 3)).toFixed(1);
             const totalGB = (memory.total / (1000 ** 3)).toFixed(0);
-            
             const ramUsage = document.getElementById('ram-usage');
             const ramBar = document.getElementById('ram-bar');
             if (ramUsage) ramUsage.textContent = `${usedGB} GB / ${totalGB} GB`;
@@ -227,34 +227,104 @@ const DashboardPage = {
             if (cpuBar) cpuBar.style.width = `${cpu.usage}%`;
         }
 
-        // GPU
+        // GPU — text only, no progress bar
         if (gpu) {
             const gpuUsage = document.getElementById('gpu-usage');
-            const gpuBar = document.getElementById('gpu-bar');
-            if (gpu.available) {
-                if (gpuUsage) gpuUsage.textContent = `${gpu.name}`;
-                if (gpuBar) gpuBar.style.width = `100%`; // Assuming available means 100% ready
-            } else {
-                if (gpuUsage) gpuUsage.textContent = 'No GPU';
-                if (gpuBar) gpuBar.style.width = `0%`;
-            }
+            if (gpuUsage) gpuUsage.textContent = gpu.available ? gpu.name : 'No GPU detected';
         }
 
-        // Storage - Update Free Space
+        // Storage
         if (disk) {
             const freeGB = (disk.free / (1024 ** 3)).toFixed(1);
-            const freeSpaceElement = document.querySelector('.resource-label + .resource-value.text-primary');
-            if (freeSpaceElement) {
-                freeSpaceElement.textContent = `${freeGB} GB`;
-            }
-            // Update free space progress bar to show used percentage
+            const freeVal = document.getElementById('free-space-value');
+            if (freeVal) freeVal.textContent = `${freeGB} GB`;
             if (disk.total) {
                 const usedPercent = ((disk.total - disk.free) / disk.total) * 100;
                 const freeBar = document.getElementById('free-space-bar');
-                if (freeBar) {
-                    freeBar.style.width = `${usedPercent}%`;
-                }
+                if (freeBar) freeBar.style.width = `${usedPercent}%`;
             }
+        }
+    },
+
+    /**
+     * Load and render recent analyses from the analysis service
+     */
+    async loadRecentAnalyses() {
+        const tbody = document.getElementById('analyses-table-body');
+        if (!tbody) return;
+
+        try {
+            if (!window.api?.analysis?.getAll) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Analysis API unavailable</td></tr>';
+                return;
+            }
+
+            const analyses = await window.api.analysis.getAll();
+            const recent = [...analyses]
+                .sort((a, b) => {
+                    const ta = new Date(a.completed_at || a.endTime || a.startTime || 0).getTime();
+                    const tb = new Date(b.completed_at || b.endTime || b.startTime || 0).getTime();
+                    return tb - ta;
+                })
+                .slice(0, 10);
+
+            // Update summary stats
+            const total = analyses.length;
+            const completed = analyses.filter(a => a.status === 'completed').length;
+            const failed = analyses.filter(a => a.status === 'failed').length;
+            const running = analyses.filter(a =>
+                ['starting', 'running', 'preprocessing', 'classifying', 'processing', 'finalizing'].includes(a.status)
+            ).length;
+
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+            set('stat-total', total);
+            set('stat-completed', completed);
+            set('stat-failed', failed);
+            set('stat-running', running);
+
+            if (recent.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No analyses yet. Start a new analysis to see results here.</td></tr>';
+                return;
+            }
+
+            const statusBadge = (status) => {
+                const map = {
+                    completed: `<span class="status-badge status-completed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path><polyline points="22 4 12 14.01 9 11.01"></polyline></svg> Completed</span>`,
+                    failed:    `<span class="status-badge status-failed"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="15" y1="9" x2="9" y2="15"></line><line x1="9" y1="9" x2="15" y2="15"></line></svg> Failed</span>`,
+                    running:   `<span class="status-badge status-running">Running</span>`,
+                    cancelled: `<span class="status-badge status-failed">Cancelled</span>`
+                };
+                return map[status] || `<span class="status-badge">${status}</span>`;
+            };
+
+            const fmt = (dt) => {
+                if (!dt) return '—';
+                const d = new Date(dt);
+                return isNaN(d) ? '—' : d.toLocaleDateString();
+            };
+
+            tbody.innerHTML = recent.map(a => {
+                const name = a.analysis_name || a.config?.analysis_name || a.id;
+                const date = fmt(a.completed_at || a.endTime || a.startTime);
+                const sampleType = a.sample_type || a.config?.sample_type || '—';
+                const topPathogen = (a.results?.pathogens?.[0]?.name) || '—';
+                return `
+                <tr>
+                    <td><div class="cell-with-icon">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
+                        ${name}
+                    </div></td>
+                    <td>${date}</td>
+                    <td class="text-muted">${sampleType}</td>
+                    <td>${statusBadge(a.status)}</td>
+                    <td>${topPathogen}</td>
+                    <td>${a.status === 'completed' ? `<button class="btn-link" onclick="App.navigateTo('results')">View Report</button>` : '<span class="text-muted">—</span>'}</td>
+                </tr>`;
+            }).join('');
+
+        } catch (error) {
+            console.error('Failed to load recent analyses:', error);
+            tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">Failed to load analyses</td></tr>';
         }
     },
 

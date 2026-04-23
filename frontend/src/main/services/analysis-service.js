@@ -284,14 +284,32 @@ async function startAnalysis(config) {
             }
             await prepareFastqForWorkflow(primaryFastq, sampleBase);
 
-            // We no longer build the custom DB here; it is built automatically on import
-            // via the Database Management page (which guarantees reads_mapping is respected).
+            // Validate that a custom/named database is built before proceeding.
+            // The database value is either 'default', 'custom' (legacy), or a database ID.
             const dbType = config.database || 'default';
-            if (dbType === 'custom') {
+            if (dbType !== 'default') {
                 const dbSettings = getDbSettings();
-                const settings = dbSettings.loadSettings();
-                if (!settings.isBuilt) {
-                    return { success: false, error: 'Custom database has not been successfully built yet. Please build it in Database Management first.' };
+                if (dbType === 'custom') {
+                    // Legacy: check if any active DB is built
+                    const active = dbSettings.getActiveDatabase();
+                    if (!active || !active.isBuilt) {
+                        return { success: false, error: 'Custom database has not been successfully built yet. Please build it in Database Management first.' };
+                    }
+                } else {
+                    // Named database ID — verify it exists and is built
+                    const databases = dbSettings.listDatabases();
+                    const selectedDb = databases.find(d => d.id === dbType);
+                    if (!selectedDb) {
+                        return { success: false, error: 'Selected database not found. Please check Database Management.' };
+                    }
+                    if (!selectedDb.isBuilt) {
+                        return { success: false, error: `Database "${selectedDb.name}" has not been built yet. Please build it first.` };
+                    }
+                    if (!selectedDb.isActive) {
+                        // The selected DB is not the one currently in clark_db/.
+                        // For now, warn but allow — the user was warned in the UI.
+                        console.warn(`[Analysis] Database "${selectedDb.name}" is not active. Using current clark_db/ content.`);
+                    }
                 }
             }
         }

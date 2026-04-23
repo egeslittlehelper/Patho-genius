@@ -259,14 +259,16 @@ rule clark_lite_classify:
                 '"{params.results}/{params.sample}.clark.csv"'
             )
 
-            # 5) Cleanup: remove FASTQ, .clark prefix, and .clark.csv from the Nano
+            # 5) Cleanup: remove intermediate files from the Nano (non-fatal)
+            #    If SSH times out here, classification already succeeded — don't crash.
+            #    Note: we intentionally keep the FASTQ for the pre-existence check next run.
             shell(
                 'echo [EDGE] Cleaning up remote files on Jetson Nano... && '
                 'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
                 '{params.ssh_target} '
-                '"rm -f {params.remote_ws}/{params.sample}.fastq '
-                '{params.remote_ws}/{params.sample}.clark '
-                '{params.remote_ws}/{params.sample}.clark.csv"'
+                '"rm -f {params.remote_ws}/{params.sample}.clark '
+                '{params.remote_ws}/{params.sample}.clark.csv" '
+                '|| echo "[EDGE] Warning: cleanup SSH timed out (non-fatal, results already downloaded)"'
             )
 
 

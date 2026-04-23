@@ -117,10 +117,13 @@
                     <label for="database-select">Reference Database</label>
                     <select id="database-select" class="input-field">
                         <option value="default">Default Database (Built-in Pathogens)</option>
-                        <option value="custom">Custom Database</option>
+                        <!-- Custom databases populated dynamically by newanalysis.js -->
                     </select>
                     <div id="custom-db-warning" class="form-warning hidden">
-                        ⚠️ No custom database configured. Go to <a href="#" onclick="App.navigateTo('database'); return false;">Database Management</a> to set one.
+                        ⚠️ No custom database configured. Go to <a href="#" onclick="App.navigateTo('database'); return false;">Database Management</a> to create one.
+                    </div>
+                    <div id="db-not-active-warning" class="form-warning hidden">
+                        ⚠️ This database is not the currently active build. It will be rebuilt before analysis starts.
                     </div>
                 </div>
                 <div class="form-group">
@@ -188,4 +191,3 @@
         </div>
     </div>
 </div>
-

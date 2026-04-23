@@ -1,25 +1,108 @@
 /**
- * MAIN.JS - Electron Main Process
+ * MAIN.JS - Electron Main Process (MERGED)
  * Purpose: Application entry point, window management, IPC handlers
+ *
+ * Combines:
+ *   - Working Snakemake/CLARK pipeline backend (analysis-service, db-settings)
+ *   - Firebase auth, cloud sync, encrypted local storage, LLM
+ *   - User isolation (analysisUserMap, .owner files)
  */
 
 const { app, BrowserWindow, ipcMain, dialog } = require('electron');
 const path = require('path');
+const fs = require('fs');
 const os = require('os');
 const si = require('systeminformation');
 
 // Services
-const authService = require('./services/auth-service');
+const firebaseAuth = require('./services/firebase-auth-service');
 const analysisService = require('./services/analysis-service');
 const encryptionService = require('./services/encryption-service');
 const dbSettings = require('./services/db-settings');
+const cloudService = require('./services/cloud-service');
+const localStorageService = require('./services/local-storage-service');
+const llmService = require('./services/llm-service');
 
 // Global reference to main window
 let mainWindow = null;
 
+// In-memory ownership map: analysisId -> uid (or 'guest')
+// Rebuilt from .owner files on disk, so survives across sessions.
+const analysisUserMap = new Map();
+
+const RESULTS_DIR = analysisService.ANALYSIS_CONFIG.RESULTS_DIR;
+
+function getCurrentUid() {
+    const user = firebaseAuth.getCurrentUser();
+    return user ? user.uid : 'guest';
+}
+
 /**
- * Create main application window
+ * Scan RESULTS_DIR for directories whose .owner file matches uid.
+ * Returns synthetic analysis records for cross-session persistence.
  */
+function getDiskAnalyses(uid) {
+    const records = [];
+    try {
+        if (!fs.existsSync(RESULTS_DIR)) return records;
+        for (const entry of fs.readdirSync(RESULTS_DIR, { withFileTypes: true })) {
+            if (!entry.isDirectory()) continue;
+            const ownerFile = path.join(RESULTS_DIR, entry.name, '.owner');
+            if (!fs.existsSync(ownerFile)) continue;
+            if (fs.readFileSync(ownerFile, 'utf8').trim() !== uid) continue;
+            const resultsFile = path.join(RESULTS_DIR, entry.name, 'results.json');
+            if (!fs.existsSync(resultsFile)) continue;
+            try {
+                const resultData = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+                const cfgFile = path.join(RESULTS_DIR, entry.name, 'config.json');
+                const cfg = fs.existsSync(cfgFile) ? JSON.parse(fs.readFileSync(cfgFile, 'utf8')) : {};
+                records.push({
+                    id: entry.name,
+                    analysis_name: resultData.analysis_name || cfg.analysis_name || entry.name,
+                    sample_type: resultData.sample_type || cfg.sample_type || '—',
+                    status: 'completed',
+                    completed_at: resultData.completed_at,
+                    startTime: resultData.completed_at ? new Date(resultData.completed_at).getTime() : 0,
+                    outputDir: path.join(RESULTS_DIR, entry.name),
+                    results: resultData
+                });
+            } catch {}
+        }
+    } catch {}
+    return records;
+}
+
+/**
+ * Scan userData/results/{uid}/ for encrypted results saved from cloud downloads.
+ * Uses .meta.json sidecars so we never decrypt just to list.
+ */
+async function getEncryptedLocalAnalyses(uid) {
+    if (!uid || uid === 'guest') return [];
+    const listed = await localStorageService.listLocalResults(uid);
+    if (!listed.success) return [];
+    return listed.files.map(f => ({
+        id: f.analysisId,
+        analysis_name: f.analysis_name || f.analysisId,
+        sample_type: f.sample_type || '—',
+        status: 'completed',
+        completed_at: f.completed_at || f.modifiedAt?.toISOString?.() || null,
+        startTime: f.completed_at ? new Date(f.completed_at).getTime() : (f.modifiedAt?.getTime?.() || 0),
+        _fromEncrypted: true
+    }));
+}
+
+/**
+ * Delete an analysis's output directory from RESULTS_DIR.
+ */
+function deleteAnalysisDir(analysisId) {
+    const dir = path.join(RESULTS_DIR, analysisId);
+    try {
+        if (fs.existsSync(dir)) fs.rmSync(dir, { recursive: true, force: true });
+    } catch (e) {
+        console.error('Failed to delete analysis dir:', e.message);
+    }
+}
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1440,
@@ -34,12 +117,8 @@ function createWindow() {
         }
     });
 
-    // Make mainWindow accessible for progress events
     global.mainWindow = mainWindow;
-
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
-
-    // Open DevTools in development
     // mainWindow.webContents.openDevTools();
 
     mainWindow.on('closed', () => {
@@ -48,8 +127,12 @@ function createWindow() {
     });
 }
 
-// App lifecycle
-app.whenReady().then(createWindow);
+app.whenReady().then(() => {
+    createWindow();
+    llmService.loadModel().then(status => {
+        if (status.loadError) console.error('LLM auto-load failed:', status.loadError);
+    });
+});
 
 app.on('window-all-closed', () => {
     if (process.platform !== 'darwin') app.quit();
@@ -60,30 +143,91 @@ app.on('activate', () => {
 });
 
 /* ============================================
-   IPC HANDLERS - Authentication
+   IPC HANDLERS - Authentication (Firebase)
    ============================================ */
 
+ipcMain.handle('auth:register', async (event, userData) => {
+    return await firebaseAuth.register(userData);
+});
+
 ipcMain.handle('auth:login', async (event, username, password) => {
-    return await authService.login(username, password);
+    return await firebaseAuth.login(username, password);
 });
 
 ipcMain.handle('auth:login-guest', async () => {
-    return await authService.loginAsGuest();
+    return {
+        success: true,
+        user: { uid: null, username: 'guest', displayName: 'Guest User', role: 'guest' },
+        isGuest: true
+    };
 });
 
-ipcMain.handle('auth:logout', async () => {
-    return await authService.logout();
+ipcMain.handle('auth:logout', async (event, isGuest) => {
+    if (isGuest) {
+        try {
+            if (fs.existsSync(RESULTS_DIR)) {
+                for (const entry of fs.readdirSync(RESULTS_DIR, { withFileTypes: true })) {
+                    if (!entry.isDirectory()) continue;
+                    const ownerFile = path.join(RESULTS_DIR, entry.name, '.owner');
+                    if (!fs.existsSync(ownerFile)) continue;
+                    if (fs.readFileSync(ownerFile, 'utf8').trim() === 'guest') {
+                        fs.rmSync(path.join(RESULTS_DIR, entry.name), { recursive: true, force: true });
+                    }
+                }
+            }
+        } catch (e) {
+            console.error('Guest data cleanup error:', e.message);
+        }
+        for (const [id, uid] of analysisUserMap.entries()) {
+            if (uid === 'guest') analysisUserMap.delete(id);
+        }
+        await localStorageService.clearGuestData();
+        encryptionService.disableEncryption();
+        return { success: true };
+    }
+    return await firebaseAuth.logout();
+});
+
+ipcMain.handle('auth:restore-session', async () => {
+    return await firebaseAuth.restoreSession();
 });
 
 ipcMain.handle('auth:get-session', () => {
-    return authService.getSession();
+    const user = firebaseAuth.getCurrentUser();
+    return user ? { success: true, user } : { success: false };
 });
 
-ipcMain.handle('auth:register', async (event, userData) => {
-    return await authService.register(userData);
+ipcMain.handle('auth:change-password', async (event, currentPassword, newPassword) => {
+    return await firebaseAuth.changePassword(currentPassword, newPassword);
 });
 
-/* IPC HANDLERS - File System */
+ipcMain.handle('auth:request-password-reset', async (event, email) => {
+    return await firebaseAuth.sendPasswordReset(email);
+});
+
+ipcMain.handle('auth:resend-verification', async (event, email, password) => {
+    return await firebaseAuth.resendVerificationEmail(email, password);
+});
+
+ipcMain.handle('auth:check-verification', async (event, email, password) => {
+    return await firebaseAuth.checkEmailVerified(email, password);
+});
+
+/* ============================================
+   IPC HANDLERS - Settings (Firebase)
+   ============================================ */
+
+ipcMain.handle('settings:save', async (event, settings) => {
+    return await firebaseAuth.saveSettings(settings);
+});
+
+ipcMain.handle('settings:load', async () => {
+    return await firebaseAuth.loadSettings();
+});
+
+/* ============================================
+   IPC HANDLERS - File System
+   ============================================ */
 
 ipcMain.handle('app:select-file', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
@@ -125,10 +269,21 @@ ipcMain.handle('app:select-mapping-file', async () => {
     return canceled ? null : filePaths[0];
 });
 
-/* IPC HANDLERS - Analysis (Snakemake) */
+/* ============================================
+   IPC HANDLERS - Analysis (Snakemake / CLARK)
+   ============================================ */
 
 ipcMain.handle('app:start-analysis', async (event, config) => {
-    return await analysisService.startAnalysis(config);
+    const result = await analysisService.startAnalysis(config);
+    if (result.success) {
+        const uid = getCurrentUid();
+        analysisUserMap.set(result.analysisId, uid);
+        // Write .owner file so ownership survives app restarts
+        try {
+            fs.writeFileSync(path.join(result.outputDir, '.owner'), uid, 'utf8');
+        } catch {}
+    }
+    return result;
 });
 
 ipcMain.handle('app:get-analysis-status', async (event, analysisId) => {
@@ -136,11 +291,45 @@ ipcMain.handle('app:get-analysis-status', async (event, analysisId) => {
 });
 
 ipcMain.handle('app:get-analysis-results', async (event, analysisId) => {
-    return analysisService.getAnalysisResults(analysisId);
+    const uid = getCurrentUid();
+    // 1. In-memory (current session, e.g. just ran)
+    const fromService = analysisService.getAnalysisResults(analysisId);
+    if (fromService) return fromService;
+    // 2. Encrypted local copy (downloaded from cloud)
+    if (uid !== 'guest') {
+        const enc = await localStorageService.loadResultLocally(analysisId, uid);
+        if (enc.success) {
+            try { return typeof enc.data === 'string' ? JSON.parse(enc.data) : enc.data; } catch {}
+        }
+    }
+    return null;
 });
 
 ipcMain.handle('app:get-all-analyses', async () => {
-    return analysisService.getAllAnalyses();
+    const uid = getCurrentUid();
+
+    // 1. Current-session in-memory analyses owned by this user
+    const fromMemory = analysisService.getAllAnalyses().filter(a => {
+        const owner = analysisUserMap.get(a.id);
+        return owner === uid;
+    });
+
+    // 2. Cross-session pipeline output (results.json + .owner on disk)
+    const fromDisk = getDiskAnalyses(uid);
+
+    // 3. Encrypted downloads from cloud (userData/results/{uid}/*.enc)
+    const fromEncrypted = uid !== 'guest' ? await getEncryptedLocalAnalyses(uid) : [];
+
+    // Merge: memory is most up-to-date, disk second, encrypted third
+    const seen = new Set(fromMemory.map(a => a.id));
+    for (const a of fromDisk) {
+        if (!seen.has(a.id)) { fromMemory.push(a); seen.add(a.id); }
+    }
+    for (const a of fromEncrypted) {
+        if (!seen.has(a.id)) { fromMemory.push(a); seen.add(a.id); }
+    }
+
+    return fromMemory.sort((a, b) => (b.startTime || 0) - (a.startTime || 0));
 });
 
 ipcMain.handle('app:cancel-analysis', async (event, analysisId) => {
@@ -156,37 +345,40 @@ ipcMain.handle('app:resume-analysis', async (event, analysisId) => {
 });
 
 ipcMain.handle('app:delete-analysis', async (event, analysisId) => {
-    return analysisService.deleteAnalysis(analysisId);
+    const uid = getCurrentUid();
+    analysisService.deleteAnalysis(analysisId, true);
+    deleteAnalysisDir(analysisId);
+    if (uid !== 'guest') {
+        await localStorageService.deleteLocalResult(analysisId, uid);
+    }
+    analysisUserMap.delete(analysisId);
+    return { success: true };
 });
 
-/* IPC HANDLERS - System Status */
+/* ============================================
+   IPC HANDLERS - System Status
+   ============================================ */
 
 ipcMain.handle('app:get-system-stats', async () => {
     try {
-        // Get CPU information
-        const cpuInfo = await si.cpu();
-        const cpuUsage = 34; // Hardcoded CPU usage
+        const [cpuInfo, cpuLoad, memInfo, diskInfo, gpuInfo, networkInterfaces] = await Promise.all([
+            si.cpu(),
+            si.currentLoad(),
+            si.mem(),
+            si.fsSize(),
+            si.graphics(),
+            si.networkInterfaces()
+        ]);
 
-        // Get memory information
-        const memInfo = await si.mem();
-
-        // Get disk information
-        const diskInfo = await si.fsSize();
-        const mainDisk = diskInfo.find(disk => disk.mount === 'C:' || disk.mount === '/') || diskInfo[0];
-
-        // Get GPU information
-        const gpuInfo = await si.graphics();
-        const primaryGpu = gpuInfo.controllers.find(gpu => gpu.vendor !== 'Microsoft') || gpuInfo.controllers[0];
-
-        // Get network information
-        const networkInterfaces = await si.networkInterfaces();
-        const activeInterface = networkInterfaces.find(iface => iface.operstate === 'up' && iface.ip4);
+        const mainDisk = diskInfo.find(d => d.mount === 'C:' || d.mount === '/') || diskInfo[0];
+        const primaryGpu = gpuInfo.controllers.find(g => g.vendor !== 'Microsoft') || gpuInfo.controllers[0];
+        const activeInterface = networkInterfaces.find(i => i.operstate === 'up' && i.ip4);
 
         return {
             cpu: {
                 cores: cpuInfo.cores,
                 model: cpuInfo.brand,
-                usage: cpuUsage
+                usage: Math.round(cpuLoad.currentLoad)
             },
             memory: {
                 total: memInfo.total,
@@ -206,13 +398,12 @@ ipcMain.handle('app:get-system-stats', async () => {
                 vendor: primaryGpu ? primaryGpu.vendor : 'Unknown'
             },
             network: {
-                connected: activeInterface ? true : false,
+                connected: !!activeInterface,
                 interface: activeInterface ? activeInterface.iface : 'None',
                 ip: activeInterface ? activeInterface.ip4 : 'N/A'
             },
             platform: os.platform(),
             hostname: os.hostname(),
-            // Analysis service config
             analysisConfig: {
                 workflowDir: analysisService.ANALYSIS_CONFIG.WORKFLOW_DIR,
                 resultsDir: analysisService.ANALYSIS_CONFIG.RESULTS_DIR,
@@ -221,23 +412,16 @@ ipcMain.handle('app:get-system-stats', async () => {
         };
     } catch (error) {
         console.error('Failed to get system stats:', error);
-        // Fallback to basic OS info
         const cpus = os.cpus();
         const totalMemory = os.totalmem();
         const freeMemory = os.freemem();
-        const usedMemory = totalMemory - freeMemory;
-
         return {
-            cpu: {
-                cores: cpus.length,
-                model: cpus[0]?.model || 'Unknown',
-                usage: 0 // Unable to get usage
-            },
+            cpu: { cores: cpus.length, model: cpus[0]?.model || 'Unknown', usage: 0 },
             memory: {
                 total: totalMemory,
-                used: usedMemory,
+                used: totalMemory - freeMemory,
                 free: freeMemory,
-                percentUsed: Math.round((usedMemory / totalMemory) * 100)
+                percentUsed: Math.round(((totalMemory - freeMemory) / totalMemory) * 100)
             },
             disk: { free: 0, total: 0, used: 0, percentUsed: 0 },
             gpu: { available: false, name: 'Unknown', vendor: 'Unknown' },
@@ -253,38 +437,61 @@ ipcMain.handle('app:get-system-stats', async () => {
     }
 });
 
-/* IPC HANDLERS - Database Management */
+/* ============================================
+   IPC HANDLERS - Database Management (real CLARK)
+   ============================================ */
 
 ipcMain.handle('app:get-database-info', async () => {
     const defaultDb = dbSettings.getDefaultDbInfo();
-    const settings = dbSettings.loadSettings();
+    const databases = dbSettings.listDatabases();
+    const active = dbSettings.getActiveDatabase();
     return {
         defaultDb: {
             path: defaultDb.path,
             isBuilt: defaultDb.isBuilt,
             genomeCount: defaultDb.genomeCount,
         },
-        customDb: {
-            path: settings.customDbPath,
-            files: settings.customDbFiles || [],
-            totalSize: settings.totalSize || 0,
-            lastUpdated: settings.lastUpdated,
-            isBuilt: settings.isBuilt || false,
-        },
+        databases,
+        activeDatabase: active,
     };
 });
 
+ipcMain.handle('app:list-databases', async () => {
+    return dbSettings.listDatabases();
+});
+
+ipcMain.handle('app:create-database', async (event, config) => {
+    const { name, genomesPath, mappingFile, syncToJetson } = config;
+    console.log(`Creating database "${name}" from ${genomesPath}, sync=${syncToJetson}`);
+
+    const addResult = dbSettings.addDatabase(name, genomesPath, mappingFile, syncToJetson);
+    if (!addResult.success) return addResult;
+
+    try {
+        await dbSettings.buildDatabase(addResult.database.id);
+        // Re-read after build to get updated flags
+        const databases = dbSettings.listDatabases();
+        const built = databases.find(d => d.id === addResult.database.id);
+        return { success: true, database: built };
+    } catch (error) {
+        return { success: false, error: 'Database build failed: ' + error.message };
+    }
+});
+
+ipcMain.handle('app:delete-database', async (event, databaseId) => {
+    console.log('Deleting database:', databaseId);
+    return dbSettings.removeDatabase(databaseId);
+});
+
 ipcMain.handle('app:import-database', async (event, folderPath, mappingFile) => {
-    console.log('Importing custom database from:', folderPath, 'Mapping:', mappingFile);
+    console.log('Legacy import from:', folderPath, 'Mapping:', mappingFile);
     const result = dbSettings.setCustomDbPath(folderPath, mappingFile);
     if (!result.success) return result;
-    
     try {
         await dbSettings.buildCustomDb(folderPath);
     } catch (error) {
         return { success: false, error: 'Database build failed: ' + error.message };
     }
-    
     return result;
 });
 
@@ -294,11 +501,7 @@ ipcMain.handle('app:clear-custom-db', async () => {
 });
 
 ipcMain.handle('app:check-database-updates', async () => {
-    return {
-        hasUpdate: false,
-        currentVersion: '2025.01',
-        message: 'Database is up to date'
-    };
+    return { hasUpdate: false, currentVersion: '2025.01', message: 'Database is up to date' };
 });
 
 ipcMain.handle('app:add-fasta', async (event, filePath, metadata) => {
@@ -316,7 +519,9 @@ ipcMain.handle('app:update-species', async (event, speciesId, metadata) => {
     return { success: true, message: 'Species metadata updated' };
 });
 
-/* IPC HANDLERS - Encryption */
+/* ============================================
+   IPC HANDLERS - Encryption
+   ============================================ */
 
 ipcMain.handle('app:init-encryption', async (event, password) => {
     return encryptionService.initializeEncryption(password);
@@ -343,112 +548,148 @@ ipcMain.handle('app:is-encryption-enabled', () => {
     return encryptionService.isEnabled();
 });
 
-/* IPC HANDLERS - Password Reset */
-
-ipcMain.handle('auth:request-password-reset', async (event, emailOrUsername) => {
-    console.log('Password reset requested for:', emailOrUsername);
-    // TODO: Implement email sending logic
-    // In production, this would:
-    // 1. Verify the email/username exists
-    // 2. Generate a secure token
-    // 3. Send email with reset link
-    return { success: true, message: 'If account exists, reset email sent' };
-});
-
-ipcMain.handle('auth:reset-password', async (event, token, newPassword) => {
-    console.log('Password reset with token');
-    // TODO: Implement password reset logic
-    // In production, this would:
-    // 1. Validate the token
-    // 2. Hash the new password
-    // 3. Update the database
-    return { success: true, message: 'Password reset successfully' };
-});
-
-ipcMain.handle('auth:change-password', async (event, currentPassword, newPassword) => {
-    console.log('User changing password');
-    // TODO: Implement password change logic
-    // In production, this would:
-    // 1. Verify current password matches
-    // 2. Hash the new password
-    // 3. Update the database
-    // 4. Optionally invalidate other sessions
-    return { success: true, message: 'Password changed successfully' };
-});
-
-/* IPC HANDLERS - Cloud Sync */
+/* ============================================
+   IPC HANDLERS - Cloud Sync (Firebase)
+   ============================================ */
 
 ipcMain.handle('cloud:check-connection', async () => {
-    // Check if we can reach the cloud server
     try {
-        // TODO: Implement actual cloud connection check
-        return { connected: true, latency: 45 };
-    } catch (error) {
-        return { connected: false, error: error.message };
+        const res = await fetch('https://firestore.googleapis.com', { method: 'HEAD' });
+        return { connected: res.status < 500, latency: null };
+    } catch {
+        return { connected: false };
     }
 });
 
 ipcMain.handle('cloud:get-results', async () => {
-    // TODO: Implement actual cloud API call
-    // This would fetch from your cloud storage/API
-    return [];
-});
-
-ipcMain.handle('cloud:download-result', async (event, resultId) => {
-    console.log('Downloading result from cloud:', resultId);
-    // TODO: Implement actual download from cloud
-    // 1. Fetch from cloud storage
-    // 2. Save to local directory
-    // 3. Add to local analysis history
-    return { success: true, localPath: `/path/to/downloaded/${resultId}` };
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not logged in', results: [] };
+    return await cloudService.getCloudResultsList(user.uid);
 });
 
 ipcMain.handle('cloud:upload-result', async (event, analysisId) => {
-    console.log('Uploading result to cloud:', analysisId);
-    // TODO: Implement actual upload to cloud
-    // 1. Read local result files
-    // 2. Encrypt if enabled
-    // 3. Upload to cloud storage
-    // 4. Mark as synced locally
-    return { success: true, cloudId: `cloud-${analysisId}` };
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not logged in' };
+    const result = analysisService.getAnalysisResults(analysisId);
+    if (!result) return { success: false, error: 'Analysis results not found locally' };
+    return await cloudService.uploadResult(analysisId, user.uid, result);
 });
 
-ipcMain.handle('cloud:delete-result', async (event, resultId) => {
-    console.log('Deleting cloud result:', resultId);
-    // TODO: Implement actual cloud deletion
+ipcMain.handle('cloud:download-result', async (event, analysisId) => {
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not logged in' };
+
+    const dlResult = await cloudService.downloadResult(analysisId, user.uid);
+    if (!dlResult.success) return dlResult;
+
+    let resultData;
+    try {
+        resultData = typeof dlResult.data === 'string' ? JSON.parse(dlResult.data) : dlResult.data;
+    } catch {
+        resultData = dlResult.data;
+    }
+
+    const meta = {
+        analysis_name: resultData?.analysis_name || analysisId,
+        sample_type: resultData?.sample_type || '—',
+        completed_at: resultData?.completed_at || new Date().toISOString()
+    };
+    await localStorageService.saveResultLocally(analysisId, user.uid, resultData, meta);
+
     return { success: true };
 });
 
-/* IPC HANDLERS - Admin */
+ipcMain.handle('cloud:delete-result', async (event, analysisId) => {
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not logged in' };
+    return await cloudService.deleteCloudResult(analysisId, user.uid);
+});
+
+ipcMain.handle('cloud:sync-metadata', async (event, analysisId, metadata) => {
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not logged in' };
+    return await cloudService.syncAnalysisMetadata(user.uid, analysisId, metadata);
+});
+
+/* ============================================
+   IPC HANDLERS - Admin (Firebase)
+   ============================================ */
 
 ipcMain.handle('admin:get-users', async () => {
-    console.log('Admin: Getting user list');
-    // TODO: Implement actual user retrieval from database
-    return [];
+    return await firebaseAuth.adminGetUsers();
 });
 
-ipcMain.handle('admin:reset-user-password', async (event, userId, newPassword) => {
-    console.log('Admin: Resetting password for user:', userId);
-    // TODO: Implement actual password reset
-    // 1. Hash the new password
-    // 2. Update in database
-    // 3. Log the action
-    return { success: true };
+ipcMain.handle('admin:suspend-user', async (event, uid) => {
+    return await firebaseAuth.adminSuspendUser(uid);
+});
+
+ipcMain.handle('admin:activate-user', async (event, uid) => {
+    return await firebaseAuth.adminActivateUser(uid);
 });
 
 ipcMain.handle('admin:update-user-role', async (event, userId, newRole) => {
-    console.log('Admin: Updating role for user:', userId, 'to', newRole);
-    // TODO: Implement actual role update
-    return { success: true };
+    return await firebaseAuth.adminChangeUserRole(userId, newRole);
+});
+
+ipcMain.handle('admin:send-password-reset', async (event, email) => {
+    return await firebaseAuth.adminSendPasswordReset(email);
+});
+
+ipcMain.handle('admin:get-stats', async () => {
+    return await firebaseAuth.adminGetStats();
+});
+
+ipcMain.handle('admin:reset-user-password', async (event, userId) => {
+    const users = await firebaseAuth.adminGetUsers();
+    if (!users.success) return { success: false, error: users.error };
+    const user = users.users.find(u => u.uid === userId);
+    if (!user) return { success: false, error: 'User not found' };
+    return await firebaseAuth.adminSendPasswordReset(user.email);
 });
 
 ipcMain.handle('admin:delete-user', async (event, userId) => {
-    console.log('Admin: Deleting user:', userId);
-    // TODO: Implement actual user deletion
-    return { success: true };
+    return await firebaseAuth.adminSuspendUser(userId);
 });
 
-console.log(' Pathogenius Main Process Ready');
+/* ============================================
+   IPC HANDLERS - LLM Service
+   ============================================ */
+
+ipcMain.handle('llm:get-status', () => {
+    return llmService.getStatus();
+});
+
+ipcMain.handle('llm:load-model', async () => {
+    return await llmService.loadModel();
+});
+
+ipcMain.handle('llm:chat', async (event, prompt) => {
+    try {
+        const response = await llmService.chat(prompt, (chunk) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('llm:token', chunk);
+            }
+        });
+        return { success: true, response };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+ipcMain.handle('llm:generate-summary', async (event, resultData) => {
+    try {
+        const response = await llmService.generateSummary(resultData, (chunk) => {
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('llm:token', chunk);
+            }
+        });
+        return { success: true, response };
+    } catch (err) {
+        return { success: false, error: err.message };
+    }
+});
+
+console.log('\n Pathogenius Main Process Ready');
 console.log(`   Platform: ${os.platform()}`);
 console.log(`   Node: ${process.versions.node}`);
 console.log(`   Electron: ${process.versions.electron}`);
