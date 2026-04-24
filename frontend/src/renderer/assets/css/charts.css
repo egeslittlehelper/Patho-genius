@@ -24,6 +24,7 @@
     flex-direction: column;
     gap: 8px;
     padding: 20px 0;
+    position: relative;
 }
 
 .bar-chart-y-axis {
@@ -54,15 +55,22 @@
     display: flex;
     flex-direction: column;
     align-items: center;
+    justify-content: flex-end;
     gap: 8px;
     flex: 1;
+    height: 100%;
 }
 
 .bar-item .bar {
     width: 40px;
-    background-color: var(--primary);
+    background: linear-gradient(180deg, var(--primary), var(--primary-dark, #006666));
     border-radius: var(--radius-sm) var(--radius-sm) 0 0;
     min-height: 2px;
+    transition: opacity 0.2s ease;
+}
+
+.bar-item .bar:hover {
+    opacity: 0.8;
 }
 
 .bar-item span {

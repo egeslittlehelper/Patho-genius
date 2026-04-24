@@ -476,9 +476,18 @@ const App = {
             activeContent.classList.add('active');
 
             // Re-render charts if needed when tab becomes active
-            if (tabId === 'comparative' && window.Charts && window.Charts.renderRadar) {
+            if (
+                tabId === 'comparative' &&
+                window.Charts &&
+                window.Charts.renderRadar &&
+                window.ResultsPage?.state?.currentResult
+            ) {
                 setTimeout(() => {
-                    Charts.renderRadar('radar-chart');
+                    const radarData = Charts.transformApiData(
+                        window.ResultsPage.state.currentResult,
+                        'radar'
+                    );
+                    Charts.renderRadar('radar-chart', radarData);
                 }, 100);
             }
         }

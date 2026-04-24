@@ -335,26 +335,28 @@ const ResultsPage = {
      */
     async viewAnalysis(analysisId) {
         this.state.selectedAnalysisId = analysisId;
-        
+        this.state.currentResult = null;
+
         try {
-            // Try to load from API
             if (window.api?.analysis?.getResults) {
                 const result = await window.api.analysis.getResults(analysisId);
                 if (result) {
-                    this.state.currentResult = result;
+                    // Unwrap nested response envelopes
+                    this.state.currentResult = result.result || result.results || result.data || result;
+                    console.log('RAW BACKEND RESPONSE:', result);
                 }
             }
-            
-            // Fallback to finding in completed analyses or use mock
+
             if (!this.state.currentResult) {
                 const analysis = this.state.completedAnalyses.find(a => a.id === analysisId);
-                this.state.currentResult = analysis?.results || this.getMockResult();
+                this.state.currentResult = analysis?.results || analysis || this.getMockResult();
             }
         } catch (error) {
             console.error('Failed to load result:', error);
             this.state.currentResult = this.getMockResult();
         }
 
+        console.log('FINAL RESULT USED:', this.state.currentResult);
         this.showDetailView();
     },
 
@@ -393,6 +395,9 @@ const ResultsPage = {
 
         // Render pathogen cards
         this.renderPathogenCards();
+        
+        // Render pathogen details tab
+        this.renderPathogenDetails(result);
         
         // Render charts
         this.renderCharts(result);
@@ -591,6 +596,69 @@ const ResultsPage = {
     },
 
     /**
+     * Render pathogen details in the Pathogen Details tab
+     */
+    renderPathogenDetails(result) {
+        const container = document.getElementById('tab-pathogens');
+        if (!container) return;
+
+        const pathogens = result?.pathogens || [];
+
+        if (!pathogens.length) {
+            container.innerHTML = `
+                <div class="card">
+                    <p class="text-muted">No pathogen detail data available.</p>
+                </div>
+            `;
+            return;
+        }
+
+        container.innerHTML = pathogens.map(p => {
+            const risk = (p.risk_level || 'low').toLowerCase();
+            return `
+                <div class="pathogen-detail-card">
+                    <div class="pathogen-detail-header">
+                        <div>
+                            <h3>${p.name}</h3>
+                            <p class="pathogen-strain">Strain: ${p.strain || 'Unknown'}</p>
+                        </div>
+                        <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
+                    </div>
+
+                    <div class="pathogen-detail-stats">
+                        <div class="detail-stat">
+                            <span class="detail-label">Relative Abundance</span>
+                            <span class="detail-value">${p.abundance ?? 0}%</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-label">Read Count</span>
+                            <span class="detail-value">${this.formatReads(p.reads || 0)}</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-label">Confidence Score</span>
+                            <span class="detail-value text-primary">${p.confidence ?? 'N/A'}%</span>
+                        </div>
+                        <div class="detail-stat">
+                            <span class="detail-label">AMR Genes Detected</span>
+                            <span class="detail-value">${p.amr_genes || 0}</span>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-danger-light">
+                        <strong>Virulence Factors</strong>
+                        <p>${p.virulence_genes || 0} virulence gene(s) reported for this pathogen.</p>
+                    </div>
+
+                    <div class="alert alert-info">
+                        <strong>Taxonomy</strong>
+                        <p>Tax ID: ${p.tax_id || 'Unknown'}</p>
+                    </div>
+                </div>
+            `;
+        }).join('');
+    },
+
+    /**
      * Render interactive charts with result data
      */
     renderCharts(result) {
@@ -600,49 +668,29 @@ const ResultsPage = {
             return;
         }
 
-        // Prepare treemap data from pathogens
-        const treemapData = result.pathogens?.map(p => ({
-            name: p.name,
-            value: p.abundance,
-            reads: p.reads,
-            confidence: p.confidence,
-            risk: this.capitalize(p.risk_level),
-            color: this.getRiskColorShaded(p.risk_level, `${p.name}|${p.strain || ''}|${p.tax_id || ''}`)
-        })) || [];
-
-        // Add unclassified if available
-        if (result.summary?.classification_rate) {
-            const unclassifiedPercent = 100 - result.summary.classification_rate;
-            if (unclassifiedPercent > 0) {
-                const otherPercent = unclassifiedPercent - treemapData.reduce((sum, p) => sum + p.value, 0);
-                if (otherPercent > 0) {
-                    treemapData.push({
-                        name: 'Other/Unclassified',
-                        value: Math.max(0, 100 - treemapData.reduce((sum, p) => sum + p.value, 0)),
-                        color: '#9CA3AF'
-                    });
-                }
-            }
-        }
+        const treemapData = Charts.transformApiData(result, 'treemap');
+        const sunburstData = Charts.transformApiData(result, 'sunburst');
+        const sankeyData = Charts.transformApiData(result, 'sankey');
+        const radarData = Charts.transformApiData(result, 'radar');
 
         // Render treemap
         setTimeout(() => {
-            Charts.renderTreemap('abundance-treemap-chart', treemapData.length > 0 ? treemapData : null);
+            Charts.renderTreemap('abundance-treemap-chart', treemapData);
         }, 100);
 
         // Render sunburst with taxonomy data
         setTimeout(() => {
-            Charts.renderSunburst('sunburst-chart');
+            Charts.renderSunburst('sunburst-chart', sunburstData);
         }, 150);
 
         // Render sankey diagram
         setTimeout(() => {
-            Charts.renderSankey('sankey-chart');
+            Charts.renderSankey('sankey-chart', sankeyData);
         }, 200);
 
         // Render radar chart for comparative analysis
         setTimeout(() => {
-            Charts.renderRadar('radar-chart');
+            Charts.renderRadar('radar-chart', radarData);
         }, 250);
     },
 

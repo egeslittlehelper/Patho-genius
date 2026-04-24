@@ -861,259 +861,113 @@ const Charts = {
      */
     formatNumber(num) {
         const n = parseFloat(num);
-        if (isNaN(n)) return num;
+        if (isNaN(n)) return String(num);
         if (n >= 1e6) return (n / 1e6).toFixed(2) + 'M';
         if (n >= 1e3) return (n / 1e3).toFixed(1) + 'K';
         return n.toLocaleString();
     },
 
+    /**
+     * Format percentage values
+     */
+    formatPercent(value) {
+        const n = Number(value);
+        if (Number.isNaN(n)) return 'N/A';
+        return `${n}%`;
+    },
+
+    /**
+     * Normalize risk level string
+     */
+    normalizeRiskLevel(risk) {
+        const value = String(risk || '').toLowerCase();
+        if (value === 'high') return 'High';
+        if (value === 'medium') return 'Medium';
+        if (value === 'low') return 'Low';
+        return 'Unknown';
+    },
+
+    /**
+     * Convert risk level to numerical score
+     */
+    riskToScore(risk) {
+        const normalized = this.normalizeRiskLevel(risk);
+        switch (normalized) {
+            case 'High': return 9;
+            case 'Medium': return 6;
+            case 'Low': return 3;
+            default: return 0;
+        }
+    },
+
+    /**
+     * Convert text to title case
+     */
+    toTitleCase(text) {
+        return String(text || '')
+            .replace(/[_-]/g, ' ')
+            .replace(/\b\w/g, ch => ch.toUpperCase());
+    },
+
+    /**
+     * Truncate label with ellipsis
+     */
+    truncateLabel(text, maxLength = 20) {
+        const value = String(text || '');
+        return value.length > maxLength ? `${value.slice(0, maxLength - 1)}…` : value;
+    },
+
+    /**
+     * Escape HTML attributes
+     */
+    escapeAttr(value) {
+        return String(value ?? '')
+            .replace(/&/g, '&amp;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&#39;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+    },
+
+    unescapeAttr(value) {
+        return String(value ?? '')
+            .replace(/&quot;/g, '"')
+            .replace(/&#39;/g, "'")
+            .replace(/&lt;/g, '<')
+            .replace(/&gt;/g, '>')
+            .replace(/&amp;/g, '&');
+    },
+
     // ============================================
-    // MOCK DATA
+    // REAL DATA TRANSFORMERS
     // ============================================
-
-    /**
-     * Mock sunburst data - taxonomic hierarchy
-     * Shows Domain → Phylum → Class → Species breakdown
-     */
-    getMockSunburstData() {
-        return {
-            name: 'All Reads',
-            value: 100,
-            children: [
-                {
-                    name: 'Bacteria',
-                    value: 71,
-                    color: '#008080',
-                    reads: 5350000,
-                    confidence: 96,
-                    children: [
-                        { 
-                            name: 'Proteobacteria', 
-                            value: 48, 
-                            reads: 3620000, 
-                            confidence: 94,
-                            children: [
-                                { name: 'Gammaproteobacteria', value: 35, reads: 2640000, confidence: 92 },
-                                { name: 'Alphaproteobacteria', value: 8, reads: 600000, confidence: 88 },
-                                { name: 'Betaproteobacteria', value: 5, reads: 380000, confidence: 85 }
-                            ]
-                        },
-                        { 
-                            name: 'Firmicutes', 
-                            value: 18, 
-                            reads: 1360000, 
-                            confidence: 89,
-                            children: [
-                                { name: 'Bacilli', value: 12, reads: 910000, confidence: 87 },
-                                { name: 'Clostridia', value: 6, reads: 450000, confidence: 82 }
-                            ]
-                        },
-                        { name: 'Bacteroidetes', value: 5, reads: 370000, confidence: 82 }
-                    ]
-                },
-                {
-                    name: 'Viruses',
-                    value: 4.8,
-                    color: '#10B981',
-                    reads: 362000,
-                    confidence: 81,
-                    children: [
-                        { name: 'dsDNA viruses', value: 3.2, reads: 241000, confidence: 78 },
-                        { name: 'RNA viruses', value: 1.6, reads: 121000, confidence: 72 }
-                    ]
-                },
-                {
-                    name: 'Archaea',
-                    value: 1.2,
-                    color: '#6366F1',
-                    reads: 90000,
-                    confidence: 65
-                },
-                {
-                    name: 'Unclassified',
-                    value: 23,
-                    color: '#9CA3AF',
-                    reads: 1730000,
-                    confidence: null
-                }
-            ]
-        };
-    },
-
-    /**
-     * Mock sankey data - read classification pipeline flow
-     * Shows: Raw → Quality Filter → Classification → Taxonomy
-     */
-    getMockSankeyData() {
-        return {
-            nodes: [
-                { id: 'raw', name: 'Raw Reads (11.89M)', value: 11890000, column: 0, color: '#6B7280', info: 'Total sequenced reads from FASTQ' },
-                { id: 'hq', name: 'High Quality (11.2M)', value: 11200000, column: 1, color: '#10B981', info: 'Q≥30 phred score, passed filters' },
-                { id: 'lq', name: 'Low Quality (690K)', value: 690000, column: 1, color: '#EF4444', info: 'Below quality threshold - discarded' },
-                { id: 'classified', name: 'Classified (7.56M)', value: 7560000, column: 2, color: '#008080', info: '67.5% of HQ reads matched database' },
-                { id: 'unclassified', name: 'Unclassified (3.64M)', value: 3640000, column: 2, color: '#9CA3AF', info: 'No confident taxonomic match' },
-                { id: 'bacteria', name: 'Bacteria (5.35M)', value: 5350000, column: 3, color: '#008080', info: '70.8% of classified reads' },
-                { id: 'virus', name: 'Viruses (362K)', value: 362000, column: 3, color: '#10B981', info: '4.8% of classified reads' },
-                { id: 'archaea', name: 'Archaea (90K)', value: 90000, column: 3, color: '#6366F1', info: '1.2% of classified reads' },
-                { id: 'other', name: 'Other Eukaryota (1.76M)', value: 1758000, column: 3, color: '#F59E0B', info: 'Fungi, protozoa, host DNA' }
-            ],
-            links: [
-                { source: 'raw', target: 'hq', value: 11200000, label: '94.2% passed quality control' },
-                { source: 'raw', target: 'lq', value: 690000, label: '5.8% failed quality control' },
-                { source: 'hq', target: 'classified', value: 7560000, label: 'Kraken2 + Bracken classified' },
-                { source: 'hq', target: 'unclassified', value: 3640000, label: 'No database hit above threshold' },
-                { source: 'classified', target: 'bacteria', value: 5350000, label: 'Bacterial genomes matched' },
-                { source: 'classified', target: 'virus', value: 362000, label: 'Viral genomes matched' },
-                { source: 'classified', target: 'archaea', value: 90000, label: 'Archaeal genomes matched' },
-                { source: 'classified', target: 'other', value: 1758000, label: 'Other organisms detected' }
-            ]
-        };
-    },
-
-    /**
-     * Mock treemap data - species abundance with clinical relevance
-     * Each species includes reads, confidence, and risk assessment
-     */
-    getMockTreemapData() {
-        return [
-            { 
-                name: 'Escherichia coli O157:H7', 
-                value: 45.2, 
-                reads: 3420000, 
-                confidence: 95, 
-                risk: 'High', 
-                color: '#EF4444',
-                amrGenes: 5,
-                virulenceFactors: 12
-            },
-            { 
-                name: 'Staphylococcus aureus (MRSA)', 
-                value: 18.6, 
-                reads: 1410000, 
-                confidence: 87, 
-                risk: 'High', 
-                color: '#F97316',
-                amrGenes: 7,
-                virulenceFactors: 8
-            },
-            { 
-                name: 'Pseudomonas aeruginosa', 
-                value: 8.3, 
-                reads: 630000, 
-                confidence: 82, 
-                risk: 'Medium', 
-                color: '#F59E0B',
-                amrGenes: 4,
-                virulenceFactors: 6
-            },
-            { 
-                name: 'Klebsiella pneumoniae (KPC+)', 
-                value: 5.1, 
-                reads: 390000, 
-                confidence: 78, 
-                risk: 'High', 
-                color: '#EAB308',
-                amrGenes: 3,
-                virulenceFactors: 4
-            },
-            { 
-                name: 'Enterococcus faecium', 
-                value: 4.2, 
-                reads: 318000, 
-                confidence: 75, 
-                risk: 'Medium', 
-                color: '#84CC16',
-                amrGenes: 2,
-                virulenceFactors: 3
-            },
-            { 
-                name: 'Commensal bacteria', 
-                value: 12.4, 
-                reads: 940000, 
-                confidence: 70, 
-                risk: 'Low', 
-                color: '#10B981',
-                amrGenes: 0,
-                virulenceFactors: 0
-            },
-            { 
-                name: 'Unclassified reads', 
-                value: 6.2, 
-                reads: 470000, 
-                confidence: null, 
-                risk: 'Unknown', 
-                color: '#9CA3AF',
-                amrGenes: null,
-                virulenceFactors: null
-            }
-        ];
-    },
-
-    /**
-     * Mock radar data - pathogen comparison across multiple dimensions
-     * Shows: Abundance, Confidence, Virulence, AMR, Risk
-     */
-    getMockRadarData() {
-        return {
-            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
-            pathogens: [
-                {
-                    name: 'Escherichia coli O157:H7',
-                    color: '#EF4444',
-                    metrics: {
-                        'Abundance': 45.2,
-                        'Confidence': 95,
-                        'Virulence': 12,
-                        'AMR': 5,
-                        'Risk': 9
-                    }
-                },
-                {
-                    name: 'Staphylococcus aureus (MRSA)',
-                    color: '#F97316',
-                    metrics: {
-                        'Abundance': 18.6,
-                        'Confidence': 87,
-                        'Virulence': 8,
-                        'AMR': 7,
-                        'Risk': 8
-                    }
-                },
-                {
-                    name: 'Pseudomonas aeruginosa',
-                    color: '#F59E0B',
-                    metrics: {
-                        'Abundance': 8.3,
-                        'Confidence': 82,
-                        'Virulence': 6,
-                        'AMR': 4,
-                        'Risk': 6
-                    }
-                },
-                {
-                    name: 'Klebsiella pneumoniae (KPC+)',
-                    color: '#EAB308',
-                    metrics: {
-                        'Abundance': 5.1,
-                        'Confidence': 78,
-                        'Virulence': 4,
-                        'AMR': 3,
-                        'Risk': 7
-                    }
-                }
-            ]
-        };
-    },
 
     /**
      * Transform backend API response to chart-ready format
-     * @param {object} apiResponse - Raw API response
+     * @param {object} apiResponse - Raw API response (results.json)
      * @param {string} chartType - 'sunburst' | 'sankey' | 'treemap' | 'radar'
      * @returns {object} Chart-ready data
      */
     transformApiData(apiResponse, chartType) {
-        // This method will transform real API responses when backend is integrated
-        // For now, returns mock data
+        if (!apiResponse) {
+            return this.getFallbackChartData(chartType);
+        }
+
+        switch (chartType) {
+            case 'sunburst':
+                return this.transformSunburstData(apiResponse);
+            case 'sankey':
+                return this.transformSankeyData(apiResponse);
+            case 'treemap':
+                return this.transformTreemapData(apiResponse);
+            case 'radar':
+                return this.transformRadarData(apiResponse);
+            default:
+                return null;
+        }
+    },
+
+    getFallbackChartData(chartType) {
         switch (chartType) {
             case 'sunburst':
                 return this.getMockSunburstData();
@@ -1126,6 +980,310 @@ const Charts = {
             default:
                 return null;
         }
+    },
+
+    transformTreemapData(apiResponse) {
+        const pathogens = apiResponse?.pathogens || [];
+        if (!Array.isArray(pathogens) || pathogens.length === 0) {
+            return this.getMockTreemapData();
+        }
+
+        return pathogens.map((p, idx, arr) => ({
+            name: p.name || 'Unknown',
+            value: Number(p.abundance || 0),
+            reads: Number(p.reads || 0),
+            confidence: p.confidence ?? null,
+            risk: this.normalizeRiskLevel(p.risk_level),
+            color: this.getColorForIndex(idx, arr.length),
+            amrGenes: p.amr_genes ?? 0,
+            virulenceFactors: p.virulence_genes ?? 0
+        }));
+    },
+
+    transformRadarData(apiResponse) {
+        const pathogens = (apiResponse?.pathogens || [])
+            .slice()
+            .sort((a, b) => Number(b.abundance || 0) - Number(a.abundance || 0))
+            .slice(0, 5);
+
+        if (!pathogens.length) {
+            return this.getMockRadarData();
+        }
+
+        return {
+            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
+            pathogens: pathogens.map((p, idx) => ({
+                name: p.name || 'Unknown',
+                color: this.getColorForIndex(idx, pathogens.length),
+                metrics: {
+                    Abundance: Number(p.abundance || 0),
+                    Confidence: Number(p.confidence || 0),
+                    Virulence: Number(p.virulence_genes || 0),
+                    AMR: Number(p.amr_genes || 0),
+                    Risk: this.riskToScore(p.risk_level)
+                }
+            }))
+        };
+    },
+
+    transformSunburstData(apiResponse) {
+        const taxonomy = apiResponse?.taxonomy;
+        if (!taxonomy || typeof taxonomy !== 'object') {
+            return this.getMockSunburstData();
+        }
+
+        const entries = Object.entries(taxonomy)
+            .filter(([, value]) => Number(value || 0) > 0);
+
+        if (!entries.length) {
+            return this.getMockSunburstData();
+        }
+
+        return {
+            name: 'Taxonomy',
+            value: 100,
+            children: entries.map(([key, value], idx) => ({
+                name: this.toTitleCase(key),
+                value: Number(value || 0),
+                color: this.getColorForIndex(idx, entries.length)
+            }))
+        };
+    },
+
+    transformSankeyData(apiResponse) {
+        const summary = apiResponse?.summary || {};
+        const taxonomy = apiResponse?.taxonomy || {};
+
+        const totalReads = Number(summary.total_reads || 0);
+        const classifiedReads = Number(summary.classified_reads || 0);
+        const unclassifiedReads = Math.max(totalReads - classifiedReads, 0);
+
+        if (!totalReads) {
+            return this.getMockSankeyData();
+        }
+
+        const bacteriaReads = Math.round((Number(taxonomy.bacteria || 0) / 100) * classifiedReads);
+        const virusReads = Math.round((Number(taxonomy.viruses || 0) / 100) * classifiedReads);
+        const otherReads = Math.max(classifiedReads - bacteriaReads - virusReads, 0);
+
+        return {
+            nodes: [
+                {
+                    id: 'raw',
+                    name: `Raw Reads (${this.formatNumber(totalReads)})`,
+                    value: totalReads,
+                    column: 0,
+                    color: '#6B7280',
+                    info: 'Total reads from analysis'
+                },
+                {
+                    id: 'classified',
+                    name: `Classified (${this.formatNumber(classifiedReads)})`,
+                    value: classifiedReads,
+                    column: 1,
+                    color: '#008080',
+                    info: 'Reads classified by CLARK'
+                },
+                {
+                    id: 'unclassified',
+                    name: `Unclassified (${this.formatNumber(unclassifiedReads)})`,
+                    value: unclassifiedReads,
+                    column: 1,
+                    color: '#9CA3AF',
+                    info: 'Reads without confident assignment'
+                },
+                {
+                    id: 'bacteria',
+                    name: `Bacteria (${this.formatNumber(bacteriaReads)})`,
+                    value: bacteriaReads,
+                    column: 2,
+                    color: '#008080',
+                    info: 'Bacterial assignments'
+                },
+                {
+                    id: 'viruses',
+                    name: `Viruses (${this.formatNumber(virusReads)})`,
+                    value: virusReads,
+                    column: 2,
+                    color: '#10B981',
+                    info: 'Viral assignments'
+                },
+                {
+                    id: 'other',
+                    name: `Other (${this.formatNumber(otherReads)})`,
+                    value: otherReads,
+                    column: 2,
+                    color: '#F59E0B',
+                    info: 'Other classified reads'
+                }
+            ],
+            links: [
+                { source: 'raw', target: 'classified', value: classifiedReads, label: 'Classified reads' },
+                { source: 'raw', target: 'unclassified', value: unclassifiedReads, label: 'Unclassified reads' },
+                { source: 'classified', target: 'bacteria', value: bacteriaReads, label: 'Bacterial reads' },
+                { source: 'classified', target: 'viruses', value: virusReads, label: 'Viral reads' },
+                { source: 'classified', target: 'other', value: otherReads, label: 'Other reads' }
+            ]
+        };
+    },
+
+    // ============================================
+    // MOCK DATA (fallbacks when no real data)
+    // ============================================
+
+    /**
+     * Mock sunburst data - taxonomic hierarchy
+     */
+    getMockSunburstData() {
+        return {
+            name: 'All Reads',
+            value: 100,
+            children: [
+                {
+                    name: 'Bacteria',
+                    value: 71,
+                    color: '#008080',
+                    reads: 5350000,
+                    confidence: 96
+                },
+                {
+                    name: 'Viruses',
+                    value: 4.8,
+                    color: '#10B981',
+                    reads: 362000,
+                    confidence: 81
+                },
+                {
+                    name: 'Proteobacteria',
+                    value: 48,
+                    color: '#0EA5E9',
+                    reads: 3620000,
+                    confidence: 94
+                },
+                {
+                    name: 'Firmicutes',
+                    value: 18,
+                    color: '#6366F1',
+                    reads: 1360000,
+                    confidence: 89
+                }
+            ]
+        };
+    },
+
+    /**
+     * Mock sankey data - read classification pipeline flow
+     */
+    getMockSankeyData() {
+        return {
+            nodes: [
+                { id: 'raw', name: 'Raw Reads (11.89M)', value: 11890000, column: 0, color: '#6B7280', info: 'Total sequenced reads from FASTQ' },
+                { id: 'classified', name: 'Classified (7.56M)', value: 7560000, column: 1, color: '#008080', info: 'Reads matched database' },
+                { id: 'unclassified', name: 'Unclassified (4.33M)', value: 4330000, column: 1, color: '#9CA3AF', info: 'No confident taxonomic match' },
+                { id: 'bacteria', name: 'Bacteria (5.35M)', value: 5350000, column: 2, color: '#008080', info: 'Bacterial assignments' },
+                { id: 'virus', name: 'Viruses (362K)', value: 362000, column: 2, color: '#10B981', info: 'Viral assignments' },
+                { id: 'other', name: 'Other (1.85M)', value: 1848000, column: 2, color: '#F59E0B', info: 'Other reads' }
+            ],
+            links: [
+                { source: 'raw', target: 'classified', value: 7560000, label: 'Reads classified' },
+                { source: 'raw', target: 'unclassified', value: 4330000, label: 'Reads unclassified' },
+                { source: 'classified', target: 'bacteria', value: 5350000, label: 'Bacterial reads' },
+                { source: 'classified', target: 'virus', value: 362000, label: 'Viral reads' },
+                { source: 'classified', target: 'other', value: 1848000, label: 'Other reads' }
+            ]
+        };
+    },
+
+    /**
+     * Mock treemap data - species abundance with clinical relevance
+     */
+    getMockTreemapData() {
+        return [
+            {
+                name: 'Escherichia coli',
+                value: 45.2,
+                reads: 3420000,
+                confidence: 95,
+                risk: 'High',
+                color: '#EF4444',
+                amrGenes: 5,
+                virulenceFactors: 12
+            },
+            {
+                name: 'Staphylococcus aureus',
+                value: 18.6,
+                reads: 1410000,
+                confidence: 87,
+                risk: 'High',
+                color: '#F97316',
+                amrGenes: 7,
+                virulenceFactors: 8
+            },
+            {
+                name: 'Pseudomonas aeruginosa',
+                value: 8.3,
+                reads: 630000,
+                confidence: 82,
+                risk: 'Medium',
+                color: '#F59E0B',
+                amrGenes: 4,
+                virulenceFactors: 6
+            },
+            {
+                name: 'Klebsiella pneumoniae',
+                value: 5.1,
+                reads: 390000,
+                confidence: 78,
+                risk: 'High',
+                color: '#EAB308',
+                amrGenes: 3,
+                virulenceFactors: 4
+            }
+        ];
+    },
+
+    /**
+     * Mock radar data - pathogen comparison across multiple dimensions
+     */
+    getMockRadarData() {
+        return {
+            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
+            pathogens: [
+                {
+                    name: 'Escherichia coli',
+                    color: '#EF4444',
+                    metrics: {
+                        Abundance: 45.2,
+                        Confidence: 95,
+                        Virulence: 12,
+                        AMR: 5,
+                        Risk: 9
+                    }
+                },
+                {
+                    name: 'Staphylococcus aureus',
+                    color: '#F97316',
+                    metrics: {
+                        Abundance: 18.6,
+                        Confidence: 87,
+                        Virulence: 8,
+                        AMR: 7,
+                        Risk: 8
+                    }
+                },
+                {
+                    name: 'Pseudomonas aeruginosa',
+                    color: '#F59E0B',
+                    metrics: {
+                        Abundance: 8.3,
+                        Confidence: 82,
+                        Virulence: 6,
+                        AMR: 4,
+                        Risk: 6
+                    }
+                }
+            ]
+        };
     }
 };
 
@@ -1134,4 +1292,5 @@ document.addEventListener('DOMContentLoaded', () => Charts.init());
 
 // Export for global access
 window.Charts = Charts;
+
 
