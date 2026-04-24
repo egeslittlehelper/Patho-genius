@@ -242,7 +242,7 @@ async function login(username, password) {
         let settings = null;
         try {
             settings = await fsGet(`settings/${uid}`, idToken);
-        } catch {}
+        } catch { }
 
         return {
             success: true,
@@ -291,7 +291,7 @@ async function restoreSession() {
 
         // Load settings
         let settings = null;
-        try { settings = await fsGet(`settings/${currentSession.uid}`, idToken); } catch {}
+        try { settings = await fsGet(`settings/${currentSession.uid}`, idToken); } catch { }
 
         return {
             success: true,
@@ -350,7 +350,7 @@ async function changePassword(currentPassword, newPassword) {
 async function sendPasswordReset(email) {
     try {
         await authPost('sendOobCode', { requestType: 'PASSWORD_RESET', email });
-    } catch {}
+    } catch { }
     // Always return success — don't reveal if email exists
     return { success: true, message: 'If an account exists with that email, a reset link has been sent.' };
 }

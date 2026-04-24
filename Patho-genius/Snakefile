@@ -180,6 +180,18 @@ rule clark_lite_classify:
             _remote_out = f"{params.remote_ws}/{params.sample}.clark.csv"
             _remote_log = f"{params.remote_ws}/cuclark.log"
 
+            # Remove stale output from any previous run so the poll loop
+            # doesn't immediately find an old file and declare DONE.
+            shell(
+                'echo [EDGE] Removing stale results on Jetson Nano... && '
+                'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
+                '{params.ssh_target} '
+                '"rm -f {params.remote_ws}/{params.sample}.clark '
+                '{params.remote_ws}/{params.sample}.clark.csv '
+                '{params.remote_ws}/cuclark.log" '
+                '|| echo "[EDGE] Warning: stale cleanup failed (non-fatal)"'
+            )
+
             shell(
                 'echo [EDGE] Launching CU-CLARK-L on Jetson Nano (background)... && '
                 'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
@@ -191,7 +203,7 @@ rule clark_lite_classify:
                 '-R {params.remote_ws}/{params.sample}.clark '
                 '-n {params.threads} '
                 '-k {params.kmer} '
-                '> {params.remote_ws}/cuclark.log 2>&1 &"'
+                '> {params.remote_ws}/cuclark.log 2>&1 </dev/null &"'
             )
 
             # Poll until classification completes or process exits

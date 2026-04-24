@@ -361,6 +361,16 @@ function runSnakemakeWorkflow(analysisId, config) {
     const threads = String(config.threads || ANALYSIS_CONFIG.DEFAULT_THREADS);
     const sampleArg = `sample=${analysis.sampleBase}`;
     const engineArg = `engine=${engine}`;
+
+    // Clean stale intermediate outputs so Snakemake re-runs from scratch.
+    // Without this, left-over files from a previous (potentially failed) run
+    // cause Snakemake to report "Nothing to be done" and skip all rules.
+    const clarkResultsDir = workflowClarkResultsDir();
+    for (const ext of ['.clark.csv', '.abundance.csv', '.json']) {
+        const stale = path.join(clarkResultsDir, `${analysis.sampleBase}${ext}`);
+        try { if (fs.existsSync(stale)) { fs.unlinkSync(stale); console.log(`[Snakemake] Removed stale: ${stale}`); } } catch {}
+    }
+
     const snakemakeArgs = [
         '-m',
         'snakemake',
