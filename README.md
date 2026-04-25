@@ -1,6 +1,6 @@
 # Pathogenius
 
-A desktop application for real-time pathogen detection from metagenomic FASTQ sequencing data. Combines an **Electron** UI with a **Snakemake/CLARK-l** classification backend, supporting both local Docker-based classification and GPU-accelerated edge computing on a Jetson Nano.
+A desktop application for real-time pathogen detection from metagenomic FASTQ sequencing data. Combines an **Electron** UI with a **Snakemake/CLARK-l** classification backend, supporting both local Docker-based classification and GPU-accelerated edge computing on a Jetson Nano. Features AI-powered clinical summaries via a local MedGemma LLM, interactive data visualizations, Firebase cloud sync with end-to-end encryption, and a modern dark-themed interface.
 
 ---
 
@@ -17,6 +17,7 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
   - [Pipeline Steps](#pipeline-steps)
   - [CPU Mode (Docker)](#cpu-mode-docker)
   - [GPU Mode (Jetson Nano)](#gpu-mode-jetson-nano)
+  - [GPU Pipeline Details](#gpu-pipeline-details)
   - [Running the Pipeline Standalone](#running-the-pipeline-standalone)
 - [Database Builder (build_clark_db.py)](#database-builder-build_clark_dbpy)
   - [Genome Sources](#genome-sources)
@@ -25,7 +26,9 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
 - [Frontend Architecture](#frontend-architecture)
   - [Main Process (main.js)](#main-process-mainjs)
   - [Preload Bridge (preload.js)](#preload-bridge-preloadjs)
-  - [Analysis Service](#analysis-service)
+  - [Services](#services)
+  - [Renderer & UI Pages](#renderer--ui-pages)
+  - [Visualization Suite](#visualization-suite)
   - [Mock Mode](#mock-mode)
 - [Environment Variables](#environment-variables)
 - [Output Format](#output-format)
@@ -35,11 +38,16 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
 
 ## Features
 
-- **Dual Classification Engines** — CPU (CLARK-l via Docker) or GPU (CU-CLARK-L on Jetson Nano via SSH)
+- **Dual Classification Engines** — CPU (CLARK-l via Docker) or GPU (CU-CLARK-L on Jetson Nano via Tailscale SSH)
 - **Universal Database Builder** — accepts any FASTA input (`.fna`, `.fasta`, `.fa`, `.fsa`, `.gz`), resolves taxids via reads-mapping or NCBI lookup
-- **Electron Desktop UI** — file picker, real-time progress tracking, result visualization, analysis history
+- **AI-Powered Clinical Summaries** — local MedGemma 4B model (GGUF) runs fully offline via `node-llama-cpp` to generate clinical interpretation of results
+- **Interactive Visualizations** — SVG-based Sunburst, Sankey, Treemap, and Radar charts with tooltips, all driven by real classification data
+- **Firebase Cloud Sync** — encrypted upload/download of results via Firebase Storage + Firestore metadata; AES-256-GCM encryption at rest
+- **Firebase Authentication** — user registration, login, password reset, and guest mode via Firebase Auth REST API
+- **Electron Desktop UI** — file picker, real-time progress tracking, result visualization, analysis history, settings management
 - **Snakemake Pipeline** — reproducible 3-step workflow: classify → abundance → JSON
-- **Authentication & Encryption** — user login/registration, optional data encryption at rest
+- **Data Encryption** — AES-256-GCM encryption for results at rest, managed via OS keychain (`keytar`)
+- **System Dashboard** — real-time CPU, RAM, disk, and GPU monitoring via `systeminformation`
 
 ---
 
@@ -47,7 +55,7 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
 
 | Requirement | Version | Notes |
 |---|---|---|
-| **Node.js** | 18+ | [nodejs.org](https://nodejs.org/) — ships with npm |
+| **Node.js** | 22+ | [nodejs.org](https://nodejs.org/) — ships with npm |
 | **Python** | 3.8+ | Needed for Snakemake and `build_clark_db.py` |
 | **Snakemake** | 7+ | `pip install snakemake` |
 | **Docker Desktop** | latest | Required for CPU-mode classification |
@@ -55,44 +63,73 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
 
 > **GPU mode only:** A Jetson Nano reachable via [Tailscale](https://tailscale.com/) SSH with CU-CLARK-L installed. Configure connection in `config.yaml → jetson_nano`.
 
+> **AI Summaries (optional):** Place a GGUF model file (e.g., `google_medgemma-4b-it-Q4_K_L.gguf`) in `frontend/models/`. The app auto-discovers any single `.gguf` file in that directory.
+
 ---
 
 ## Project Structure
 
 ```
-Patho-genius/                       # Repository root
+Pathogenius/                            # Repository root
 │
-├── README.md                       # ← You are here
+├── README.md                           # ← You are here
 │
-├── Patho-genius/                   # Backend — Snakemake pipeline + database builder
-│   ├── Snakefile                   # 3-rule dual-engine classification workflow
-│   ├── config.yaml                 # All pipeline configuration (paths, engines, genome sources)
-│   ├── build_clark_db.py           # Universal CLARK database builder
-│   ├── clark_db/                   # Reference database (FASTA genomes, taxonomy, targets.txt)
-│   │   ├── *.fna                   # Pathogen genome files
-│   │   ├── Custom/                 # Processed genomes for CLARK
-│   │   └── taxonomy/              # NCBI taxdump (nodes.dmp, names.dmp, ...)
-│   ├── fastQ_reads/                # Input FASTQ files
-│   └── results/clark/              # Pipeline output (CSV + JSON per sample)
+├── Patho-genius/                       # Backend — Snakemake pipeline + database builder
+│   ├── Snakefile                       # 3-rule dual-engine classification workflow
+│   ├── config.yaml                     # All pipeline configuration (paths, engines, genome sources)
+│   ├── build_clark_db.py               # Universal CLARK database builder
+│   ├── clark_db/                       # Reference database (FASTA genomes, taxonomy, targets.txt)
+│   │   ├── *.fna                       # Pathogen genome files
+│   │   ├── Custom/                     # Processed genomes for CLARK
+│   │   └── taxonomy/                   # NCBI taxdump (nodes.dmp, names.dmp, ...)
+│   ├── fastQ_reads/                    # Input FASTQ files
+│   └── results/clark/                  # Pipeline output (CSV + JSON per sample)
 │
-└── frontend/                       # Electron desktop application
-    ├── package.json                # App metadata, scripts, dependencies
-    ├── package-lock.json           # Locked dependency versions (commit this to git)
-    ├── results/                    # Analysis output copied here for the UI
+└── frontend/                           # Electron desktop application
+    ├── package.json                    # App metadata, scripts, dependencies
+    ├── models/                         # GGUF model files for local AI (e.g., MedGemma)
+    ├── results/                        # Analysis output copied here for the UI
     └── src/
-        ├── main/                   # Electron main process (Node.js)
-        │   ├── main.js             # Entry point — window creation, IPC handlers
-        │   ├── preload.js          # Context bridge — exposes safe APIs to renderer
+        ├── main/                       # Electron main process (Node.js)
+        │   ├── main.js                 # Entry point — window creation, IPC handlers
+        │   ├── preload.js              # Context bridge — exposes safe APIs to renderer
         │   └── services/
-        │       ├── analysis-service.js   # Snakemake orchestration (CPU + GPU)
-        │       ├── auth-service.js       # Authentication (login, register, sessions)
-        │       └── encryption-service.js # Data encryption at rest
-        └── renderer/               # Electron renderer (browser context)
-            ├── index.html          # Main HTML shell
-            ├── assets/             # Icons, images, fonts
-            ├── js/                 # Client-side JavaScript
-            ├── pages/              # Page modules
-            └── templates/          # Reusable HTML templates
+        │       ├── analysis-service.js       # Snakemake orchestration (CPU + GPU)
+        │       ├── firebase-auth-service.js  # Firebase Auth REST API (login, register, tokens)
+        │       ├── firebase-config.js        # Firebase project configuration
+        │       ├── cloud-service.js          # Firebase Storage upload/download + Firestore metadata
+        │       ├── encryption-service.js     # AES-256-GCM encryption at rest (via keytar)
+        │       ├── llm-service.js            # Local LLM via node-llama-cpp (MedGemma)
+        │       ├── db-settings.js            # Database info and management
+        │       └── local-storage-service.js  # Persistent local storage for analysis history
+        └── renderer/                   # Electron renderer (browser context)
+            ├── index.html              # Main HTML shell
+            ├── assets/
+            │   ├── css/                # Modular CSS (variables, base, components, charts, layout)
+            │   └── fonts/              # Local font files (Inter)
+            ├── js/                     # Client-side JavaScript
+            │   ├── app.js              # Global navigation, tab switching, theme management
+            │   ├── charts.js           # SVG chart renderers + data transformers
+            │   ├── template-loader.js  # Dynamic HTML template loading
+            │   └── utils.js            # Shared utilities (formatting, debounce, etc.)
+            ├── pages/                  # Page controller modules
+            │   ├── dashboard.js        # System stats, recent activity
+            │   ├── database.js         # Database management UI
+            │   ├── login.js            # Login page controller
+            │   ├── register.js         # Registration page controller
+            │   ├── newanalysis.js       # New analysis wizard (file picker, engine select)
+            │   ├── results.js          # Results viewer (pathogen cards, charts, AI summary)
+            │   └── settings.js         # Application settings controller
+            └── templates/              # Reusable HTML templates
+                ├── analysis.html       # New analysis form
+                ├── dashboard.html      # Dashboard layout
+                ├── database.html       # Database management
+                ├── login.html          # Login form
+                ├── register.html       # Registration form
+                ├── results.html        # Results detail view with chart containers
+                ├── settings.html       # Settings panel
+                ├── sidebar.html        # Navigation sidebar
+                └── modals.html         # Modal dialogs
 ```
 
 ---
@@ -125,9 +162,12 @@ cd frontend
 npm install
 ```
 
+This installs Electron, Firebase SDK, `node-llama-cpp`, `keytar`, `systeminformation`, and other dependencies.
+
 ### 3. Launch the Application
 
 ```bash
+cd frontend
 npm start
 ```
 
@@ -135,7 +175,10 @@ This opens the Electron app. From the UI you can:
 - Select a FASTQ file via the file picker
 - Choose CPU or GPU engine
 - Start analysis and monitor real-time progress
-- View detected pathogens, abundance, and classification results
+- View detected pathogens with interactive charts (Sunburst, Sankey, Treemap, Radar)
+- Generate AI-powered clinical summaries using the local MedGemma model
+- Upload/download encrypted results to/from Firebase cloud storage
+- Manage database, view system stats, and configure settings
 
 ---
 
@@ -160,11 +203,13 @@ FASTQ input
 │ Rule 2: clark_abundance_report │   Estimate species abundance → .abundance.csv
 │   CPU: Docker estimate_abundance │
 │   GPU: Local Python computation  │
+│        (NCBI taxonomy download)  │
 └──────────┬───────────────────┘
            │
            ▼
 ┌────────────────────────┐
 │ Rule 3: clark_to_json    │   Convert to UI-friendly JSON → .json
+│   Risk scoring + confidence │
 │   (always runs locally)  │
 └──────────────────────────┘
 ```
@@ -195,13 +240,26 @@ engine: "gpu"
 jetson_nano:
   host: "100.71.242.74"          # Tailscale IP
   user: "pathogen"               # SSH username
-  ssh_batch_mode: false          # false = allows password prompts
+  ssh_batch_mode: true           # true = SSH key auth, false = allows password prompts
   remote_db: "/home/pathogen/cuclark_db"
   remote_workspace: "/home/pathogen/pathogenius_ws"
   cuclark_dir: "/home/pathogen/cuclark"
 ```
 
-**GPU workflow:** Upload FASTQ → free GPU memory → run CU-CLARK-L → download results → cleanup → local abundance estimation.
+### GPU Pipeline Details
+
+The GPU workflow performs the following steps via SSH:
+
+1. **Connectivity check** — SSH pre-check with clear error message if unreachable
+2. **FASTQ upload** — `scp` to Jetson Nano (skipped if file already exists remotely)
+3. **GPU memory cleanup** — drops page caches to free unified memory
+4. **Stale result removal** — deletes previous `.clark.csv` and logs to prevent false completion detection
+5. **CU-CLARK-L launch** — runs in background via `nohup` with `-b 128` batch size to avoid CUDA watchdog timeouts
+6. **Polling loop** — checks every 30s: process still running → RUNNING; process exited + file exists → DONE; process exited + no file → FAILED. Uses `pgrep -f '[c]uCLARK-l'` (bracket trick to avoid self-matching)
+7. **CSV validation** — verifies the downloaded CSV has more than just a header row (catches watchdog timeout crashes)
+8. **Result download** — `scp` the classification CSV back to the local machine
+9. **Remote cleanup** — removes intermediate files (keeps FASTQ for next run)
+10. **Local abundance estimation** — parses NCBI taxonomy (cached after first download), counts reads per taxid, computes abundance percentages
 
 ### Running the Pipeline Standalone
 
@@ -215,6 +273,9 @@ python -m snakemake --cores 8 --config sample=SRR7497167_1
 
 # GPU mode
 python -m snakemake --cores 8 --config sample=SRR7497167_1 engine=gpu
+
+# Force re-run (ignore cached results)
+python -m snakemake --cores 8 --rerun-incomplete --config sample=SRR7497167_1 engine=gpu
 ```
 
 Input files must be placed in `fastQ_reads/{sample}.fastq`. Results are written to `results/clark/{sample}.json`.
@@ -270,7 +331,12 @@ All pipeline settings live in `Patho-genius/config.yaml`:
 | `clark.threads` | `8` | Number of classification threads |
 | `clark.kmer_length` | `27` | k-mer length for CLARK-l |
 | `clark.sampling_factor` | `2` | Sampling factor (higher = faster, less sensitive) |
-| `jetson_nano.*` | Various | Jetson Nano SSH connection details for GPU mode |
+| `jetson_nano.host` | IP address | Jetson Nano Tailscale IP |
+| `jetson_nano.user` | Username | SSH username on the Jetson |
+| `jetson_nano.ssh_batch_mode` | `true`/`false` | `true` for key auth, `false` for password auth |
+| `jetson_nano.remote_db` | Path | CLARK database path on the Jetson |
+| `jetson_nano.remote_workspace` | Path | Working directory on the Jetson for FASTQ and results |
+| `jetson_nano.cuclark_dir` | Path | CU-CLARK-L installation directory on the Jetson |
 | `genome_sources` | List of `{path, reads_mapping?}` | Directories of FASTA files for database building |
 
 ---
@@ -281,13 +347,14 @@ All pipeline settings live in `Patho-genius/config.yaml`:
 
 The Electron main process (`frontend/src/main/main.js`) creates the application window and registers IPC handlers for:
 
-- **Authentication** — login, register, logout, password reset
+- **Authentication** — Firebase login, register, logout, password reset, guest mode
 - **File System** — native file/folder picker dialogs
 - **Analysis** — start, pause, resume, cancel, delete analyses
 - **System Stats** — CPU, RAM, disk, GPU, network info for the dashboard
 - **Database Management** — database info, import, species CRUD
 - **Encryption** — initialize, lock/unlock, encrypt/decrypt data
-- **Cloud Sync** — upload/download results (placeholder)
+- **Cloud Sync** — upload/download encrypted results to/from Firebase
+- **LLM** — generate AI clinical summaries via local MedGemma model
 
 ### Preload Bridge (preload.js)
 
@@ -296,21 +363,50 @@ Securely exposes main-process APIs to the renderer via `contextBridge.exposeInMa
 ```javascript
 // In renderer JavaScript:
 await api.analysis.start(config);      // Start analysis
-await api.auth.login(user, pass);      // Login
+await api.auth.login(user, pass);      // Firebase login
 await api.files.selectFile();          // Open file picker
 await api.system.getStats();           // Get system info
+await api.cloud.upload(id, data);      // Upload to Firebase
+await api.llm.generate(prompt);        // Generate AI summary
+await api.encryption.encrypt(data);    // Encrypt data
 ```
 
-### Analysis Service
+### Services
 
-The analysis service (`analysis-service.js`) orchestrates the full workflow:
+| Service | File | Purpose |
+|---|---|---|
+| **Analysis** | `analysis-service.js` | Snakemake orchestration — validates inputs, copies FASTQ, spawns Snakemake, parses progress, reads results. Includes pre-run stale file cleanup and database validation. |
+| **Firebase Auth** | `firebase-auth-service.js` | Firebase Authentication via REST API — sign-up, sign-in, token refresh, password reset. No Firebase SDK dependency in main process. |
+| **Cloud Sync** | `cloud-service.js` | Firebase Storage for encrypted result upload/download. Firestore for analysis metadata (sample name, status, timestamps). |
+| **Encryption** | `encryption-service.js` | AES-256-GCM encryption/decryption. Master key stored in OS keychain via `keytar`. |
+| **LLM** | `llm-service.js` | Local LLM inference via `node-llama-cpp`. Auto-loads GGUF model from `frontend/models/`. Configurable context size, temperature, and max tokens. |
+| **DB Settings** | `db-settings.js` | CLARK database introspection — reads `targets.txt`, lists species, provides database statistics. |
+| **Local Storage** | `local-storage-service.js` | Persistent JSON storage for analysis history and app state. |
 
-1. Validates input files exist
-2. Copies/decompresses FASTQ into `Patho-genius/fastQ_reads/`
-3. Spawns Snakemake with `--config sample=... engine=cpu|gpu`
-4. Parses stdout/stderr for progress updates (engine-specific patterns)
-5. Emits real-time progress to the UI via IPC
-6. Reads the pipeline's JSON output and merges UI metadata
+### Renderer & UI Pages
+
+| Page | Controller | Description |
+|---|---|---|
+| **Login** | `login.js` | Firebase authentication + guest mode |
+| **Register** | `register.js` | New user registration with password strength validation |
+| **Dashboard** | `dashboard.js` | System stats (CPU, RAM, GPU), recent analyses, quick actions |
+| **New Analysis** | `newanalysis.js` | FASTQ file picker, engine selection (CPU/GPU), analysis configuration |
+| **Results** | `results.js` | Analysis history, detail view with pathogen cards, chart rendering, AI summary generation, cloud sync, result export |
+| **Database** | `database.js` | Database info, species list, import/export |
+| **Settings** | `settings.js` | Theme, confidence thresholds, AI model config, encryption, cloud settings |
+
+### Visualization Suite
+
+The `charts.js` module renders four interactive SVG chart types, each with real data transformation from the pipeline's JSON output:
+
+| Chart | Container | Description |
+|---|---|---|
+| **Treemap** | `abundance-treemap-chart` | Proportional area chart of pathogen abundance. Color-coded by risk level with hover tooltips. |
+| **Sunburst** | `sunburst-chart` | Hierarchical taxonomy view (domain → phylum → class → species). Interactive ring segments with drill-down. |
+| **Sankey** | `sankey-chart` | Flow diagram showing read classification path: Total Reads → Classified/Unclassified → Taxonomic groups → Species. |
+| **Radar** | `radar-chart` | Multi-axis comparison of top pathogens across metrics (abundance, confidence, read count, virulence, AMR genes). |
+
+All charts use `Charts.transformApiData(result, chartType)` to convert raw API data into chart-ready formats, with mock data fallback for development.
 
 ### Mock Mode
 
@@ -345,16 +441,16 @@ Each analysis produces a JSON file with this structure:
 
 ```json
 {
-  "analysis_name": "SRR7497167_1",
+  "analysis_name": "anonymous_reads",
   "sample_type": "clinical",
-  "completed_at": "2026-04-19T22:30:00.000Z",
-  "classifier": "CLARK-l",
+  "completed_at": "2026-04-25T20:20:00.000Z",
+  "classifier": "CU-CLARK-L",
   "summary": {
-    "total_reads": 11890000,
-    "classified_reads": 7560000,
-    "classification_rate": 63.6,
-    "species_detected": 342,
-    "pathogens_detected": 4
+    "total_reads": 908893,
+    "classified_reads": 14585,
+    "classification_rate": 1.6,
+    "species_detected": 23,
+    "pathogens_detected": 3
   },
   "pathogens": [
     {
@@ -362,9 +458,11 @@ Each analysis produces a JSON file with this structure:
       "strain": "Escherichia coli",
       "tax_id": 562,
       "abundance": 45.2,
-      "reads": 3420000,
+      "reads": 6594,
       "confidence": 95,
-      "risk_level": "high"
+      "risk_level": "high",
+      "amr_genes": 5,
+      "virulence_genes": 12
     }
   ],
   "taxonomy": {
@@ -375,6 +473,8 @@ Each analysis produces a JSON file with this structure:
   }
 }
 ```
+
+The `clark_to_json` rule in the Snakefile generates risk levels and confidence scores using heuristic algorithms based on abundance, read counts, and known pathogen databases.
 
 ---
 
@@ -391,4 +491,11 @@ Each analysis produces a JSON file with this structure:
 | 100% unclassified reads | Rebuild the database: delete `clark_db/Custom/` and `targets.txt`, then rerun `build_clark_db.py` |
 | Docker permission errors | Enable file sharing for the workspace directory in Docker Desktop settings |
 | GPU mode — "Cannot reach Jetson Nano" | Verify Tailscale VPN is up; if using password auth, set `ssh_batch_mode: false` in `config.yaml` |
-| Blank Electron window | Uncomment `mainWindow.webContents.openDevTools()` in `main.js` line 42 to debug |
+| GPU — header-only CSV / 0 taxa | CUDA watchdog timeout. Ensure `-b 128` is in the CU-CLARK-L command. Alternatively, disable watchdog: `echo 0 \| sudo tee /sys/kernel/debug/gpu.0/timeouts_enabled` |
+| GPU — poll loop stuck on RUNNING | The `pgrep` self-match bug. Ensure the poll uses `pgrep -f '[c]uCLARK-l'` (bracket trick) |
+| GPU — "Nothing to be done" | Stale cached results. The analysis service auto-cleans `.clark.csv`, `.abundance.csv`, and `.json` before each run. If running standalone, add `--rerun-incomplete` |
+| `csv.field_size_limit` error | Already handled — the Snakefile auto-raises the CSV field size limit on startup |
+| LLM — "Failed to load model" | Ensure Node.js 22+ is installed (`node-llama-cpp` v3 requires it). Check the `.gguf` file exists in `frontend/models/` |
+| LLM — "Unexpected token 'with'" | Upgrade Node.js to v22+ and reinstall: `rm -rf node_modules && npm install` |
+| Blank Electron window | Uncomment `mainWindow.webContents.openDevTools()` in `main.js` to debug |
+| Cloud sync — "Not authenticated" | Login with a registered account (cloud features unavailable in guest mode) |
