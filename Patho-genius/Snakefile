@@ -173,6 +173,7 @@ rule clark_lite_classify:
                 '"sync && echo 3 | sudo tee /proc/sys/vm/drop_caches > /dev/null"'
             )
 
+
             # 4) Run CU-CLARK-L on the Nano (GPU classification)
             #    Launch with nohup in background so it survives SSH disconnects.
             #    First-time runs build .tsk index (30+ min for 903 genomes),
@@ -203,6 +204,7 @@ rule clark_lite_classify:
                 '-R {params.remote_ws}/{params.sample}.clark '
                 '-n {params.threads} '
                 '-k {params.kmer} '
+                '-b 128 '
                 '> {params.remote_ws}/cuclark.log 2>&1 </dev/null &"'
             )
 
@@ -228,8 +230,8 @@ rule clark_lite_classify:
                 try:
                     _check = _sp2.run(
                         _ssh_base + [
-                            f"test -f {_remote_out} && echo DONE || "
-                            f"(pgrep -f cuCLARK-l > /dev/null 2>&1 && echo RUNNING || echo FAILED)"
+                            f"pgrep -f '[c]uCLARK-l' > /dev/null 2>&1 && echo RUNNING || "
+                            f"(test -f {_remote_out} && echo DONE || echo FAILED)"
                         ],
                         capture_output=True, text=True, timeout=30
                     )
@@ -263,7 +265,7 @@ rule clark_lite_classify:
                     f"CU-CLARK-L timed out after {_MAX_WAIT // 60} minutes"
                 )
 
-            # 4) Download classification CSV back
+            # 5) Download classification CSV back
             shell(
                 'echo [EDGE] Downloading classification results from Jetson Nano... && '
                 'scp -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} '
@@ -271,7 +273,38 @@ rule clark_lite_classify:
                 '"{params.results}/{params.sample}.clark.csv"'
             )
 
-            # 5) Cleanup: remove intermediate files from the Nano (non-fatal)
+            # 5b) Validate CSV is not empty / header-only.
+            #     CUDA watchdog timeouts cause CU-CLARK-L to write only
+            #     the header before crashing. Catch that here.
+            import subprocess as _sp_val
+            _local_csv = os.path.join(params.results, f"{params.sample}.clark.csv")
+            with open(_local_csv) as _vf:
+                _lines = sum(1 for _ in _vf)
+            if _lines <= 1:
+                # Fetch the CU-CLARK-L log for diagnostics
+                print("[EDGE] ERROR: Downloaded CSV is empty (header only).")
+                try:
+                    _log_fetch = _sp_val.run(
+                        ["ssh", "-o", "StrictHostKeyChecking=no",
+                         "-o", f"BatchMode={SSH_BATCH_OPT}",
+                         "-o", "ConnectTimeout=10",
+                         params.ssh_target, f"tail -10 {_remote_log}"],
+                        capture_output=True, text=True, timeout=15
+                    )
+                    print(f"[EDGE] CU-CLARK-L log:\n{_log_fetch.stdout}")
+                except Exception:
+                    pass
+                # Remove the bad file so Snakemake doesn't cache it
+                os.remove(_local_csv)
+                raise RuntimeError(
+                    "CU-CLARK-L produced no classification results (header-only CSV). "
+                    "This is usually caused by the CUDA GPU watchdog timeout. "
+                    "Ensure the watchdog is disabled: "
+                    "echo 0 | sudo tee /sys/kernel/debug/gpu.0/timeouts_enabled"
+                )
+            print(f"[EDGE] CSV validated: {_lines} lines ({_lines - 1} classified reads)")
+
+            # 6) Cleanup: remove intermediate files from the Nano (non-fatal)
             #    If SSH times out here, classification already succeeded — don't crash.
             #    Note: we intentionally keep the FASTQ for the pre-existence check next run.
             shell(
