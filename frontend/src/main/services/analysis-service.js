@@ -256,6 +256,7 @@ async function startAnalysis(config) {
 
         // Capture engine selection from UI (default: cpu)
         const engine = config.engine || 'cpu';
+        const batchProcessing = !!config.batch_processing;
 
         const snakemakeConfig = {
             analysis_id: analysisId,
@@ -268,6 +269,7 @@ async function startAnalysis(config) {
             threads: config.threads || ANALYSIS_CONFIG.DEFAULT_THREADS,
             timestamp: config.timestamp || new Date().toISOString(),
             engine: engine,
+            batch_processing: batchProcessing,
         };
 
         fs.writeFileSync(
@@ -327,7 +329,11 @@ async function startAnalysis(config) {
         };
         activeAnalyses.set(analysisId, analysisState);
 
-        runSnakemakeWorkflow(analysisId, snakemakeConfig);
+        if (batchProcessing) {
+            runBatchWorkflow(analysisId, snakemakeConfig);
+        } else {
+            runSnakemakeWorkflow(analysisId, snakemakeConfig);
+        }
 
         return { success: true, analysisId, outputDir };
     } catch (error) {
@@ -380,6 +386,7 @@ function runSnakemakeWorkflow(analysisId, config) {
         threads,
         '--nolock',
         '--rerun-incomplete',
+        '--latency-wait', '15',
         '--config',
         sampleArg,
         engineArg,
@@ -413,6 +420,238 @@ function runSnakemakeWorkflow(analysisId, config) {
     launch(0);
 }
 
+// ═════════════════════════════════════════════════════════════════════════════
+// Batch Processing Workflow
+// Split FASTQ → classify each part → merge abundances → JSON
+// ═════════════════════════════════════════════════════════════════════════════
+
+function seqkitBinPath() {
+    return path.join(__dirname, '..', '..', '..', 'bin', 'seqkit.exe');
+}
+
+/**
+ * Run a child process and return a Promise that resolves on exit code 0.
+ */
+function execPromise(cmd, args, opts = {}) {
+    return new Promise((resolve, reject) => {
+        const proc = spawn(cmd, args, { stdio: ['ignore', 'pipe', 'pipe'], ...opts });
+        let stdout = '', stderr = '';
+        proc.stdout.on('data', d => { stdout += d; });
+        proc.stderr.on('data', d => { stderr += d; });
+        proc.on('error', reject);
+        proc.on('close', code => {
+            if (code === 0) resolve({ stdout, stderr });
+            else reject(new Error(`Exit code ${code}: ${stderr.slice(-1000)}`));
+        });
+    });
+}
+
+/**
+ * Run a Snakemake pipeline for a given sample and return a Promise.
+ * Reuses the same Python-finding logic as runSnakemakeWorkflow.
+ * Streams progress to the analysis state.
+ */
+function runSnakemakeForSample(sampleName, engine, threads, analysis, analysisId, progressOffset, progressScale) {
+    return new Promise((resolve, reject) => {
+        const wf = ANALYSIS_CONFIG.WORKFLOW_DIR;
+        const snakemakeArgs = [
+            '-m', 'snakemake', '-d', wf,
+            '--cores', String(threads),
+            '--nolock', '--rerun-incomplete',
+            '--latency-wait', '15',
+            '--config', `sample=${sampleName}`, `engine=${engine}`,
+        ];
+        const candidates = [['python', []], ['py', ['-3']], ['python3', []]];
+
+        // Clean stale outputs for this sample
+        const clarkResultsDir = workflowClarkResultsDir();
+        for (const ext of ['.clark.csv', '.abundance.csv', '.json']) {
+            const stale = path.join(clarkResultsDir, `${sampleName}${ext}`);
+            try { if (fs.existsSync(stale)) { fs.unlinkSync(stale); } } catch {}
+        }
+
+        const launch = (idx) => {
+            if (idx >= candidates.length) {
+                return reject(new Error('Could not start Snakemake'));
+            }
+            const [cmd, prefix] = candidates[idx];
+            const proc = spawn(cmd, [...prefix, ...snakemakeArgs], {
+                cwd: wf, env: { ...process.env },
+            });
+            proc.once('error', () => launch(idx + 1));
+            proc.once('spawn', () => {
+                analysis.snakemakeProc = proc;
+                let stderrBuf = '';
+
+                const onData = (d) => {
+                    const text = d.toString();
+                    console.log(`[Snakemake ${analysisId}]`, text);
+                    // Scale progress within the allocated range
+                    parseSnakemakeProgress(d, analysis);
+                    const scaledProgress = progressOffset + (analysis.progress / 100) * progressScale;
+                    emitProgress(analysisId, {
+                        progress: Math.round(scaledProgress),
+                        status: analysis.status,
+                        message: `[Batch ${sampleName}] ${analysis.message || ''}`,
+                    });
+                };
+                proc.stdout.on('data', onData);
+                proc.stderr.on('data', (d) => {
+                    stderrBuf += d.toString();
+                    onData(d);
+                });
+                proc.on('close', (code) => {
+                    analysis.snakemakeProc = null;
+                    // Don't reject if the analysis was cancelled
+                    if (analysis.status === 'cancelled') return reject(new Error('cancelled'));
+                    if (code === 0) resolve();
+                    else reject(new Error(`Snakemake (${sampleName}) exited with code ${code}. ${stderrBuf.slice(-1000)}`));
+                });
+            });
+        };
+        launch(0);
+    });
+}
+
+async function runBatchWorkflow(analysisId, config) {
+    const analysis = activeAnalyses.get(analysisId);
+    if (!analysis) return;
+
+    const engine = config.engine || 'cpu';
+    const threads = config.threads || ANALYSIS_CONFIG.DEFAULT_THREADS;
+    const sampleBase = analysis.sampleBase;
+    const fastqDir = workflowFastqDir();
+    const clarkResultsDir = workflowClarkResultsDir();
+    const seqkit = seqkitBinPath();
+
+    try {
+        // ── Step 1: Split FASTQ ──────────────────────────────────────────
+        analysis.progress = 3;
+        analysis.status = 'splitting';
+        analysis.message = 'Splitting FASTQ into batches with SeqKit...';
+        emitProgress(analysisId, { progress: 3, status: 'splitting', message: analysis.message });
+
+        const inputFastq = path.join(fastqDir, `${sampleBase}.fastq`);
+        const splitDir = path.join(fastqDir, `${sampleBase}_splits`);
+        fs.mkdirSync(splitDir, { recursive: true });
+
+        console.log(`[Batch] Splitting ${inputFastq} into 2 parts...`);
+        await execPromise(seqkit, ['split2', '-p', '2', '-f', '-O', splitDir, inputFastq]);
+
+        // ── Cancellation check ──
+        if (analysis.status === 'cancelled') { console.log('[Batch] Cancelled after split'); return; }
+
+        // Find the split files
+        const part1Name = `${sampleBase}.part_001`;
+        const part2Name = `${sampleBase}.part_002`;
+        const part1Fastq = path.join(splitDir, `${part1Name}.fastq`);
+        const part2Fastq = path.join(splitDir, `${part2Name}.fastq`);
+
+        if (!fs.existsSync(part1Fastq) || !fs.existsSync(part2Fastq)) {
+            throw new Error(`SeqKit split did not produce expected files: ${part1Fastq}, ${part2Fastq}`);
+        }
+
+        // Copy split parts to fastQ_reads/ so Snakemake can find them
+        fs.copyFileSync(part1Fastq, path.join(fastqDir, `${part1Name}.fastq`));
+        fs.copyFileSync(part2Fastq, path.join(fastqDir, `${part2Name}.fastq`));
+        console.log(`[Batch] Split complete: ${part1Name}, ${part2Name}`);
+
+        // ── Cancellation check ──
+        if (analysis.status === 'cancelled') { console.log('[Batch] Cancelled before part 1'); return; }
+
+        // ── Step 2: Classify + Abundance for Part 1 ─────────────────────
+        analysis.progress = 8;
+        analysis.status = 'classifying';
+        analysis.message = 'Processing batch 1 of 2...';
+        emitProgress(analysisId, { progress: 8, status: 'classifying', message: analysis.message });
+
+        // Reset progress tracking for part 1
+        analysis.progress = 0;
+        await runSnakemakeForSample(part1Name, engine, threads, analysis, analysisId, 8, 38);
+        console.log(`[Batch] Part 1 complete`);
+
+        // ── Cancellation check ──
+        if (analysis.status === 'cancelled') { console.log('[Batch] Cancelled after part 1'); return; }
+
+        // ── Step 3: Classify + Abundance for Part 2 ─────────────────────
+        analysis.status = 'classifying';
+        analysis.message = 'Processing batch 2 of 2...';
+        emitProgress(analysisId, { progress: 48, status: 'classifying', message: analysis.message });
+
+        analysis.progress = 0;
+        await runSnakemakeForSample(part2Name, engine, threads, analysis, analysisId, 48, 38);
+        console.log(`[Batch] Part 2 complete`);
+
+        // ── Step 4: Merge Abundances ─────────────────────────────────────
+        analysis.progress = 88;
+        analysis.status = 'merging';
+        analysis.message = 'Merging batch abundance results...';
+        emitProgress(analysisId, { progress: 88, status: 'merging', message: analysis.message });
+
+        const part1Abundance = path.join(clarkResultsDir, `${part1Name}.abundance.csv`);
+        const part2Abundance = path.join(clarkResultsDir, `${part2Name}.abundance.csv`);
+        const mergedAbundance = path.join(clarkResultsDir, `${sampleBase}.abundance.csv`);
+        const mergeScript = path.join(ANALYSIS_CONFIG.WORKFLOW_DIR, 'merge_abundance.py');
+
+        if (!fs.existsSync(part1Abundance) || !fs.existsSync(part2Abundance)) {
+            throw new Error('Part abundance files missing after classification');
+        }
+
+        // Run merge_abundance.py
+        const pythonCandidates = ['python', 'py', 'python3'];
+        let mergeSuccess = false;
+        for (const pyCmd of pythonCandidates) {
+            try {
+                await execPromise(pyCmd, [mergeScript, part1Abundance, part2Abundance, '-o', mergedAbundance]);
+                mergeSuccess = true;
+                break;
+            } catch { continue; }
+        }
+        if (!mergeSuccess) throw new Error('Failed to merge abundance files');
+        console.log(`[Batch] Merged abundance: ${mergedAbundance}`);
+
+        // ── Step 5: JSON conversion ──────────────────────────────────────
+        analysis.progress = 92;
+        analysis.status = 'finalizing';
+        analysis.message = 'Converting merged results to JSON...';
+        emitProgress(analysisId, { progress: 92, status: 'finalizing', message: analysis.message });
+
+        // Create a dummy .clark.csv so Snakemake sees clark_to_json's input satisfied.
+        // We concatenate the two part CSVs (skip header of second).
+        const mergedClark = path.join(clarkResultsDir, `${sampleBase}.clark.csv`);
+        const part1Clark = path.join(clarkResultsDir, `${part1Name}.clark.csv`);
+        const part2Clark = path.join(clarkResultsDir, `${part2Name}.clark.csv`);
+        if (fs.existsSync(part1Clark) && fs.existsSync(part2Clark)) {
+            const p1 = fs.readFileSync(part1Clark, 'utf-8');
+            const p2Lines = fs.readFileSync(part2Clark, 'utf-8').split('\n');
+            // Skip header of part2
+            const p2Body = p2Lines.slice(1).join('\n');
+            fs.writeFileSync(mergedClark, p1.trimEnd() + '\n' + p2Body);
+        }
+
+        // Remove any stale JSON so Snakemake reruns clark_to_json
+        const staleJson = path.join(clarkResultsDir, `${sampleBase}.json`);
+        try { if (fs.existsSync(staleJson)) fs.unlinkSync(staleJson); } catch {}
+
+        // Run Snakemake for just the JSON conversion (classify + abundance are up to date)
+        analysis.progress = 0;
+        await runSnakemakeForSample(sampleBase, engine, threads, analysis, analysisId, 92, 6);
+        console.log(`[Batch] JSON conversion complete`);
+
+        // ── Step 6: Finish ───────────────────────────────────────────────
+        finishFromClarkJson(analysisId);
+
+    } catch (error) {
+        // Don't log as failed if it was a user cancellation
+        if (analysis.status === 'cancelled' || error.message === 'cancelled') {
+            console.log(`[Batch] Workflow cancelled by user`);
+            return;
+        }
+        console.error(`[Batch] Workflow failed:`, error);
+        completeAnalysis(analysisId, false, `Batch processing failed: ${error.message}`);
+    }
+}
+
 function attachSnakemakeHandlers(proc, analysisId, analysis) {
     analysis.snakemakeProc = proc;
 
@@ -438,10 +677,14 @@ function attachSnakemakeHandlers(proc, analysisId, analysis) {
     });
     proc.on('error', (err) => {
         console.error(err);
+        // Don't report failure if the analysis was cancelled
+        if (analysis.status === 'cancelled') return;
         completeAnalysis(analysisId, false, err.message);
     });
     proc.on('close', (code) => {
         analysis.snakemakeProc = null;
+        // Don't report failure if the analysis was cancelled
+        if (analysis.status === 'cancelled') return;
         if (code === 0) {
             finishFromClarkJson(analysisId);
         } else {
@@ -541,6 +784,8 @@ function simulateWorkflow(analysisId) {
 function completeAnalysis(analysisId, success, error = null) {
     const analysis = activeAnalyses.get(analysisId);
     if (!analysis) return;
+    // Don't overwrite a cancellation with a failure from the dying process
+    if (analysis.status === 'cancelled') return;
 
     analysis.status = success ? 'completed' : 'failed';
     analysis.progress = success ? 100 : analysis.progress;
@@ -671,9 +916,11 @@ function generateMockResults(cfg) {
 
 function emitProgress(analysisId, progress) {
     if (global.mainWindow) {
+        const analysis = activeAnalyses.get(analysisId);
         global.mainWindow.webContents.send('analysis:progress', {
             analysisId,
             ...progress,
+            config: analysis?.config || {},
         });
     }
 }
@@ -717,6 +964,14 @@ function cancelAnalysis(analysisId) {
     const analysis = activeAnalyses.get(analysisId);
     if (!analysis) return { success: false, error: 'Analysis not found' };
 
+    console.log(`[Cancel] Cancelling analysis ${analysisId}`);
+
+    // Mark as cancelled BEFORE killing the process so close handlers respect it
+    analysis.status = 'cancelled';
+    analysis.endTime = Date.now();
+    analysis.progress = analysis.progress || 0;
+
+    // Kill the running Snakemake process tree
     if (analysis.snakemakeProc) {
         killProcessTree(analysis.snakemakeProc);
         analysis.snakemakeProc = null;
@@ -726,18 +981,37 @@ function cancelAnalysis(analysisId) {
         analysis.mockTimer = null;
     }
 
-    analysis.status = 'cancelled';
-    analysisHistory.push({
+    // Save to history as cancelled
+    const record = {
         id: analysis.id,
         analysis_name: analysis.config.analysis_name,
         sample_type: analysis.config.sample_type,
         status: 'cancelled',
+        progress: analysis.progress,
         startTime: analysis.startTime,
-        endTime: Date.now(),
+        endTime: analysis.endTime,
         config: analysis.config,
         outputDir: analysis.outputDir,
-    });
+    };
+    analysisHistory.push(record);
     activeAnalyses.delete(analysisId);
+
+    // Notify the renderer so the UI updates immediately
+    emitProgress(analysisId, {
+        progress: analysis.progress,
+        status: 'cancelled',
+        message: 'Analysis cancelled by user',
+    });
+
+    if (global.mainWindow) {
+        global.mainWindow.webContents.send('analysis:complete', {
+            analysisId,
+            success: false,
+            error: 'Cancelled by user',
+        });
+    }
+
+    console.log(`[Cancel] Analysis ${analysisId} cancelled successfully`);
     return { success: true };
 }
 

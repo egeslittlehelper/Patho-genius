@@ -15,8 +15,16 @@ const AnalysisPage = {
         database: 'default',
         confidenceThreshold: 0.7,
         engine: 'cpu',
-        inputFiles: []
+        inputFiles: [],
+        batchProcessing: false
     },
+
+    // SeqKit stats cache — avoids re-running when switching steps
+    _seqkitStats: null,
+    _seqkitLargeFile: false,
+
+    // Threshold: 4.5 billion bases
+    LARGE_FILE_THRESHOLD: 4_500_000_000,
 
     // Cached database list from backend
     availableDatabases: [],
@@ -264,6 +272,10 @@ const AnalysisPage = {
         document.getElementById('review-sample').textContent = this.getSampleTypeLabel(this.config.sampleType);
         document.getElementById('review-database').textContent = this.getDatabaseLabel(this.config.database);
         document.getElementById('review-engine').textContent = this.getEngineLabel(this.config.engine);
+        const reviewBatch = document.getElementById('review-batch');
+        if (reviewBatch) {
+            reviewBatch.textContent = this.config.batchProcessing ? '✅ Enabled (split into 2 batches)' : '—';
+        }
     },
 
     getSampleTypeLabel(value) {
@@ -333,6 +345,7 @@ const AnalysisPage = {
             if (files && files.length > 0) {
                 this.config.inputFiles = files;
                 this.displayFiles();
+                this.runSeqkitStats();
             }
         } catch (error) {
             console.error('File selection error:', error);
@@ -344,6 +357,7 @@ const AnalysisPage = {
         if (paths.length > 0) {
             this.config.inputFiles = paths;
             this.displayFiles();
+            this.runSeqkitStats();
         }
     },
 
@@ -384,8 +398,130 @@ const AnalysisPage = {
 
     clearFiles() {
         this.config.inputFiles = [];
+        this._seqkitStats = null;
+        this._seqkitLargeFile = false;
+        this.config.batchProcessing = false;
         this.displayFiles();
+        this.hideSeqkitUI();
         document.getElementById('upload-zone')?.classList.remove('hidden');
+    },
+
+    /**
+     * Hide all SeqKit-related UI elements
+     */
+    hideSeqkitUI() {
+        document.getElementById('fastq-stats-banner')?.classList.add('hidden');
+        document.getElementById('fastq-large-warning')?.classList.add('hidden');
+    },
+
+    /**
+     * Run SeqKit stats on the first selected FASTQ file.
+     * Updates the stats banner and shows a large-file warning if needed.
+     */
+    async runSeqkitStats() {
+        if (!this.config.inputFiles.length) return;
+        if (!window.api?.files?.seqkitStats) {
+            console.warn('SeqKit API not available');
+            return;
+        }
+
+        const filePath = this.config.inputFiles[0];
+        const banner = document.getElementById('fastq-stats-banner');
+        const content = document.getElementById('fastq-stats-content');
+        const loading = document.getElementById('fastq-stats-loading');
+        const warning = document.getElementById('fastq-large-warning');
+
+        // Show loading state
+        if (banner) banner.classList.remove('hidden');
+        if (content) content.innerHTML = '';
+        if (loading) loading.classList.remove('hidden');
+        if (warning) warning.classList.add('hidden');
+
+        try {
+            console.log('[SeqKit] Analysing:', filePath);
+            const result = await window.api.files.seqkitStats(filePath);
+
+            if (loading) loading.classList.add('hidden');
+
+            if (!result.success) {
+                console.warn('[SeqKit] Failed:', result.error);
+                if (banner) banner.classList.add('hidden');
+                return;
+            }
+
+            this._seqkitStats = result.stats;
+            const s = result.stats;
+            console.log('[SeqKit] Stats:', s);
+
+            // Populate stats grid
+            if (content) {
+                content.innerHTML = `
+                    <div class="fastq-stat-item">
+                        <span class="stat-label">Reads</span>
+                        <span class="stat-value">${this.formatNumber(s.num_seqs)}</span>
+                    </div>
+                    <div class="fastq-stat-item">
+                        <span class="stat-label">Total Length</span>
+                        <span class="stat-value ${s.sum_len > this.LARGE_FILE_THRESHOLD ? 'warning' : ''}">${this.formatBases(s.sum_len)}</span>
+                    </div>
+                    <div class="fastq-stat-item">
+                        <span class="stat-label">Avg Length</span>
+                        <span class="stat-value">${this.formatNumber(Math.round(s.avg_len))}</span>
+                    </div>
+                    <div class="fastq-stat-item">
+                        <span class="stat-label">Max Length</span>
+                        <span class="stat-value">${this.formatNumber(s.max_len)}</span>
+                    </div>
+                    <div class="fastq-stat-item">
+                        <span class="stat-label">Format</span>
+                        <span class="stat-value">${s.format}</span>
+                    </div>
+                `;
+            }
+
+            // Check if file exceeds threshold
+            this._seqkitLargeFile = s.sum_len > this.LARGE_FILE_THRESHOLD;
+            if (this._seqkitLargeFile && warning) {
+                const detail = document.getElementById('fastq-large-warning-detail');
+                if (detail) {
+                    detail.textContent = `Total sequence length is ${this.formatBases(s.sum_len)} ` +
+                        `(${this.formatNumber(s.num_seqs)} reads). ` +
+                        `This exceeds the 4.5 Gbp threshold. Batch processing is recommended.`;
+                }
+                warning.classList.remove('hidden');
+
+                // Wire up batch toggle
+                const toggle = document.getElementById('batch-processing-toggle');
+                if (toggle) {
+                    toggle.checked = this.config.batchProcessing;
+                    toggle.onchange = () => {
+                        this.config.batchProcessing = toggle.checked;
+                        console.log('[BatchProcessing] Toggled:', toggle.checked);
+                    };
+                }
+            }
+        } catch (err) {
+            console.error('[SeqKit] Error:', err);
+            if (loading) loading.classList.add('hidden');
+            if (banner) banner.classList.add('hidden');
+        }
+    },
+
+    /**
+     * Format a number with commas (e.g. 1644811 → "1,644,811")
+     */
+    formatNumber(n) {
+        return Number(n).toLocaleString();
+    },
+
+    /**
+     * Format base count to human-readable (e.g. 4874039793 → "4.87 Gbp")
+     */
+    formatBases(n) {
+        if (n >= 1e9) return (n / 1e9).toFixed(2) + ' Gbp';
+        if (n >= 1e6) return (n / 1e6).toFixed(2) + ' Mbp';
+        if (n >= 1e3) return (n / 1e3).toFixed(1) + ' Kbp';
+        return n + ' bp';
     },
 
     /**
@@ -420,6 +556,7 @@ const AnalysisPage = {
             database: this.config.database,
             confidence_threshold: this.config.confidenceThreshold,
             engine: this.config.engine,
+            batch_processing: this.config.batchProcessing,
             timestamp: new Date().toISOString(),
             threads: 4,
             output_dir: `results/${this.config.analysisName}_${Date.now()}`
@@ -461,8 +598,11 @@ const AnalysisPage = {
             database: 'default',
             confidenceThreshold: 0.7,
             engine: 'cpu',
-            inputFiles: []
+            inputFiles: [],
+            batchProcessing: false
         };
+        this._seqkitStats = null;
+        this._seqkitLargeFile = false;
         this.isAnalyzing = false;
         
         const nameInput = document.getElementById('analysis-name');

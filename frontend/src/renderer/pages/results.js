@@ -119,7 +119,8 @@ const ResultsPage = {
                 
                 // Separate running and completed
                 this.state.runningAnalyses = analyses.filter(a => 
-                    ['starting', 'running', 'preprocessing', 'classifying', 'processing', 'finalizing'].includes(a.status)
+                    ['starting', 'running', 'preprocessing', 'classifying', 'processing',
+                     'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
                 );
                 this.state.completedAnalyses = analyses.filter(a => 
                     ['completed', 'failed', 'cancelled'].includes(a.status)
@@ -277,42 +278,54 @@ const ResultsPage = {
     updateRunningAnalysis(data) {
         const { analysisId, progress, status, message } = data;
         
-        const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
-        if (analysis) {
-            analysis.progress = progress;
-            analysis.status = status;
-            analysis.message = message;
-            
-            // If completed, move to completed list
-            if (status === 'completed' || status === 'failed') {
-                this.state.runningAnalyses = this.state.runningAnalyses.filter(a => a.id !== analysisId);
-                this.state.completedAnalyses.unshift(analysis);
+        let analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
 
-                // Desktop notification if enabled
-                const notificationsEnabled = window.SettingsPage?.settings?.notificationsEnabled ?? true;
-                if (notificationsEnabled && 'Notification' in window) {
-                    if (Notification.permission === 'granted') {
-                        new Notification('Pathogenius', {
-                            body: status === 'completed'
-                                ? `Analysis "${analysis.config?.analysis_name || analysisId}" completed.`
-                                : `Analysis "${analysis.config?.analysis_name || analysisId}" failed.`
-                        });
-                    } else if (Notification.permission !== 'denied') {
-                        Notification.requestPermission().then(perm => {
-                            if (perm === 'granted') {
-                                new Notification('Pathogenius', {
-                                    body: `Analysis "${analysis.config?.analysis_name || analysisId}" ${status}.`
-                                });
-                            }
-                        });
-                    }
+        // If this analysis isn't tracked yet, add it to the running list
+        if (!analysis) {
+            analysis = {
+                id: analysisId,
+                config: data.config || {},
+                progress: progress || 0,
+                status: status || 'running',
+                message: message || '',
+                startTime: Date.now(),
+            };
+            this.state.runningAnalyses.push(analysis);
+        }
+
+        analysis.progress = progress;
+        analysis.status = status;
+        analysis.message = message;
+        
+        // If completed/failed/cancelled, move to completed list
+        if (status === 'completed' || status === 'failed' || status === 'cancelled') {
+            this.state.runningAnalyses = this.state.runningAnalyses.filter(a => a.id !== analysisId);
+            this.state.completedAnalyses.unshift(analysis);
+
+            // Desktop notification if enabled
+            const notificationsEnabled = window.SettingsPage?.settings?.notificationsEnabled ?? true;
+            if (notificationsEnabled && 'Notification' in window) {
+                if (Notification.permission === 'granted') {
+                    new Notification('Pathogenius', {
+                        body: status === 'completed'
+                            ? `Analysis "${analysis.config?.analysis_name || analysisId}" completed.`
+                            : `Analysis "${analysis.config?.analysis_name || analysisId}" failed.`
+                    });
+                } else if (Notification.permission !== 'denied') {
+                    Notification.requestPermission().then(perm => {
+                        if (perm === 'granted') {
+                            new Notification('Pathogenius', {
+                                body: `Analysis "${analysis.config?.analysis_name || analysisId}" ${status}.`
+                            });
+                        }
+                    });
                 }
             }
-            
-            this.renderRunningAnalyses();
-            this.renderAnalysisHistory();
-            this.updateRunningCount();
         }
+        
+        this.renderRunningAnalyses();
+        this.renderAnalysisHistory();
+        this.updateRunningCount();
     },
 
     /**

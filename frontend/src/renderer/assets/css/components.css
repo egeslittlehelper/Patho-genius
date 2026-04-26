@@ -811,3 +811,43 @@
     font-size: 0.875rem;
 }
 
+/* INLINE SPINNER (small, for loading states within text) */
+.spinner-inline {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid var(--border-color);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin-inline 0.8s linear infinite;
+    vertical-align: middle;
+    margin-right: 6px;
+}
+@keyframes spin-inline {
+    to { transform: rotate(360deg); }
+}
+
+/* FASTQ STATS ITEMS */
+.fastq-stat-item {
+    background: var(--bg-elevated);
+    border-radius: var(--radius-md);
+    padding: 10px 12px;
+    text-align: center;
+}
+.fastq-stat-item .stat-label {
+    display: block;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+}
+.fastq-stat-item .stat-value {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 1rem;
+}
+.fastq-stat-item .stat-value.warning {
+    color: #f59e0b;
+}

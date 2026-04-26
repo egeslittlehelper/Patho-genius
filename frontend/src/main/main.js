@@ -251,6 +251,54 @@ ipcMain.handle('app:select-files', async () => {
     return canceled ? [] : filePaths;
 });
 
+// ── SeqKit FASTQ statistics ──────────────────────────────────────────────────
+ipcMain.handle('app:seqkit-stats', async (_event, filePath) => {
+    const { execFile } = require('child_process');
+    const seqkitBin = path.join(__dirname, '..', '..', 'bin', 'seqkit.exe');
+
+    if (!fs.existsSync(seqkitBin)) {
+        console.warn('SeqKit binary not found at', seqkitBin);
+        return { success: false, error: 'SeqKit binary not found' };
+    }
+    if (!filePath || !fs.existsSync(filePath)) {
+        return { success: false, error: 'File not found' };
+    }
+
+    return new Promise((resolve) => {
+        execFile(seqkitBin, ['stats', '-T', filePath], { timeout: 120000 }, (err, stdout, stderr) => {
+            if (err) {
+                console.error('SeqKit error:', err.message);
+                return resolve({ success: false, error: err.message });
+            }
+            try {
+                const lines = stdout.trim().split('\n');
+                if (lines.length < 2) return resolve({ success: false, error: 'No data from SeqKit' });
+
+                const headers = lines[0].split('\t');
+                const values = lines[1].split('\t');
+                const stats = {};
+                headers.forEach((h, i) => { stats[h.trim()] = values[i]?.trim(); });
+
+                resolve({
+                    success: true,
+                    stats: {
+                        file: stats['file'] || filePath,
+                        format: stats['format'] || 'FASTQ',
+                        type: stats['type'] || 'DNA',
+                        num_seqs: parseInt(stats['num_seqs'], 10) || 0,
+                        sum_len: parseInt(stats['sum_len'], 10) || 0,
+                        min_len: parseInt(stats['min_len'], 10) || 0,
+                        avg_len: parseFloat(stats['avg_len']) || 0,
+                        max_len: parseInt(stats['max_len'], 10) || 0
+                    }
+                });
+            } catch (parseErr) {
+                resolve({ success: false, error: 'Failed to parse SeqKit output: ' + parseErr.message });
+            }
+        });
+    });
+});
+
 ipcMain.handle('app:select-folder', async () => {
     const { canceled, filePaths } = await dialog.showOpenDialog({
         properties: ['openDirectory']

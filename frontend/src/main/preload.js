@@ -52,7 +52,10 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke('app:select-folder'),
 
         selectMappingFile: () =>
-            ipcRenderer.invoke('app:select-mapping-file')
+            ipcRenderer.invoke('app:select-mapping-file'),
+
+        seqkitStats: (filePath) =>
+            ipcRenderer.invoke('app:seqkit-stats', filePath)
     },
 
     /* ANALYSIS (CLARK / CuCLARK Workflow) */

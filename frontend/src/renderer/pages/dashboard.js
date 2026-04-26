@@ -82,7 +82,8 @@ const DashboardPage = {
             if (window.api?.analysis?.getAll) {
                 const analyses = await window.api.analysis.getAll();
                 const running = analyses.find(a => 
-                    ['starting', 'running', 'preprocessing', 'classifying', 'processing', 'finalizing'].includes(a.status)
+                    ['starting', 'running', 'preprocessing', 'classifying', 'processing',
+                     'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
                 );
                 
                 if (running) {
@@ -133,10 +134,12 @@ const DashboardPage = {
         const { analysisId, progress, status, message } = data;
         
         // If analysis completed, hide the banner
-        if (status === 'completed' || status === 'failed') {
+        if (status === 'completed' || status === 'failed' || status === 'cancelled') {
             this.hideRunningAnalysisBanner();
             // Update running count badge
             this.updateRunningCountBadge();
+            // Refresh the recent analyses table to show the new status
+            this.loadRecentAnalyses();
             return;
         }
 
@@ -273,7 +276,8 @@ const DashboardPage = {
             const completed = analyses.filter(a => a.status === 'completed').length;
             const failed = analyses.filter(a => a.status === 'failed').length;
             const running = analyses.filter(a =>
-                ['starting', 'running', 'preprocessing', 'classifying', 'processing', 'finalizing'].includes(a.status)
+                ['starting', 'running', 'preprocessing', 'classifying', 'processing',
+                 'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
             ).length;
 
             const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
