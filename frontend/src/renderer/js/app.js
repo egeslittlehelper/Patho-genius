@@ -421,6 +421,9 @@ const App = {
             case 'database':
                 if (window.DatabasePage) DatabasePage.init();
                 break;
+            case 'terminal':
+                if (window.TerminalPage) TerminalPage.init();
+                break;
             case 'settings':
                 if (window.SettingsPage) SettingsPage.init();
                 this.loadSystemInfo();

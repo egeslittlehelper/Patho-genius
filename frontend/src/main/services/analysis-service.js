@@ -451,7 +451,7 @@ function execPromise(cmd, args, opts = {}) {
  * Reuses the same Python-finding logic as runSnakemakeWorkflow.
  * Streams progress to the analysis state.
  */
-function runSnakemakeForSample(sampleName, engine, threads, analysis, analysisId, progressOffset, progressScale) {
+function runSnakemakeForSample(sampleName, engine, threads, analysis, analysisId, progressOffset, progressScale, options = {}) {
     return new Promise((resolve, reject) => {
         const wf = ANALYSIS_CONFIG.WORKFLOW_DIR;
         const snakemakeArgs = [
@@ -461,13 +461,21 @@ function runSnakemakeForSample(sampleName, engine, threads, analysis, analysisId
             '--latency-wait', '15',
             '--config', `sample=${sampleName}`, `engine=${engine}`,
         ];
+
+        // Restrict to specific rules (e.g. just JSON conversion in batch finalization)
+        if (options.allowedRules && options.allowedRules.length > 0) {
+            snakemakeArgs.push('--allowed-rules', ...options.allowedRules);
+        }
+
         const candidates = [['python', []], ['py', ['-3']], ['python3', []]];
 
-        // Clean stale outputs for this sample
-        const clarkResultsDir = workflowClarkResultsDir();
-        for (const ext of ['.clark.csv', '.abundance.csv', '.json']) {
-            const stale = path.join(clarkResultsDir, `${sampleName}${ext}`);
-            try { if (fs.existsSync(stale)) { fs.unlinkSync(stale); } } catch {}
+        // Clean stale outputs for this sample (unless skip requested)
+        if (!options.skipClean) {
+            const clarkResultsDir = workflowClarkResultsDir();
+            for (const ext of ['.clark.csv', '.abundance.csv', '.json']) {
+                const stale = path.join(clarkResultsDir, `${sampleName}${ext}`);
+                try { if (fs.existsSync(stale)) { fs.unlinkSync(stale); } } catch {}
+            }
         }
 
         const launch = (idx) => {
@@ -633,9 +641,12 @@ async function runBatchWorkflow(analysisId, config) {
         const staleJson = path.join(clarkResultsDir, `${sampleBase}.json`);
         try { if (fs.existsSync(staleJson)) fs.unlinkSync(staleJson); } catch {}
 
-        // Run Snakemake for just the JSON conversion (classify + abundance are up to date)
+        // Run Snakemake for ONLY the JSON conversion rule — skip classify + abundance
         analysis.progress = 0;
-        await runSnakemakeForSample(sampleBase, engine, threads, analysis, analysisId, 92, 6);
+        await runSnakemakeForSample(sampleBase, engine, threads, analysis, analysisId, 92, 6, {
+            allowedRules: ['clark_to_json', 'all'],
+            skipClean: true,
+        });
         console.log(`[Batch] JSON conversion complete`);
 
         // ── Step 6: Finish ───────────────────────────────────────────────

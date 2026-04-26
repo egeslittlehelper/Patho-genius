@@ -1,0 +1,57 @@
+<!-- TERMINAL PAGE -->
+<div id="page-terminal" class="page-view hidden">
+    <div class="page-header">
+        <div>
+            <h1 class="page-title">Terminal</h1>
+            <p class="page-subtitle">Live process output and system logs</p>
+        </div>
+        <div class="header-actions">
+            <button class="btn btn-outline btn-sm" id="terminal-auto-scroll-btn" title="Toggle auto-scroll">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="17 13 12 18 7 13"></polyline>
+                    <polyline points="17 6 12 11 7 6"></polyline>
+                </svg>
+                Auto-scroll
+            </button>
+            <button class="btn btn-outline btn-sm" id="terminal-clear-btn" title="Clear terminal">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <polyline points="3 6 5 6 21 6"></polyline>
+                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                </svg>
+                Clear
+            </button>
+            <button class="btn btn-outline btn-sm" id="terminal-copy-btn" title="Copy to clipboard">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16" height="16">
+                    <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                    <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+                Copy
+            </button>
+        </div>
+    </div>
+
+    <!-- Terminal filter bar -->
+    <div class="terminal-filter-bar">
+        <div class="terminal-filters">
+            <button class="terminal-filter-btn active" data-filter="all">All</button>
+            <button class="terminal-filter-btn" data-filter="snakemake">Snakemake</button>
+            <button class="terminal-filter-btn" data-filter="batch">Batch</button>
+            <button class="terminal-filter-btn" data-filter="cancel">Cancel</button>
+            <button class="terminal-filter-btn" data-filter="error">Errors</button>
+        </div>
+        <div class="terminal-search">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                <circle cx="11" cy="11" r="8"></circle>
+                <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+            </svg>
+            <input type="text" id="terminal-search-input" placeholder="Search logs..." />
+        </div>
+        <span class="terminal-line-count" id="terminal-line-count">0 lines</span>
+    </div>
+
+    <!-- Terminal output area -->
+    <div class="terminal-container" id="terminal-container">
+        <pre class="terminal-output" id="terminal-output"><span class="terminal-line terminal-system">Pathogenius Terminal Ready — waiting for process output...</span>
+</pre>
+    </div>
+</div>

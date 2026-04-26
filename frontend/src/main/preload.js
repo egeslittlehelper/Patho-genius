@@ -243,6 +243,17 @@ contextBridge.exposeInMainWorld('api', {
         removeTokenListener: () => {
             ipcRenderer.removeAllListeners('llm:token');
         }
+    },
+
+    /* TERMINAL (Process Logs) */
+    terminal: {
+        onLog: (callback) => {
+            ipcRenderer.on('terminal:log', (_event, data) => callback(data));
+        },
+
+        removeLogListener: () => {
+            ipcRenderer.removeAllListeners('terminal:log');
+        }
     }
 });
 

@@ -129,6 +129,33 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow();
+
+    // ── Relay main-process console output to the renderer Terminal page ──
+    const _origLog = console.log.bind(console);
+    const _origError = console.error.bind(console);
+    const _origWarn = console.warn.bind(console);
+
+    function sendToTerminal(text, type) {
+        try {
+            if (global.mainWindow && !global.mainWindow.isDestroyed()) {
+                global.mainWindow.webContents.send('terminal:log', { text: String(text), type });
+            }
+        } catch { /* ignore if window is gone */ }
+    }
+
+    console.log = (...args) => {
+        _origLog(...args);
+        sendToTerminal(args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a))).join(' '), 'info');
+    };
+    console.error = (...args) => {
+        _origError(...args);
+        sendToTerminal(args.map(a => (typeof a === 'object' ? (a?.stack || JSON.stringify(a, null, 2)) : String(a))).join(' '), 'error');
+    };
+    console.warn = (...args) => {
+        _origWarn(...args);
+        sendToTerminal(args.map(a => (typeof a === 'object' ? JSON.stringify(a, null, 2) : String(a))).join(' '), 'warning');
+    };
+
     llmService.loadModel().then(status => {
         if (status.loadError) console.error('LLM auto-load failed:', status.loadError);
     });

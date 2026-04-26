@@ -20,6 +20,7 @@ const TemplateLoader = {
             'dashboard.html',
             'analysis.html',
             'results.html',
+            'terminal.html',
             'database.html',
             'settings.html'
         ],
