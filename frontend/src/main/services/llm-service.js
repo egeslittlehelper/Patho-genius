@@ -38,6 +38,7 @@ const LLM_CONFIG = {
 // node-llama-cpp v3 — loaded once via dynamic import()
 let llamaInstance  = null;   // getLlama() result
 let modelInstance  = null;   // llama.loadModel() result
+let contextInstance = null;  // persistent LlamaContext (reused per request to avoid native crash on dispose)
 let isLoaded       = false;
 let isLoading      = false;
 let loadError      = null;
@@ -89,6 +90,9 @@ async function loadModel() {
         const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
         llamaInstance = await getLlama();
         modelInstance = await llamaInstance.loadModel({ modelPath });
+        contextInstance = await modelInstance.createContext({
+            contextSize: LLM_CONFIG.contextSize,
+        });
 
         isLoaded  = true;
         isLoading = false;
@@ -117,30 +121,38 @@ async function chat(prompt, onToken) {
 
     const { LlamaChatSession } = await import('node-llama-cpp');
 
-    // Fresh context + session per request to avoid state leakage
-    const context = await modelInstance.createContext({
-        contextSize: LLM_CONFIG.contextSize,
-    });
+    // Reuse the persistent context created at load time.
+    // Creating a new context per request and calling context.dispose() after
+    // session.prompt() returns causes a native crash (segfault in llama.cpp)
+    // because the LlamaChatSession still holds a live reference to the
+    // context's C++ sequence object at the point of disposal.
+    // Each new LlamaChatSession starts a fresh conversation and overwrites
+    // the KV cache, so there is no history leakage between requests.
+    //
+    // The sequence slot must be explicitly disposed after each request so it
+    // is returned to the context pool. Without this, every call consumes one
+    // slot and retries throw "No sequences left".
+    const sequence = contextInstance.getSequence();
+    try {
+        const session = new LlamaChatSession({ contextSequence: sequence });
 
-    const session = new LlamaChatSession({
-        contextSequence: context.getSequence(),
-    });
+        const response = await session.prompt(prompt, {
+            maxTokens:   LLM_CONFIG.maxTokens,
+            temperature: LLM_CONFIG.temperature,
+            topP:        LLM_CONFIG.topP,
+            onTextChunk(chunk) {
+                if (onToken) {
+                    onToken(chunk);
+                }
+            },
+        });
 
-    const response = await session.prompt(prompt, {
-        maxTokens:   LLM_CONFIG.maxTokens,
-        temperature: LLM_CONFIG.temperature,
-        topP:        LLM_CONFIG.topP,
-        onTextChunk(chunk) {
-            if (onToken) {
-                onToken(chunk);
-            }
-        },
-    });
-
-    // Dispose context to free memory
-    await context.dispose();
-
-    return response;
+        return response;
+    } finally {
+        // Always release the sequence slot back to the context pool so the
+        // next call (e.g. Retry) can acquire it successfully.
+        sequence.dispose();
+    }
 }
 
 /**
