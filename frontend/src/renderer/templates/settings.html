@@ -93,15 +93,15 @@
         <div class="settings-section">
             <div class="setting-row-grid">
                 <div class="form-group">
-                    <label for="settings-confidence-threshold">Confidence Threshold</label>
+                    <label for="settings-confidence-threshold">Result Display Threshold</label>
                     <select id="settings-confidence-threshold" class="input-field">
-                        <option value="0.5">50% - Very Sensitive (more results, lower precision)</option>
+                        <option value="0.5">50% - Show all results</option>
                         <option value="0.6">60% - Sensitive</option>
                         <option value="0.7" selected>70% - Balanced (recommended)</option>
-                        <option value="0.8">80% - High Precision</option>
-                        <option value="0.9">90% - Very High Precision (fewer results)</option>
+                        <option value="0.8">80% - High precision only</option>
+                        <option value="0.9">90% - Very high precision only</option>
                     </select>
-                    <small class="form-hint">Minimum confidence score to report a pathogen detection</small>
+                    <small class="form-hint">Minimum confidence to display a detected pathogen in results. Does not affect the classifier — only filters what you see.</small>
                 </div>
                 <div class="form-group">
                     <label for="settings-min-read-count">Minimum Read Count</label>
@@ -116,23 +116,6 @@
                 </div>
                 <label class="toggle-switch">
                     <input type="checkbox" id="toggle-low-confidence">
-                    <span class="toggle-slider"></span>
-                </label>
-            </div>
-        </div>
-    </div>
-
-    <!-- Data Management -->
-    <div class="card">
-        <h3 class="card-title">Data Management</h3>
-        <div class="settings-section">
-            <div class="setting-row">
-                <div class="setting-info">
-                    <h4>Encrypt Local Data</h4>
-                    <p>Encrypt stored analysis results and sensitive data (requires password on startup)</p>
-                </div>
-                <label class="toggle-switch">
-                    <input type="checkbox" id="toggle-encryption">
                     <span class="toggle-slider"></span>
                 </label>
             </div>
@@ -256,11 +239,11 @@
         <div class="system-info-grid">
             <div class="info-item">
                 <span class="info-label">App Version</span>
-                <span class="info-value">—</span>
+                <span class="info-value" id="system-app-version">—</span>
             </div>
             <div class="info-item">
-                <span class="info-label">Database Version</span>
-                <span class="info-value">NCBI RefSeq 2025.01</span>
+                <span class="info-label">Electron Version</span>
+                <span class="info-value" id="system-electron">—</span>
             </div>
             <div class="info-item">
                 <span class="info-label">Platform</span>

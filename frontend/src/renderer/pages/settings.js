@@ -11,7 +11,6 @@ const SettingsPage = {
         confidenceThreshold: 0.7,
         minReadCount: 100,
         showLowConfidenceResults: false,
-        encryptLocalData: false,
         theme: 'light',
         notificationsEnabled: true,
         autoSaveInterval: 5
@@ -37,7 +36,6 @@ const SettingsPage = {
         const toggleMap = {
             'toggle-local-ai':       'localAiEnabled',
             'toggle-low-confidence': 'showLowConfidenceResults',
-            'toggle-encryption':     'encryptLocalData',
             'toggle-notifications':  'notificationsEnabled'
         };
 
@@ -154,19 +152,10 @@ const SettingsPage = {
 
         set('toggle-local-ai', this.settings.localAiEnabled);
         set('toggle-low-confidence', this.settings.showLowConfidenceResults);
-        set('toggle-encryption', this.settings.encryptLocalData);
         set('toggle-notifications', this.settings.notificationsEnabled);
         set('toggle-dark-mode', this.settings.theme === 'dark');
         setVal('settings-confidence-threshold', this.settings.confidenceThreshold);
         setVal('settings-min-read-count', this.settings.minReadCount);
-
-        // Hide entire encryption card for guests (no account = no encryption key)
-        const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
-        const encryptToggle = document.getElementById('toggle-encryption');
-        if (encryptToggle) {
-            const encryptCard = encryptToggle.closest('.card');
-            if (encryptCard) encryptCard.classList.toggle('hidden', !!isGuest);
-        }
     },
 
     applyTheme() {

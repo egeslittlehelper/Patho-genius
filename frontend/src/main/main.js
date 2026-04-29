@@ -37,6 +37,21 @@ function getCurrentUid() {
     return user ? user.uid : 'guest';
 }
 
+// Reject any analysisId that doesn't match the generated format (prevents path traversal).
+function isValidAnalysisId(id) {
+    return typeof id === 'string' && /^analysis_[0-9]+_[a-z0-9]+$/.test(id);
+}
+
+// Strip file paths and long stack traces from error strings before persisting.
+function sanitizeError(err) {
+    if (!err) return 'Unknown error';
+    // Take only the first line (removes path-containing stack trace lines)
+    const firstLine = String(err).split('\n')[0].trim();
+    // Remove anything that looks like a Windows or Unix path
+    const noPath = firstLine.replace(/[A-Za-z]:\\[^\s,)]+/g, '[path]').replace(/\/[^\s,)]+/g, '[path]');
+    return noPath.slice(0, 120);
+}
+
 /**
  * Scan RESULTS_DIR for directories whose .owner file matches uid.
  * Returns synthetic analysis records for cross-session persistence.
@@ -82,11 +97,14 @@ async function getEncryptedLocalAnalyses(uid) {
     if (!listed.success) return [];
     return listed.files.map(f => ({
         id: f.analysisId,
-        analysis_name: f.analysis_name || f.analysisId,
-        sample_type: f.sample_type || '—',
-        status: 'completed',
+        analysis_name: f.analysisId,   // name is encrypted — shown after user opens the result
+        sample_type: '—',              // sample_type is encrypted
+        status: f.status || 'completed',
+        error: f.error || null,
         completed_at: f.completed_at || f.modifiedAt?.toISOString?.() || null,
         startTime: f.completed_at ? new Date(f.completed_at).getTime() : (f.modifiedAt?.getTime?.() || 0),
+        detectedCount: f.detectedCount ?? null,
+        synced: !!f.hasCloudBackup,
         _fromEncrypted: true
     }));
 }
@@ -103,6 +121,90 @@ function deleteAnalysisDir(analysisId) {
     }
 }
 
+/**
+ * One-time migration: encrypt any plain results in frontend/results/ that belong
+ * to uid and move them into the encrypted local store.
+ * Runs silently after login / session restore.
+ */
+async function migratePlainResults(uid) {
+    if (!uid || uid === 'guest') return;
+    if (!fs.existsSync(RESULTS_DIR)) return;
+
+    let entries;
+    try { entries = fs.readdirSync(RESULTS_DIR, { withFileTypes: true }); }
+    catch { return; }
+
+    for (const entry of entries) {
+        if (!entry.isDirectory()) continue;
+        const dir = path.join(RESULTS_DIR, entry.name);
+        const ownerFile = path.join(dir, '.owner');
+        const resultsFile = path.join(dir, 'results.json');
+
+        try {
+            if (!fs.existsSync(ownerFile) || !fs.existsSync(resultsFile)) continue;
+            if (fs.readFileSync(ownerFile, 'utf8').trim() !== uid) continue;
+
+            const resultData = JSON.parse(fs.readFileSync(resultsFile, 'utf8'));
+            const cfgFile = path.join(dir, 'config.json');
+            const cfg = fs.existsSync(cfgFile) ? JSON.parse(fs.readFileSync(cfgFile, 'utf8')) : {};
+
+            const meta = {
+                analysis_name: resultData.analysis_name || cfg.analysis_name || entry.name,
+                sample_type: resultData.sample_type || cfg.sample_type || '—',
+                completed_at: resultData.completed_at || new Date().toISOString(),
+                status: 'completed',
+                detectedCount: Array.isArray(resultData.pathogens) ? resultData.pathogens.length : 0
+            };
+
+            const saved = await localStorageService.saveResultLocally(entry.name, uid, resultData, meta);
+            if (saved.success) {
+                fs.rmSync(dir, { recursive: true, force: true });
+                console.log(`[migration] Encrypted and migrated result: ${entry.name}`);
+            }
+        } catch (e) {
+            console.error(`[migration] Failed to migrate ${entry.name}:`, e.message);
+        }
+    }
+}
+
+// When a logged-in user's analysis finishes, encrypt and save it to per-user
+// local storage, then remove the plain working directory.
+analysisService.setOnCompleteCallback(async (analysisId, record) => {
+    const uid = analysisUserMap.get(analysisId);
+    if (!uid || uid === 'guest') return;
+
+    const succeeded = record.status === 'completed' && record.results;
+
+    if (succeeded) {
+        const meta = {
+            analysis_name: record.analysis_name || analysisId,
+            sample_type: record.sample_type || '—',
+            completed_at: record.completed_at || new Date().toISOString(),
+            status: 'completed',
+            detectedCount: Array.isArray(record.results?.pathogens) ? record.results.pathogens.length : 0
+        };
+        const saved = await localStorageService.saveResultLocally(analysisId, uid, record.results, meta);
+        if (saved.success) {
+            deleteAnalysisDir(analysisId);
+        } else {
+            console.error('Failed to encrypt result locally - plain copy kept:', saved.error);
+        }
+    } else {
+        // Save a minimal failure record — no file paths, no config, just enough to
+        // show in history and stats. The working dir is deleted regardless.
+        const meta = {
+            analysis_name: record.analysis_name || analysisId,
+            sample_type: record.sample_type || '—',
+            completed_at: new Date().toISOString(),
+            status: 'failed',
+            error: sanitizeError(record.error),
+            detectedCount: 0
+        };
+        await localStorageService.saveResultLocally(analysisId, uid, null, meta);
+        deleteAnalysisDir(analysisId);
+    }
+});
+
 function createWindow() {
     mainWindow = new BrowserWindow({
         width: 1440,
@@ -113,7 +215,8 @@ function createWindow() {
         webPreferences: {
             preload: path.join(__dirname, 'preload.js'),
             contextIsolation: true,
-            nodeIntegration: false
+            nodeIntegration: false,
+            sandbox: true
         }
     });
 
@@ -178,7 +281,9 @@ ipcMain.handle('auth:register', async (event, userData) => {
 });
 
 ipcMain.handle('auth:login', async (event, username, password) => {
-    return await firebaseAuth.login(username, password);
+    const result = await firebaseAuth.login(username, password);
+    if (result.success) migratePlainResults(result.user.uid).catch(() => {});
+    return result;
 });
 
 ipcMain.handle('auth:login-guest', async () => {
@@ -216,7 +321,9 @@ ipcMain.handle('auth:logout', async (event, isGuest) => {
 });
 
 ipcMain.handle('auth:restore-session', async () => {
-    return await firebaseAuth.restoreSession();
+    const result = await firebaseAuth.restoreSession();
+    if (result.success) migratePlainResults(result.user.uid).catch(() => {});
+    return result;
 });
 
 ipcMain.handle('auth:get-session', () => {
@@ -366,15 +473,20 @@ ipcMain.handle('app:get-analysis-status', async (event, analysisId) => {
 });
 
 ipcMain.handle('app:get-analysis-results', async (event, analysisId) => {
+    if (!isValidAnalysisId(analysisId)) return null;
     const uid = getCurrentUid();
     // 1. In-memory (current session, e.g. just ran)
     const fromService = analysisService.getAnalysisResults(analysisId);
     if (fromService) return fromService;
-    // 2. Encrypted local copy (downloaded from cloud)
+    // 2. Encrypted local store (completed analyses and cloud downloads)
     if (uid !== 'guest') {
         const enc = await localStorageService.loadResultLocally(analysisId, uid);
         if (enc.success) {
-            try { return typeof enc.data === 'string' ? JSON.parse(enc.data) : enc.data; } catch {}
+            // New format: { data: result, analysis_name, sample_type }
+            // Legacy format: data IS the result directly
+            const data = enc.data;
+            if (data && typeof data === 'object') return data;
+            if (typeof data === 'string') { try { return JSON.parse(data); } catch {} }
         }
     }
     return null;
@@ -389,18 +501,33 @@ ipcMain.handle('app:get-all-analyses', async () => {
         return owner === uid;
     });
 
-    // 2. Cross-session pipeline output (results.json + .owner on disk)
+    // 2. Encrypted local store — decrypt name/sample_type for each entry so the
+    //    history list can display them. Full result is only decrypted on demand.
+    let fromEncrypted = [];
+    if (uid !== 'guest') {
+        const listed = await getEncryptedLocalAnalyses(uid);
+        fromEncrypted = await Promise.all(listed.map(async entry => {
+            if (!entry._fromEncrypted || entry.status === 'failed') return entry;
+            try {
+                const loaded = await localStorageService.loadResultLocally(entry.id, uid);
+                if (loaded.success && loaded.analysis_name) {
+                    entry.analysis_name = loaded.analysis_name;
+                    entry.sample_type = loaded.sample_type || '—';
+                }
+            } catch {}
+            return entry;
+        }));
+    }
+
+    // 3. Plain pipeline working dir — guests only
     const fromDisk = getDiskAnalyses(uid);
 
-    // 3. Encrypted downloads from cloud (userData/results/{uid}/*.enc)
-    const fromEncrypted = uid !== 'guest' ? await getEncryptedLocalAnalyses(uid) : [];
-
-    // Merge: memory is most up-to-date, disk second, encrypted third
+    // Merge: memory > encrypted > disk
     const seen = new Set(fromMemory.map(a => a.id));
-    for (const a of fromDisk) {
+    for (const a of fromEncrypted) {
         if (!seen.has(a.id)) { fromMemory.push(a); seen.add(a.id); }
     }
-    for (const a of fromEncrypted) {
+    for (const a of fromDisk) {
         if (!seen.has(a.id)) { fromMemory.push(a); seen.add(a.id); }
     }
 
@@ -420,6 +547,7 @@ ipcMain.handle('app:resume-analysis', async (event, analysisId) => {
 });
 
 ipcMain.handle('app:delete-analysis', async (event, analysisId) => {
+    if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
     const uid = getCurrentUid();
     analysisService.deleteAnalysis(analysisId, true);
     deleteAnalysisDir(analysisId);
@@ -595,35 +723,6 @@ ipcMain.handle('app:update-species', async (event, speciesId, metadata) => {
 });
 
 /* ============================================
-   IPC HANDLERS - Encryption
-   ============================================ */
-
-ipcMain.handle('app:init-encryption', async (event, password) => {
-    return encryptionService.initializeEncryption(password);
-});
-
-ipcMain.handle('app:unlock-encryption', async (event, password, salt) => {
-    return encryptionService.unlockEncryption(password, salt);
-});
-
-ipcMain.handle('app:encrypt-data', async (event, data) => {
-    return encryptionService.encrypt(data);
-});
-
-ipcMain.handle('app:decrypt-data', async (event, encryptedData) => {
-    return encryptionService.decrypt(encryptedData);
-});
-
-ipcMain.handle('app:disable-encryption', async () => {
-    encryptionService.disableEncryption();
-    return { success: true };
-});
-
-ipcMain.handle('app:is-encryption-enabled', () => {
-    return encryptionService.isEnabled();
-});
-
-/* ============================================
    IPC HANDLERS - Cloud Sync (Firebase)
    ============================================ */
 
@@ -643,14 +742,28 @@ ipcMain.handle('cloud:get-results', async () => {
 });
 
 ipcMain.handle('cloud:upload-result', async (event, analysisId) => {
+    if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
     const user = firebaseAuth.getCurrentUser();
     if (!user) return { success: false, error: 'Not logged in' };
-    const result = analysisService.getAnalysisResults(analysisId);
+
+    const loaded = await localStorageService.loadResultLocally(analysisId, user.uid);
+    if (!loaded.success || !loaded.data) return { success: false, error: 'Result not found in local storage' };
+    const result = {
+        ...loaded.data,
+        analysis_name: loaded.analysis_name || loaded.data?.analysis_name,
+        sample_type:   loaded.sample_type   || loaded.data?.sample_type,
+    };
+
     if (!result) return { success: false, error: 'Analysis results not found locally' };
-    return await cloudService.uploadResult(analysisId, user.uid, result);
+    const upResult = await cloudService.uploadResult(analysisId, user.uid, result);
+    if (upResult.success) {
+        await localStorageService.markAsCloudSynced(analysisId, user.uid);
+    }
+    return upResult;
 });
 
 ipcMain.handle('cloud:download-result', async (event, analysisId) => {
+    if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
     const user = firebaseAuth.getCurrentUser();
     if (!user) return { success: false, error: 'Not logged in' };
 
@@ -675,6 +788,7 @@ ipcMain.handle('cloud:download-result', async (event, analysisId) => {
 });
 
 ipcMain.handle('cloud:delete-result', async (event, analysisId) => {
+    if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
     const user = firebaseAuth.getCurrentUser();
     if (!user) return { success: false, error: 'Not logged in' };
     return await cloudService.deleteCloudResult(analysisId, user.uid);

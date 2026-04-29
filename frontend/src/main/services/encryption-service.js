@@ -52,7 +52,7 @@ function initializeEncryption(password) {
         encryptionKey = deriveKey(password, salt);
         isEncryptionEnabled = true;
 
-        console.log('🔐 Encryption initialized');
+        console.log('Encryption initialized');
         
         return { 
             success: true, 
@@ -76,7 +76,7 @@ function unlockEncryption(password, saltBase64) {
         encryptionKey = deriveKey(password, salt);
         isEncryptionEnabled = true;
         
-        console.log('🔓 Encryption unlocked');
+        console.log('Encryption unlocked');
         return { success: true };
     } catch (error) {
         console.error('Encryption unlock error:', error);
@@ -141,44 +141,26 @@ function encrypt(data) {
 function decrypt(encryptedData) {
     try {
         if (!isEncryptionEnabled || !encryptionKey) {
-            // Try to parse as JSON if encryption not enabled
-            try {
-                return { success: true, decrypted: JSON.parse(encryptedData) };
-            } catch {
-                return { success: true, decrypted: encryptedData };
-            }
+            try { return { success: true, decrypted: JSON.parse(encryptedData) }; }
+            catch { return { success: true, decrypted: encryptedData }; }
         }
 
         const combined = Buffer.from(encryptedData, 'base64');
-        
-        // Extract components
         const iv = combined.slice(0, ENCRYPTION_CONFIG.IV_LENGTH);
         const authTag = combined.slice(
             ENCRYPTION_CONFIG.IV_LENGTH,
             ENCRYPTION_CONFIG.IV_LENGTH + ENCRYPTION_CONFIG.TAG_LENGTH
         );
-        const encrypted = combined.slice(
-            ENCRYPTION_CONFIG.IV_LENGTH + ENCRYPTION_CONFIG.TAG_LENGTH
-        );
-        
-        // Create decipher
-        const decipher = crypto.createDecipheriv(
-            ENCRYPTION_CONFIG.ALGORITHM,
-            encryptionKey,
-            iv
-        );
+        const encrypted = combined.slice(ENCRYPTION_CONFIG.IV_LENGTH + ENCRYPTION_CONFIG.TAG_LENGTH);
+
+        const decipher = crypto.createDecipheriv(ENCRYPTION_CONFIG.ALGORITHM, encryptionKey, iv);
         decipher.setAuthTag(authTag);
-        
-        // Decrypt
+
         let decrypted = decipher.update(encrypted, undefined, 'utf8');
         decrypted += decipher.final('utf8');
-        
-        // Try to parse as JSON
-        try {
-            return { success: true, decrypted: JSON.parse(decrypted) };
-        } catch {
-            return { success: true, decrypted };
-        }
+
+        try { return { success: true, decrypted: JSON.parse(decrypted) }; }
+        catch { return { success: true, decrypted }; }
     } catch (error) {
         console.error('Decryption error:', error);
         return { success: false, error: 'Decryption failed - invalid password or corrupted data' };

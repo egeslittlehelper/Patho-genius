@@ -155,7 +155,7 @@ const AnalysisPage = {
             opt.value = db.id;
             let label = db.name;
             if (db.isActive) label += ' (Active)';
-            if (db.syncedToJetson) label += ' ⚡';
+            if (db.syncedToJetson) label += ' (Jetson)';
             opt.textContent = label;
             select.appendChild(opt);
         }
@@ -274,7 +274,7 @@ const AnalysisPage = {
         document.getElementById('review-engine').textContent = this.getEngineLabel(this.config.engine);
         const reviewBatch = document.getElementById('review-batch');
         if (reviewBatch) {
-            reviewBatch.textContent = this.config.batchProcessing ? '✅ Enabled (split into 2 batches)' : '—';
+            reviewBatch.textContent = this.config.batchProcessing ? 'Enabled (split into 2 batches)' : '—';
         }
     },
 
@@ -294,7 +294,7 @@ const AnalysisPage = {
         const db = this.availableDatabases.find(d => d.id === value);
         if (db) {
             let label = db.name;
-            if (db.syncedToJetson) label += ' ⚡';
+            if (db.syncedToJetson) label += ' (Jetson)';
             return label;
         }
         return value;
@@ -322,8 +322,8 @@ const AnalysisPage = {
 
     getEngineLabel(value) {
         const labels = {
-            'cpu': '🖥️ CPU — CLARK-l (Docker, local)',
-            'gpu': '⚡ GPU — CU-CLARK-L (Jetson Nano, edge)'
+            'cpu': 'CPU — CLARK-l (Docker, local)',
+            'gpu': 'GPU — CU-CLARK-L (Jetson Nano, edge)'
         };
         return labels[value] || value;
     },

@@ -29,6 +29,9 @@ const ANALYSIS_CONFIG = {
 const activeAnalyses = new Map();
 const analysisHistory = [];
 
+let onCompleteCallback = null;
+function setOnCompleteCallback(cb) { onCompleteCallback = cb; }
+
 // Lazy-load db-settings (avoids circular require issues)
 let _dbSettings = null;
 function getDbSettings() {
@@ -845,6 +848,12 @@ function completeAnalysis(analysisId, success, error = null) {
     }
 
     console.log(`Analysis ${analysisId} ${success ? 'completed' : 'failed'} [engine=${analysis.config?.engine}]`);
+
+    if (onCompleteCallback) {
+        onCompleteCallback(analysisId, record).catch(e =>
+            console.error(`[analysis] post-completion callback failed for ${analysisId}:`, e.message)
+        );
+    }
 }
 
 function generateMockResults(cfg) {
@@ -1088,5 +1097,6 @@ module.exports = {
     pauseAnalysis,
     resumeAnalysis,
     deleteAnalysis,
+    setOnCompleteCallback,
     ANALYSIS_CONFIG,
 };

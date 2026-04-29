@@ -293,7 +293,7 @@ async function syncDbToJetson() {
 
     const jetson = doc.jetson_nano;
     if (!jetson || !jetson.host || !jetson.user || !jetson.remote_db) {
-        console.log('[DB Sync] No Jetson Nano config found — skipping GPU sync');
+        console.log('[DB Sync] No Jetson Nano config found - skipping GPU sync');
         return { success: true, skipped: true };
     }
 
@@ -313,23 +313,23 @@ async function syncDbToJetson() {
     console.log(`[DB Sync] Syncing clark_db to ${sshTarget}:${remoteDb} ...`);
 
     try {
-        console.log('[DB Sync] Step 1/4 — Creating archive...');
+        console.log('[DB Sync] Step 1/4 - Creating archive...');
         await runCommand('tar', ['-cf', tarFile, '-C', clarkDb, '.']);
 
-        console.log('[DB Sync] Step 2/4 — Cleaning remote...');
+        console.log('[DB Sync] Step 2/4 - Cleaning remote...');
         await runCommand('ssh', [
             ...sshOpts, sshTarget,
             `rm -rf ${remoteDb}/Custom ${remoteDb}/*.tsk.* && mkdir -p ${remoteDb}`,
         ]);
 
         const tarSizeMB = (fs.statSync(tarFile).size / (1024 * 1024)).toFixed(1);
-        console.log(`[DB Sync] Step 3/4 — Uploading archive (${tarSizeMB} MB)...`);
+        console.log(`[DB Sync] Step 3/4 - Uploading archive (${tarSizeMB} MB)...`);
         await runCommand('scp', [
             ...sshOpts, tarFile,
             `${sshTarget}:/tmp/clark_db_sync.tar`,
         ]);
 
-        console.log('[DB Sync] Step 4/4 — Extracting on Jetson Nano...');
+        console.log('[DB Sync] Step 4/4 - Extracting on Jetson Nano...');
         await runCommand('ssh', [
             ...sshOpts, sshTarget,
             `tar -xf /tmp/clark_db_sync.tar -C ${remoteDb} && ` +

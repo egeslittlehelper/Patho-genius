@@ -139,30 +139,12 @@ contextBridge.exposeInMainWorld('api', {
         getStats: () =>
             ipcRenderer.invoke('app:get-system-stats'),
 
-        getVersion: () => process.versions.electron,
+        getAppVersion: () => {
+            try { return require('../../package.json').version; } catch { return '—'; }
+        },
+        getElectronVersion: () => process.versions.electron,
         getPlatform: () => process.platform,
         getNodeVersion: () => process.versions.node
-    },
-
-    /* ENCRYPTION */
-    encryption: {
-        initialize: (password) =>
-            ipcRenderer.invoke('app:init-encryption', password),
-
-        unlock: (password, salt) =>
-            ipcRenderer.invoke('app:unlock-encryption', password, salt),
-
-        encrypt: (data) =>
-            ipcRenderer.invoke('app:encrypt-data', data),
-
-        decrypt: (encryptedData) =>
-            ipcRenderer.invoke('app:decrypt-data', encryptedData),
-
-        disable: () =>
-            ipcRenderer.invoke('app:disable-encryption'),
-
-        isEnabled: () =>
-            ipcRenderer.invoke('app:is-encryption-enabled')
     },
 
     /* SETTINGS (Firebase) */

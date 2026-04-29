@@ -436,19 +436,22 @@ const App = {
      */
     async loadSystemInfo() {
         try {
-            const platformEl = document.getElementById('system-platform');
-            const nodeEl = document.getElementById('system-node');
+            if (!window.api?.system) return;
+            const sys = window.api.system;
 
-            if (window.api?.system) {
-                if (platformEl) {
-                    const platform = await window.api.system.getPlatform?.() || 'Unknown';
-                    platformEl.textContent = platform.charAt(0).toUpperCase() + platform.slice(1);
-                }
-                if (nodeEl) {
-                    const nodeVersion = await window.api.system.getNodeVersion?.() || 'Unknown';
-                    nodeEl.textContent = 'v' + nodeVersion;
-                }
-            }
+            const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+
+            const platform = sys.getPlatform?.() || 'Unknown';
+            set('system-platform', platform.charAt(0).toUpperCase() + platform.slice(1));
+
+            const node = sys.getNodeVersion?.() || 'Unknown';
+            set('system-node', 'v' + node);
+
+            const appVer = sys.getAppVersion?.() || '—';
+            set('system-app-version', appVer);
+
+            const electronVer = sys.getElectronVersion?.() || '—';
+            set('system-electron', 'v' + electronVer);
         } catch (error) {
             console.error('Failed to load system info:', error);
         }
@@ -502,9 +505,24 @@ const App = {
     async logout() {
         const isGuest = this.state.isGuestMode;
 
+        // Check for running analyses before allowing logout
+        try {
+            const allAnalyses = await window.api?.app?.getAllAnalyses?.() || [];
+            const running = allAnalyses.filter(a => a.status === 'running' || a.status === 'processing' || a.status === 'paused');
+            if (running.length > 0) {
+                const names = running.map(a => a.analysis_name || a.id).join(', ');
+                const proceed = confirm(
+                    `There ${running.length === 1 ? 'is' : 'are'} ${running.length} analysis${running.length === 1 ? '' : 'es'} still running:\n\n${names}\n\n` +
+                    `${isGuest ? 'Exiting guest mode' : 'Logging out'} will cancel ${running.length === 1 ? 'it' : 'them'}. Continue?`
+                );
+                if (!proceed) return;
+            }
+        } catch (e) {
+            console.error('Could not check running analyses:', e);
+        }
+
         if (isGuest) {
             console.log('Exiting guest mode...');
-            // Guest mode: clear session data
             this.clearGuestSessionData();
         } else {
             console.log('Logging out...');
@@ -605,6 +623,7 @@ const App = {
         const sidebarRole = document.getElementById('sidebar-user-role');
         if (sidebarName) sidebarName.textContent = userName;
         if (sidebarRole) sidebarRole.textContent = userRole;
+
 
         // Update dashboard greeting
         const dashboardName = document.getElementById('dashboard-user-name');

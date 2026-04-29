@@ -135,16 +135,39 @@ async function clearSession() {
     currentSession = null;
 }
 
-async function initUserEncryption(uid) {
+async function initUserEncryption(uid, idToken = null, userData = null) {
     const account = `key-${uid}`;
     let stored = await keytar.getPassword(KEYTAR_SERVICE, account);
+
     if (!stored) {
+        // Not in keytar — try Firestore (cross-machine / reinstall scenario)
+        if (userData?.encKeyMaterial && userData?.encKeySalt) {
+            stored = JSON.stringify({ keyMaterial: userData.encKeyMaterial, salt: userData.encKeySalt });
+            await keytar.setPassword(KEYTAR_SERVICE, account, stored);
+        }
+    }
+
+    if (!stored) {
+        // Generate a new key and persist it to both keytar and Firestore
         const crypto = require('crypto');
         const keyMaterial = crypto.randomBytes(32).toString('hex');
         const salt = crypto.randomBytes(16).toString('base64');
         stored = JSON.stringify({ keyMaterial, salt });
         await keytar.setPassword(KEYTAR_SERVICE, account, stored);
+
+        if (idToken) {
+            try {
+                await fsUpdate(`users/${uid}`, { encKeyMaterial: keyMaterial, encKeySalt: salt }, idToken);
+            } catch { /* non-fatal — key still works locally */ }
+        }
+    } else if (idToken && userData && !userData.encKeyMaterial) {
+        // Key exists in keytar but was never synced to Firestore — backfill once
+        const { keyMaterial, salt } = JSON.parse(stored);
+        try {
+            await fsUpdate(`users/${uid}`, { encKeyMaterial: keyMaterial, encKeySalt: salt }, idToken);
+        } catch { /* non-fatal */ }
     }
+
     const { keyMaterial, salt } = JSON.parse(stored);
     encryptionService.unlockEncryption(keyMaterial, salt);
 }
@@ -236,7 +259,7 @@ async function login(username, password) {
         await storeSession(currentSession);
 
         // 6. Initialize local file encryption for this user
-        await initUserEncryption(uid);
+        await initUserEncryption(uid, idToken, userData);
 
         // 7. Load settings
         let settings = null;
@@ -287,7 +310,7 @@ async function restoreSession() {
         if (!userData || userData.status === 'suspended') { await clearSession(); return { success: false }; }
 
         // Re-init encryption
-        await initUserEncryption(currentSession.uid);
+        await initUserEncryption(currentSession.uid, idToken, userData);
 
         // Load settings
         let settings = null;

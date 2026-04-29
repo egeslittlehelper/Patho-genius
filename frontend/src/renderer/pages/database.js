@@ -67,7 +67,7 @@ const DatabasePage = {
         const genomesEl = document.getElementById('default-db-genomes');
         const indexEl = document.getElementById('default-db-index');
         if (genomesEl) genomesEl.textContent = db.genomeCount > 0 ? db.genomeCount.toLocaleString() : '—';
-        if (indexEl) indexEl.textContent = db.isBuilt ? 'Indexed ✅' : 'Not built';
+        if (indexEl) indexEl.textContent = db.isBuilt ? 'Indexed' : 'Not built';
     },
 
     /**
@@ -109,11 +109,11 @@ const DatabasePage = {
                         <span class="db-list-name">${db.name}</span>
                         ${db.isActive ? '<span class="status-badge status-active" style="font-size: 0.7rem; padding: 2px 8px;">Active</span>' : ''}
                         ${db.isBuilt ? '<span class="status-badge status-completed" style="font-size: 0.7rem; padding: 2px 8px;">Built</span>' : '<span class="status-badge status-failed" style="font-size: 0.7rem; padding: 2px 8px;">Not Built</span>'}
-                        ${db.syncedToJetson ? '<span class="status-badge status-running" style="font-size: 0.7rem; padding: 2px 8px;">⚡ Jetson</span>' : ''}
+                        ${db.syncedToJetson ? '<span class="status-badge status-running" style="font-size: 0.7rem; padding: 2px 8px;">Jetson</span>' : ''}
                     </div>
                     <span class="db-list-meta">
                         ${db.genomeCount || 0} genomes • Created ${this.formatDate(db.createdAt)}
-                        ${db.syncToJetson && !db.syncedToJetson ? ' • ⚠️ Jetson sync pending' : ''}
+                        ${db.syncToJetson && !db.syncedToJetson ? ' • Jetson sync pending' : ''}
                     </span>
                 </div>
                 <div class="db-list-actions">

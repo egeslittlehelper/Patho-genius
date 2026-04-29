@@ -126,13 +126,13 @@ const ResultsPage = {
                     ['completed', 'failed', 'cancelled'].includes(a.status)
                 );
             } else {
-                // Use mock data for development
                 this.state.runningAnalyses = [];
-                this.state.completedAnalyses = this.getMockAnalyses();
+                this.state.completedAnalyses = [];
             }
         } catch (error) {
             console.error('Failed to load analyses:', error);
-            this.state.completedAnalyses = this.getMockAnalyses();
+            this.state.runningAnalyses = [];
+            this.state.completedAnalyses = [];
         }
 
         this.renderRunningAnalyses();
@@ -226,7 +226,7 @@ const ResultsPage = {
                             <polyline points="14 2 14 8 20 8"></polyline>
                         </svg>
                         ${analysis.analysis_name || analysis.config?.analysis_name || analysis.id}
-                        ${analysis.synced ? '<span class="synced-indicator" title="Synced to cloud">☁</span>' : ''}
+                        ${analysis.synced ? '<span class="synced-indicator" title="Synced to cloud">&#x2601;</span>' : ''}
                     </div>
                 </td>
                 <td>${this.formatDate(analysis.completed_at || analysis.endTime || analysis.startTime)}</td>
@@ -234,7 +234,7 @@ const ResultsPage = {
                 <td>${this.getStatusBadge(analysis.status)}</td>
                 <td>${this.getPathogenCount(analysis)}</td>
                 <td>
-                    ${analysis.status === 'completed' 
+                    ${analysis.status === 'completed'
                         ? `<button class="btn-link" onclick="ResultsPage.viewAnalysis('${analysis.id}')">View Report</button>`
                         : `<span class="text-muted">—</span>`
                     }
@@ -354,22 +354,18 @@ const ResultsPage = {
             if (window.api?.analysis?.getResults) {
                 const result = await window.api.analysis.getResults(analysisId);
                 if (result) {
-                    // Unwrap nested response envelopes
                     this.state.currentResult = result.result || result.results || result.data || result;
-                    console.log('RAW BACKEND RESPONSE:', result);
                 }
             }
 
             if (!this.state.currentResult) {
                 const analysis = this.state.completedAnalyses.find(a => a.id === analysisId);
-                this.state.currentResult = analysis?.results || analysis || this.getMockResult();
+                this.state.currentResult = analysis?.results || null;
             }
         } catch (error) {
             console.error('Failed to load result:', error);
-            this.state.currentResult = this.getMockResult();
+            this.state.currentResult = null;
         }
-
-        console.log('FINAL RESULT USED:', this.state.currentResult);
         this.showDetailView();
     },
 
@@ -1118,123 +1114,6 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
         return Utils.capitalize(str);
     },
 
-
-    // MOCK DATA (for development)
-    getMockAnalyses() {
-        return [
-            {
-                id: 'analysis_001',
-                analysis_name: 'Patient_001_Sample',
-                sample_type: 'Clinical Sample',
-                status: 'completed',
-                completed_at: '2025-12-10T14:30:00Z',
-                summary: { pathogens_detected: 4 },
-                results: this.getMockResult()
-            },
-            {
-                id: 'analysis_002',
-                analysis_name: 'Water_Source_A',
-                sample_type: 'Environmental',
-                status: 'completed',
-                completed_at: '2025-12-09T10:15:00Z',
-                summary: { pathogens_detected: 2 }
-            },
-            {
-                id: 'analysis_003',
-                analysis_name: 'Soil_Sample_042',
-                sample_type: 'Environmental',
-                status: 'failed',
-                completed_at: '2025-12-08T16:45:00Z',
-                error: 'Insufficient reads'
-            },
-            {
-                id: 'analysis_004',
-                analysis_name: 'Blood_Culture_Test',
-                sample_type: 'Clinical Sample',
-                status: 'completed',
-                completed_at: '2025-12-07T09:00:00Z',
-                summary: { pathogens_detected: 1 }
-            }
-        ];
-    },
-
-    getMockResult() {
-        return {
-            analysis_name: 'Patient_001_Blood_Sample',
-            sample_type: 'clinical',
-            completed_at: '2025-12-12T14:45:00Z',
-            
-            summary: {
-                total_reads: 11890000,
-                classified_reads: 7560000,
-                classification_rate: 63.6,
-                species_detected: 342,
-                pathogens_detected: 4,
-                amr_genes: 19
-            },
-            
-            quality: {
-                average_quality: 38,
-                high_quality_rate: 94.2,
-                mean_coverage: 145
-            },
-            
-            pathogens: [
-                {
-                    name: 'Escherichia coli',
-                    strain: 'O157:H7',
-                    tax_id: 83334,
-                    abundance: 45.2,
-                    reads: 3420000,
-                    confidence: 95,
-                    amr_genes: 5,
-                    virulence_genes: 12,
-                    risk_level: 'high'
-                },
-                {
-                    name: 'Staphylococcus aureus',
-                    strain: 'MRSA USA300',
-                    tax_id: 46170,
-                    abundance: 18.6,
-                    reads: 1410000,
-                    confidence: 87,
-                    amr_genes: 7,
-                    virulence_genes: 8,
-                    risk_level: 'high'
-                },
-                {
-                    name: 'Pseudomonas aeruginosa',
-                    strain: 'PAO1',
-                    tax_id: 208964,
-                    abundance: 8.3,
-                    reads: 630000,
-                    confidence: 82,
-                    amr_genes: 4,
-                    virulence_genes: 6,
-                    risk_level: 'medium'
-                },
-                {
-                    name: 'Klebsiella pneumoniae',
-                    strain: 'KPC+',
-                    tax_id: 573,
-                    abundance: 5.1,
-                    reads: 390000,
-                    confidence: 78,
-                    amr_genes: 3,
-                    virulence_genes: 4,
-                    risk_level: 'high'
-                }
-            ],
-            
-            taxonomy: {
-                bacteria: 71,
-                viruses: 4.8,
-                proteobacteria: 48,
-                firmicutes: 18
-            }
-        };
-    },
-
     // CLOUD RESULTS SECTION
 
     /**
@@ -1419,6 +1298,13 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
                             </svg>
                             Download
                         </button>
+                        <button class="btn btn-outline btn-sm btn-danger-outline" onclick="ResultsPage.deleteCloudResult('${result.id}', '${result.name}')" title="Delete from cloud">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
+                                <polyline points="3 6 5 6 21 6"></polyline>
+                                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+                            </svg>
+                            Delete
+                        </button>
                     </div>
                 </td>
             </tr>
@@ -1482,8 +1368,29 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
 
         } catch (error) {
             console.error('Failed to download result:', error);
-            alert('Failed to download result. Please check your connection and try again.');
+            alert(`Failed to download result: ${error.message}`);
             this.renderCloudResults();
+        }
+    },
+
+    /**
+     * Delete a cloud result permanently
+     */
+    async deleteCloudResult(resultId, resultName) {
+        const displayName = resultName || resultId;
+        if (!confirm(`Delete "${displayName}" from the cloud permanently?\n\nThis cannot be undone. Your local copy (if any) will not be affected.`)) return;
+
+        try {
+            if (window.api?.cloud?.deleteResult) {
+                const result = await window.api.cloud.deleteResult(resultId);
+                if (!result.success) throw new Error(result.error || 'Delete failed');
+            }
+
+            this.state.cloudResults = this.state.cloudResults.filter(r => r.id !== resultId);
+            this.renderCloudResults();
+        } catch (error) {
+            console.error('Failed to delete cloud result:', error);
+            alert(`Failed to delete: ${error.message}`);
         }
     },
 
@@ -1517,7 +1424,7 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
             // Show progress
             const statusText = document.createElement('span');
             statusText.className = 'upload-status';
-            statusText.innerHTML = `<span class="icon-spin">⏳</span> Uploading...`;
+            statusText.innerHTML = `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;" class="icon-spin"><circle cx="12" cy="12" r="10"></circle><path d="M12 6v6l4 2"></path></svg> Uploading...`;
 
             if (window.api?.cloud?.uploadResult) {
                 const upResult = await window.api.cloud.uploadResult(analysisId);
