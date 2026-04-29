@@ -1,0 +1,1415 @@
+\documentclass[12pt,a4paper]{report}
+
+%% ─── Packages ────────────────────────────────────────────────────────────────
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage[margin=2.5cm, headheight=14pt]{geometry}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{longtable}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{fancyhdr}
+\usepackage{titlesec}
+\usepackage{tcolorbox}
+\usepackage{float}
+\usepackage{caption}
+\usepackage{subcaption}
+\usepackage{parskip}
+\usepackage{microtype}
+\usepackage{mdframed}
+\usepackage{fontawesome5}
+\usepackage{amsmath}
+\usepackage{wrapfig}
+\usepackage{multirow}
+\usepackage{tabularx}
+\usepackage{makecell}
+
+%% ─── Colors ──────────────────────────────────────────────────────────────────
+\definecolor{primary}{HTML}{008080}       % --primary
+\definecolor{primarydark}{HTML}{006666}   % --primary-hover
+\definecolor{primarylight}{HTML}{E6F3F3}  % --primary-light
+\definecolor{success}{HTML}{28A745}
+\definecolor{warning}{HTML}{FFC107}
+\definecolor{danger}{HTML}{DC3545}
+\definecolor{info}{HTML}{008080}          % reuse primary teal for info boxes
+\definecolor{darkbg}{HTML}{0D3333}        % dark teal for title page
+\definecolor{lightgray}{HTML}{F8F9FA}
+\definecolor{medgray}{HTML}{6C757D}
+\definecolor{boxborder}{HTML}{DEE2E6}
+
+%% ─── Hyperref Setup ──────────────────────────────────────────────────────────
+\hypersetup{
+    colorlinks   = true,
+    linkcolor    = primary,
+    urlcolor     = primarydark,
+    citecolor    = primary,
+    pdftitle     = {Pathogenius User Guide},
+    pdfauthor    = {Pathogenius Team},
+    pdfsubject   = {User Manual},
+    bookmarksnumbered = true
+}
+
+%% ─── Header / Footer ─────────────────────────────────────────────────────────
+\pagestyle{fancy}
+\fancyhf{}
+\fancyhead[L]{\small\textcolor{medgray}{Pathogenius User Guide}}
+\fancyhead[R]{\small\textcolor{medgray}{\leftmark}}
+\fancyfoot[C]{\small\textcolor{medgray}{\thepage}}
+\renewcommand{\headrulewidth}{0.4pt}
+\renewcommand{\footrulewidth}{0pt}
+
+%% ─── Section Styling ─────────────────────────────────────────────────────────
+\titleformat{\chapter}[display]
+  {\normalfont\huge\bfseries\color{primary}}
+  {\chaptertitlename\ \thechapter}{20pt}{\Huge}
+\titlespacing*{\chapter}{0pt}{30pt}{20pt}
+
+\titleformat{\section}
+  {\normalfont\Large\bfseries\color{primarydark}}
+  {\thesection}{1em}{}
+\titleformat{\subsection}
+  {\normalfont\large\bfseries\color{darkbg}}
+  {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+  {\normalfont\normalsize\bfseries\color{medgray}}
+  {\thesubsubsection}{1em}{}
+
+%% ─── Custom Boxes ────────────────────────────────────────────────────────────
+\tcbuselibrary{breakable, skins, theorems}
+
+\newtcolorbox{notebox}{
+    breakable,
+    colback  = info!8,
+    colframe = info,
+    arc      = 4pt,
+    boxrule  = 0.8pt,
+    left     = 8pt, right = 8pt, top = 6pt, bottom = 6pt,
+    fonttitle= \bfseries,
+    title    = {\faInfoCircle\quad Note}
+}
+
+\newtcolorbox{warningbox}{
+    breakable,
+    colback  = warning!10,
+    colframe = warning!80!black,
+    arc      = 4pt,
+    boxrule  = 0.8pt,
+    left     = 8pt, right = 8pt, top = 6pt, bottom = 6pt,
+    fonttitle= \bfseries,
+    title    = {\faExclamationTriangle\quad Warning}
+}
+
+\newtcolorbox{tipbox}{
+    breakable,
+    colback  = success!8,
+    colframe = success,
+    arc      = 4pt,
+    boxrule  = 0.8pt,
+    left     = 8pt, right = 8pt, top = 6pt, bottom = 6pt,
+    fonttitle= \bfseries,
+    title    = {\faLightbulb\quad Tip}
+}
+
+\newtcolorbox{importantbox}{
+    breakable,
+    colback  = danger!8,
+    colframe = danger,
+    arc      = 4pt,
+    boxrule  = 0.8pt,
+    left     = 8pt, right = 8pt, top = 6pt, bottom = 6pt,
+    fonttitle= \bfseries,
+    title    = {\faExclamationCircle\quad Important}
+}
+
+\newtcolorbox{stepbox}[1]{
+    breakable,
+    colback  = primary!5,
+    colframe = primary!60,
+    arc      = 4pt,
+    boxrule  = 0.6pt,
+    left     = 8pt, right = 8pt, top = 6pt, bottom = 6pt,
+    fonttitle= \bfseries\color{primary},
+    title    = {#1}
+}
+
+%% ─── Misc Helpers ────────────────────────────────────────────────────────────
+\newcommand{\btn}[1]{\textbf{\textcolor{primary}{[#1]}}}
+\newcommand{\field}[1]{\textit{#1}}
+\newcommand{\uielem}[1]{\texttt{#1}}
+\newcommand{\badge}[2]{\colorbox{#1!20}{\textcolor{#1!70!black}{\small\textbf{#2}}}}
+
+%% ─── Figure placeholder ──────────────────────────────────────────────────────
+\newcommand{\screenshotplaceholder}[2]{%
+  \begin{figure}[H]
+    \centering
+    \fboxsep=0pt
+    \fbox{%
+      \begin{minipage}[c][5cm][c]{0.85\textwidth}
+        \centering
+        \textcolor{medgray}{\Large\faImage}\\[6pt]
+        \textcolor{medgray}{\small Screenshot: \textit{#1}}
+      \end{minipage}%
+    }
+    \caption{#2}
+  \end{figure}%
+}
+
+%% ─── Document ────────────────────────────────────────────────────────────────
+\begin{document}
+
+%% ═══ Title Page ══════════════════════════════════════════════════════════════
+\begin{titlepage}
+  \pagecolor{darkbg}
+  \color{white}
+  \centering
+  \vspace*{3cm}
+
+  {\Huge\bfseries\color{primary} Pathogenius}\\[0.6em]
+  {\large\color{white!80} Real-Time Pathogen Detection \& Clinical Analysis}
+
+  \vspace{2cm}
+  \rule{0.5\textwidth}{0.4pt}
+  \vspace{2cm}
+
+  {\LARGE\bfseries User Guide}\\[0.4em]
+  {\large Version 1.0}
+
+  \vspace{2cm}
+
+  \begin{tcolorbox}[
+      width=0.75\textwidth,
+      colback=primarydark,
+      colframe=primarylight,
+      arc=6pt, boxrule=1pt,
+      halign=center
+  ]
+    \small\color{white!80}
+    This manual covers all features of the Pathogenius desktop
+    application — from first login to advanced GPU-accelerated
+    metagenomic analysis, AI-powered clinical summaries, and
+    encrypted cloud synchronisation.
+  \end{tcolorbox}
+
+  \vfill
+  {\small\color{white!50} \copyright\ 2025--2026 Pathogenius Team. All rights reserved.}
+\end{titlepage}
+\nopagecolor
+\color{black}
+
+\tableofcontents
+\listoffigures
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Introduction}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{About Pathogenius}
+
+Pathogenius is a desktop application for \textbf{real-time pathogen detection} from metagenomic FASTQ sequencing data. It combines a modern Electron-based graphical interface with a powerful Snakemake/CLARK-l bioinformatics backend, supporting both local Docker-based CPU classification and GPU-accelerated edge computing on a Jetson Nano device.
+
+Key capabilities at a glance:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Dual classification engines} — CLARK-l (CPU via Docker) or CU-CLARK-L (GPU via Jetson Nano)
+  \item \textbf{Interactive visualisations} — Treemap, Sunburst, Sankey, and Radar charts
+  \item \textbf{AI-powered clinical summaries} — local MedGemma 4B model runs fully offline
+  \item \textbf{Encrypted cloud sync} — AES-256-GCM encrypted upload/download via Firebase
+  \item \textbf{User management} — Firebase authentication with admin controls
+  \item \textbf{Custom reference databases} — build and manage CLARK databases from custom genomes
+  \item \textbf{Real-time system dashboard} — CPU, RAM, disk, and GPU monitoring
+\end{itemize}
+
+\begin{importantbox}
+  Pathogenius is a \textbf{decision-support tool only}. Results are computational predictions based on sequence similarity. They must never be used as the sole basis for clinical diagnosis. Always confirm findings with certified clinical laboratory tests and consult a qualified healthcare professional.
+\end{importantbox}
+
+\section{Intended Audience}
+
+This user guide is written for:
+\begin{itemize}[leftmargin=1.5em]
+  \item Researchers and bioinformaticians running metagenomic sequencing workflows
+  \item Clinical laboratory staff using Pathogenius as a supplementary decision-support tool
+  \item System administrators managing user accounts and database builds
+  \item Field workers using the offline/guest mode and GPU edge-computing features
+\end{itemize}
+
+\section{Document Conventions}
+
+Throughout this guide the following conventions are used:
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Convention} & \textbf{Meaning} \\
+  \midrule
+  \btn{Button Name}      & Clickable button in the UI \\
+  \field{Field Name}     & Input field or form element \\
+  \uielem{UI element}    & Specific UI component or label \\
+  \badge{success}{Active} & Status badge \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{System Requirements}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXl}
+  \toprule
+  \textbf{Component} & \textbf{Requirement} & \textbf{Notes} \\
+  \midrule
+  Operating System  & Windows 10/11 (64-bit) & macOS/Linux supported with adjustments \\
+  Node.js           & Version 22 or later   & Required for the Electron frontend \\
+  Python            & Version 3.8 or later  & Required for Snakemake pipeline \\
+  Snakemake         & Version 7 or later    & \texttt{pip install snakemake} \\
+  Docker Desktop    & Latest stable         & Required for CPU classification \\
+  RAM               & 8 GB minimum          & 16 GB recommended for large files \\
+  Disk Space        & 20 GB minimum         & For databases and result storage \\
+  Internet          & Required for setup    & Offline operation after initial setup \\
+  \midrule
+  \multicolumn{3}{l}{\textit{GPU mode (optional)}} \\
+  Jetson Nano       & With CU-CLARK-L       & Connected via Tailscale VPN \\
+  Tailscale         & Latest client         & For secure SSH tunnel to Jetson Nano \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Getting Started}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Installation Overview}
+
+\subsection{Step 1 — Install Prerequisites}
+
+Before launching Pathogenius, ensure the following are installed on your system:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Node.js 22+} — download from \url{https://nodejs.org/}
+  \item \textbf{Python 3.8+} — download from \url{https://www.python.org/}
+  \item \textbf{Snakemake} — install via pip:
+    \begin{verbatim}
+  pip install snakemake pyyaml
+    \end{verbatim}
+  \item \textbf{Docker Desktop} — download from \url{https://www.docker.com/}. Ensure Docker is running before starting any CPU-mode analysis.
+\end{enumerate}
+
+\subsection{Step 2 — Install Frontend Dependencies}
+
+Open a terminal, navigate to the \texttt{frontend/} directory, and run:
+
+\begin{verbatim}
+  cd frontend
+  npm install
+\end{verbatim}
+
+This installs Electron, Firebase SDK, \texttt{node-llama-cpp}, \texttt{keytar}, \texttt{systeminformation}, and all other dependencies.
+
+\subsection{Step 3 — Build the Reference Database (First-Time)}
+
+Place pathogen genome FASTA files (\texttt{.fna}, \texttt{.fasta}, \texttt{.fa}, \texttt{.fsa}, or gzipped variants) into the \texttt{Patho-genius/clark\_db/} directory. Then run:
+
+\begin{verbatim}
+  cd Patho-genius
+  python build_clark_db.py
+\end{verbatim}
+
+This will automatically:
+\begin{enumerate}[leftmargin=1.5em]
+  \item Scan all genome sources listed in \texttt{config.yaml}
+  \item Resolve taxonomy IDs via NCBI lookup or reads-mapping
+  \item Copy genomes into \texttt{clark\_db/Custom/}
+  \item Download NCBI taxdump ($\sim$55 MB)
+  \item Run \texttt{set\_targets.sh} inside Docker to produce \texttt{targets.txt}
+\end{enumerate}
+
+\begin{notebox}
+  The database build requires Docker to be running and an active internet connection for NCBI taxonomy lookups. This step only needs to be performed once, unless you add new genome sequences.
+\end{notebox}
+
+\subsection{Step 4 — Launch the Application}
+
+\begin{verbatim}
+  cd frontend
+  npm start
+\end{verbatim}
+
+The Pathogenius window will open automatically.
+
+\section{First Launch}
+
+On first launch, the \textbf{Login} screen is displayed. You can either:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Create a new account} to access all features including cloud synchronisation.
+  \item \textbf{Log in with existing credentials} if your administrator has already created an account for you.
+  \item \textbf{Use Guest Mode} for immediate offline access without registration.
+\end{itemize}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Authentication}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Login}
+
+\screenshotplaceholder{Login Screen}{The Pathogenius login screen with username/password fields and guest mode option.}
+
+The login screen features a two-panel layout: a branded information panel on the left and the login form on the right.
+
+\subsection{Logging In}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Enter your \field{Username} or email address.
+  \item Enter your \field{Password}. Use the \faEye\ (eye) icon to toggle password visibility.
+  \item Click \btn{Login}.
+\end{enumerate}
+
+On successful login you are taken directly to the \textbf{Dashboard}.
+
+\subsection{Common Login Errors}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Error} & \textbf{Resolution} \\
+  \midrule
+  Invalid credentials  & Check username and password. Passwords are case-sensitive. \\
+  Email not verified   & Check your inbox for the verification email. Click \btn{Resend Verification Email} if needed. \\
+  Account suspended    & Contact your system administrator. \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{Forgot Password}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Click the \btn{Forgot Password?} link below the login form.
+  \item Enter your registered email address or username in the dialog.
+  \item Click \btn{Send Recovery Link}.
+  \item Check your inbox for the password reset email and follow the link.
+\end{enumerate}
+
+\section{Creating a New Account}
+
+\screenshotplaceholder{Registration Screen}{Account registration form with password strength indicator.}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item On the Login screen, click \btn{Create Account}.
+  \item Fill in the registration form:
+    \begin{itemize}[leftmargin=1em]
+      \item \field{Username} — at least 3 characters
+      \item \field{Email} — a valid email address (used for verification and password reset)
+      \item \field{Display Name} — optional; defaults to your username
+      \item \field{Institution/Organisation} — optional
+      \item \field{Password} — see requirements below
+      \item \field{Confirm Password} — must match the password field exactly
+    \end{itemize}
+  \item Click \btn{Create Account}.
+  \item A verification email is sent to your address. Click the link in the email.
+  \item Return to Pathogenius and click \btn{I've Verified My Email}.
+  \item You are redirected to the login screen with a success message.
+\end{enumerate}
+
+\subsubsection{Password Requirements}
+
+Your password must meet \textbf{all} of the following criteria:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item[\faCheck] At least 12 characters in length
+  \item[\faCheck] At least one uppercase letter (A--Z)
+  \item[\faCheck] At least one number (0--9)
+  \item[\faCheck] At least one special character (\texttt{!@\#\$\%\^{}\&*()\_+-=[]}\ldots)
+\end{itemize}
+
+A real-time strength indicator and checklist are shown as you type.
+
+\section{Guest Mode (Offline Access)}
+
+Guest mode grants immediate access without an account. Click \btn{Guest Mode (Offline Access)} on the login screen.
+
+\begin{warningbox}
+  Guest mode has the following limitations:
+  \begin{itemize}[leftmargin=1em]
+    \item Results are saved locally only — no cloud synchronisation
+    \item Cloud upload and download are disabled
+    \item Password change and admin features are unavailable
+  \end{itemize}
+  To unlock all features, create a registered account.
+\end{warningbox}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Application Layout}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Main Window Structure}
+
+\screenshotplaceholder{Application Layout Overview}{Main window showing the sidebar navigation and content area.}
+
+The Pathogenius window is divided into two main areas:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Sidebar} (left) — persistent navigation panel present on all screens.
+  \item \textbf{Content area} (right) — displays the active page.
+\end{itemize}
+
+\section{Sidebar Navigation}
+
+\subsection{Brand \& User Card}
+
+At the top of the sidebar:
+\begin{itemize}[leftmargin=1.5em]
+  \item The \textbf{Pathogenius} logo and application name.
+  \item A \textbf{User Card} showing your display name and role (e.g., \textit{Researcher}).
+  \item A \faCog\ (Settings) icon button to jump to the Settings page.
+  \item A \faSync\ (Refresh) icon button to reload system status information.
+\end{itemize}
+
+\subsection{Navigation Menu}
+
+\begin{center}
+\begin{tabular}{clp{7cm}}
+  \toprule
+  \textbf{Icon} & \textbf{Page} & \textbf{Purpose} \\
+  \midrule
+  \faHome        & Dashboard    & System overview, running analyses, recent history \\
+  \faPlus        & New Analysis & Wizard to launch a new classification run \\
+  \faFile     & Results      & View and manage all analysis results \\
+  \faTerminal    & Terminal     & Embedded terminal for advanced pipeline control \\
+  \faDatabase    & Database     & Build and manage reference databases \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+The active page is highlighted. A numeric badge on \textit{Results} shows the count of currently running analyses.
+
+\subsection{System Status Widget}
+
+At the bottom of the sidebar a compact status widget shows:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Connection} — Online / Offline indicator.
+  \item \textbf{GPU} — Available / Not detected.
+  \item \textbf{Storage} — Free disk space in GB.
+\end{itemize}
+
+In Guest Mode a yellow notice banner reads \textit{"Results saved locally (no cloud sync)"}.
+
+The \btn{Logout} button is at the very bottom of the sidebar.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Dashboard}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+\screenshotplaceholder{Dashboard Screen}{Dashboard showing system resources, analysis summary, and recent analyses table.}
+
+The Dashboard is the home screen, providing a real-time snapshot of system health and analysis activity.
+
+\section{Running Analysis Banner}
+
+When an analysis is actively processing, a prominent banner appears at the top of the Dashboard showing:
+\begin{itemize}[leftmargin=1.5em]
+  \item The \textbf{analysis name}
+  \item The current \textbf{status message} (e.g., \textit{"Classifying reads\ldots"})
+  \item An animated \textbf{progress bar} (0--100\%)
+  \item A \btn{View Details} button that navigates directly to the Results page
+\end{itemize}
+
+\section{System Resources Card}
+
+Displays real-time hardware metrics:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{CPU Usage} — percentage utilisation with a colour-coded progress bar
+  \item \textbf{RAM Usage} — gigabytes used out of total, with a progress bar
+  \item \textbf{GPU Status} — GPU model name if detected, or \textit{"No GPU detected"}
+\end{itemize}
+
+\section{Storage Card}
+
+Shows available disk space with a progress bar indicating used vs.\ total capacity.
+
+\section{Analysis Summary Card}
+
+Four counters provide a quick health check:
+
+\begin{center}
+\begin{tabular}{lp{8cm}}
+  \toprule
+  \textbf{Counter} & \textbf{Description} \\
+  \midrule
+  Total Analyses & All analyses ever run on this installation \\
+  Completed      & Successfully finished analyses \\
+  Failed         & Analyses that terminated with an error (shown in red) \\
+  Running        & Analyses currently processing \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\section{Recent Analyses Table}
+
+Lists the 10 most recent analyses with columns for Name, Date, Sample Type, Status, Top Pathogen detected, and an action button. Use the \field{Search} box to filter by name. Click \btn{View Report} to open the full detail view for any completed analysis.
+
+\section{Quick Actions}
+
+The \btn{Start New Analysis} card at the bottom of the Dashboard navigates directly to the New Analysis wizard.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Running a New Analysis}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+\screenshotplaceholder{New Analysis Wizard — Step 1}{File selection step of the three-step analysis wizard.}
+
+The New Analysis wizard is a three-step process:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Input Files} — select the FASTQ sequencing data
+  \item \textbf{Configuration} — choose the classification engine and analysis settings
+  \item \textbf{Review \& Launch} — confirm all settings and start the run
+\end{enumerate}
+
+A step indicator at the top of the page shows your current position. Click \btn{Back} at any step to revise previous selections.
+
+\section{Step 1: Input Files}
+
+\subsection{Selecting FASTQ Files}
+
+Two methods are available:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Drag and Drop} — drag one or more \texttt{.fastq} or \texttt{.fastq.gz} files directly onto the upload zone.
+  \item \textbf{Browse} — click inside the upload zone to open a native file-picker dialog.
+\end{itemize}
+
+After selection the file list appears, showing each filename with a \btn{Clear} button to reset the selection.
+
+\begin{notebox}
+  Pathogenius accepts standard FASTQ format. Gzip-compressed files are supported. Only one file is required for a single-sample analysis.
+\end{notebox}
+
+Click \btn{Next: Configuration} to proceed. This button is disabled until at least one file is selected.
+
+\section{Step 2: Configuration}
+
+\screenshotplaceholder{New Analysis Wizard — Step 2}{Configuration step showing engine selection cards, analysis settings form, and FASTQ statistics banner.}
+
+\subsection{Engine Selection}
+
+Choose between two classification engines using the clickable cards:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXl}
+  \toprule
+  \textbf{Engine} & \textbf{Description} & \textbf{Requirement} \\
+  \midrule
+  \textbf{CPU Workflow} (default) &
+  CLARK-l running inside a Docker container on the local machine. Suitable for most analyses. &
+  Docker Desktop running \\[6pt]
+  \textbf{GPU Accelerated} &
+  CU-CLARK-L on the Jetson Nano edge device via Tailscale SSH. Significantly faster for large datasets. &
+  Tailscale connected; Jetson Nano reachable \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+\subsection{FASTQ Statistics Banner}
+
+After file selection, Pathogenius automatically analyses the first FASTQ file using SeqKit and displays:
+\begin{itemize}[leftmargin=1.5em]
+  \item Total read count
+  \item Total sequence length
+  \item Average and maximum read length
+  \item File format confirmation
+\end{itemize}
+
+\subsection{Large File Warning and Batch Processing}
+
+If the total sequence length exceeds \textbf{4.5 Gbp}, a warning banner appears. Enable the \field{Batch Processing} toggle to split the file into two batches, which prevents memory overruns and reduces the risk of classification crashes.
+
+\begin{tipbox}
+  For very large clinical FASTQ files we recommend enabling batch processing. It slightly increases total runtime but greatly improves reliability.
+\end{tipbox}
+
+\subsection{Analysis Configuration Form}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXl}
+  \toprule
+  \textbf{Field} & \textbf{Description} & \textbf{Required} \\
+  \midrule
+  Analysis Name &
+  A unique, descriptive name for this run (e.g., \textit{Patient\_001\_Sample}). Used to identify the result later. &
+  Yes \\[4pt]
+  Sample Type &
+  Category for the sample: Clinical Sample, Environmental, Food Safety, or Other. Affects report labelling. &
+  Yes \\[4pt]
+  Reference Database &
+  The CLARK database to use for classification. Defaults to the built-in database. Custom databases appear here once built. &
+  Yes \\[4pt]
+  Confidence Threshold &
+  Minimum confidence score to report a pathogen. Lower values increase sensitivity; higher values increase precision. &
+  Yes \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+\begin{warningbox}
+  If you select a custom database that has not yet been built or activated, a warning is shown. The database will be rebuilt automatically before the analysis starts, which may add several minutes.
+\end{warningbox}
+
+Click \btn{Next: Launch} to proceed. The Analysis Name field must be filled before continuing.
+
+\section{Step 3: Review \& Launch}
+
+\screenshotplaceholder{New Analysis Wizard — Step 3}{Review screen showing all selected settings before launching.}
+
+A read-only summary card displays every configuration choice:
+\begin{itemize}[leftmargin=1em]
+  \item Analysis Name
+  \item Input Files (count)
+  \item Sample Type
+  \item Reference Database
+  \item Classification Engine (with icon)
+  \item Batch Processing (Enabled / Disabled)
+  \item Estimated Time ($\sim$15--30 minutes for typical datasets)
+\end{itemize}
+
+Review the summary. If anything needs changing, click \btn{Back}. When satisfied, click \btn{Start Analysis}. The application navigates to the Results page and begins processing immediately.
+
+\section{Monitoring Progress}
+
+Once an analysis starts:
+\begin{itemize}[leftmargin=1.5em]
+  \item A \textbf{progress banner} appears on the Dashboard with real-time status messages and a percentage bar.
+  \item The \textbf{Running Analyses} section on the Results page shows the analysis card with pause, resume, and cancel controls.
+  \item The sidebar \textit{Results} badge increments to show the count of active runs.
+\end{itemize}
+
+\subsection{Pausing and Resuming}
+
+Click \faPause\ \btn{Pause} on the running analysis card to pause the Snakemake pipeline. Click \faPlay\ \btn{Resume} to continue. Pausing is useful if system resources are needed for other tasks.
+
+\subsection{Cancelling an Analysis}
+
+Click the \faTimes\ \btn{Cancel} button on the running analysis card. A confirmation prompt appears. Cancellation stops the pipeline and marks the result as \badge{danger}{Cancelled}. Partial outputs are discarded.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Viewing Results}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Results Page Overview}
+
+\screenshotplaceholder{Results Page — History Table}{Analysis history table showing completed, failed, and running analyses.}
+
+The Results page is divided into two source tabs:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Local Results} — analyses stored on this machine.
+  \item \textbf{Cloud Results} — analyses synchronised to Firebase Storage (registered users only).
+\end{itemize}
+
+\section{Analysis History Table}
+
+The history table lists all local analyses with the following columns:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lX}
+  \toprule
+  \textbf{Column} & \textbf{Description} \\
+  \midrule
+  Analysis Name   & Clickable name; opens the detail view \\
+  Date            & Completion or start timestamp \\
+  Sample Type     & Category selected at launch \\
+  Status          & \badge{success}{Completed}, \badge{danger}{Failed}, Running, or \badge{warning}{Cancelled} \\
+  Pathogens Found & Count of detected pathogens, or "—" if none \\
+  Report          & \btn{View Report} button (completed analyses only) \\
+  Actions         & Cloud upload and delete buttons \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+Use the \field{Search} box to filter by analysis name. A cloud icon (\faCloud) appears next to analyses that have been uploaded.
+
+\subsection{Action Buttons}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \faUpload\ \btn{Upload} — encrypts and uploads the result to Firebase (registered users only).
+  \item \faTrash\ \btn{Delete} — permanently removes the result from local storage. A confirmation dialog appears first.
+\end{itemize}
+
+\section{Detailed Results View}
+
+\screenshotplaceholder{Results Detail View — Overview Tab}{Pathogen cards, AI summary section, and chart containers for a completed analysis.}
+
+Clicking \btn{View Report} or the analysis name opens the full detail view.
+
+\subsection{Header}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \btn{Back to History} — returns to the analysis list.
+  \item Analysis name as a large heading.
+  \item Subtitle: \textit{"Completed on [date] · [Classifier]"}.
+  \item \btn{Export Report} — generates a downloadable PDF report.
+  \item \btn{View Raw Data} — displays the raw JSON classification output.
+\end{itemize}
+
+\begin{importantbox}
+  A red banner at the top of the detail view reads:\\
+  \textbf{"DECISION SUPPORT ONLY — NOT FOR CLINICAL DIAGNOSIS"}\\
+  Results are computational predictions and must be confirmed by a certified clinical laboratory.
+\end{importantbox}
+
+\subsection{Overview Tab — Pathogen Cards}
+
+Up to four pathogen cards are shown. Each card contains:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Pathogen name and strain
+  \item Confidence badge with percentage
+  \item \textbf{Metrics:} Abundance (\%), Read count, AMR genes detected
+  \item Colour-coded confidence bar (green / amber / red)
+  \item Risk level badge: \badge{danger}{High Risk}, \badge{warning}{Medium Risk}, or \badge{success}{Low Risk}
+  \item Virulence gene count
+  \item Cards for high-risk pathogens have a red background tint
+\end{itemize}
+
+\subsection{AI Summary Card}
+
+If AI summaries are enabled in Settings:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Click \btn{Generate Summary}.
+  \item The local MedGemma 4B model analyses the results and produces a clinical interpretation.
+  \item The summary appears within 30--120 seconds depending on hardware.
+  \item Click \btn{Regenerate} to produce an alternative summary.
+\end{enumerate}
+
+\begin{notebox}
+  The MedGemma model runs entirely on your local machine. No data is sent to external servers. A GGUF model file must be present in \texttt{frontend/models/} for this feature to work.
+\end{notebox}
+
+\subsection{Pathogen Details Tab}
+
+An expanded card for each detected pathogen with full metrics:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Relative Abundance (\%)
+  \item Read Count
+  \item Confidence Score (\%)
+  \item AMR (Antibiotic Resistance) Genes Detected
+  \item Virulence Factors alert box with gene count
+  \item NCBI Taxonomy ID
+\end{itemize}
+
+\subsection{Charts Tab}
+
+\screenshotplaceholder{Charts Tab}{Four interactive visualisation charts: Treemap, Sunburst, Sankey, and Radar.}
+
+Four interactive SVG charts visualise the classification results:
+
+\begin{center}
+\begin{tabularx}{\textwidth}{llX}
+  \toprule
+  \textbf{Chart} & \textbf{Type} & \textbf{Description} \\
+  \midrule
+  Treemap  & Area chart  & Proportional rectangles sized by pathogen abundance. Colour-coded by risk level. Hover for tooltips. \\[4pt]
+  Sunburst & Ring chart  & Hierarchical taxonomy view: Domain $\to$ Phylum $\to$ Class $\to$ Species. Click to drill down. \\[4pt]
+  Sankey   & Flow chart  & Read flow: Total Reads $\to$ Classified/Unclassified $\to$ Taxonomic groups $\to$ Species. \\[4pt]
+  Radar    & Spider chart & Comparative view of top pathogens across five axes: Abundance, Confidence, Read Count, Virulence, AMR Genes. \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+All charts are generated from the classification JSON output and update automatically when confidence filters are changed in Settings.
+
+\section{Cloud Results}
+
+\screenshotplaceholder{Cloud Results Tab}{Cloud results list with download actions for registered users.}
+
+Switch to the \textbf{Cloud Results} tab to view analyses synchronised to Firebase Storage.
+
+\subsection{Cloud Status Banner}
+
+Shows whether the cloud connection is active: \textit{"Connected to cloud storage"} or \textit{"Unable to connect"}.
+
+\subsection{Cloud Results Table}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Column} & \textbf{Description} \\
+  \midrule
+  Analysis Name & Cloud-stored analysis identifier \\
+  Date          & Upload timestamp \\
+  Sample Type   & Category \\
+  Size          & Encrypted file size \\
+  Status        & \badge{success}{Local copy} (downloaded) or \badge{info}{Cloud only} \\
+  Actions       & \btn{Download} button \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+Click \faDownload\ \btn{Download} to decrypt and store a cloud result locally. Click \faSync\ \btn{Refresh} to update the list from Firebase.
+
+\begin{notebox}
+  Cloud features are unavailable in Guest Mode. A locked notice with login and register links is displayed instead.
+\end{notebox}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Database Management}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+\screenshotplaceholder{Database Management Page}{Default database card, custom database creation form, and database list.}
+
+The Database Management page allows you to view the built-in CLARK reference database and create custom databases from your own genome files.
+
+\section{Default Reference Database}
+
+A prominent card shows the built-in CLARK database:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Name:} Default Reference Database
+  \item \textbf{Location:} \texttt{clark\_db/}
+  \item \textbf{Status:} \badge{success}{Active}
+  \item \textbf{Statistics:} Total genome count and index status (\textit{"Indexed ✅"} or \textit{"Not built"})
+\end{itemize}
+
+\section{Creating a Custom Reference Database}
+
+Building a custom database is a two-step process within the page.
+
+\subsection{Step 1 — File Selection}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Click \btn{Browse} next to \field{Genomes Folder} and select the directory containing your FASTA genome files (\texttt{.fna}, \texttt{.fasta}, \texttt{.fa}, \texttt{.fsa}, or gzipped variants).
+  \item Click \btn{Browse} next to \field{Reads Mapping File} and select the \texttt{reads\_mapping.tsv} or \texttt{reads\_mapping.tsv.gz} file (required for SPAdes-assembled contig taxid resolution).
+  \item Click \btn{Next: Configure} (enabled only when both fields are populated).
+\end{enumerate}
+
+\subsection{Step 2 — Configuration}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Enter a \field{Database Name} (auto-filled with the folder name as a suggestion).
+  \item Optionally enable the \textbf{Sync to Jetson Nano (GPU)} toggle to automatically transfer the finished database to the Jetson Nano. This is required to use the database with the GPU engine.
+  \item Click \btn{Build Database}.
+\end{enumerate}
+
+A spinning \textit{"Building database\ldots"} indicator appears while the build runs. Building time depends on genome count and machine speed — typically a few minutes to several tens of minutes.
+
+\section{Managing Custom Databases}
+
+Built databases appear in the \textbf{Your Reference Databases} list. Each entry shows:
+\begin{itemize}[leftmargin=1.5em]
+  \item Database name
+  \item Status badges: \badge{success}{Active}, \badge{success}{Built} or \badge{danger}{Not Built}, and \badge{info}{Jetson} if synced
+  \item Genome count and creation date
+  \item A Jetson sync warning if a sync is pending
+  \item \faTrash\ \btn{Delete} button — removes the database after a confirmation dialog
+\end{itemize}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Settings}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+\screenshotplaceholder{Settings Page}{Settings page showing all configuration sections.}
+
+Access Settings from the \faCog\ icon in the sidebar user card. Changes take effect immediately and are confirmed by a brief \badge{success}{Settings Saved} notification at the top of the page.
+
+\section{Account Security}
+
+\begin{notebox}
+  This section is hidden in Guest Mode.
+\end{notebox}
+
+\subsection{Change Password}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Enter your \field{Current Password}.
+  \item Enter a \field{New Password} (same requirements as registration: 12+ chars, uppercase, number, special character).
+  \item Enter the same password in \field{Confirm New Password}.
+  \item Click \btn{Update Password}.
+\end{enumerate}
+
+Error messages appear in red for mismatched passwords, incorrect current password, or passwords that do not meet complexity requirements. A green success message confirms the change.
+
+\section{AI Analysis Settings}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Enable Local AI Summary} (toggle, default ON) — shows or hides the AI summary card on the Results page.
+\end{itemize}
+
+\section{Analysis Thresholds}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXl}
+  \toprule
+  \textbf{Setting} & \textbf{Description} & \textbf{Default} \\
+  \midrule
+  Confidence Threshold &
+  Pathogens below this confidence score are excluded from reports. Options: 50\% (very sensitive) to 90\% (very precise). &
+  70\% (Balanced) \\[4pt]
+  Minimum Read Count &
+  Species with fewer than this many reads are excluded. Range: 10--10{,}000. &
+  100 \\[4pt]
+  Show Low-Confidence Results &
+  When ON, includes sub-threshold results in reports (shown with a warning label). &
+  OFF \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Data Management}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Encrypt Local Data} (toggle, default OFF, hidden for guests) — encrypts stored analysis results using AES-256-GCM. A master key is stored in the OS keychain. Enabling this requires a short password-entry step on next startup.
+\end{itemize}
+
+\section{Notifications}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Analysis Complete Notifications} (toggle, default ON) — displays a desktop notification when an analysis finishes or fails.
+\end{itemize}
+
+\section{Appearance}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Dark Mode} (toggle, default OFF) — switches the application to a dark theme for reduced eye strain in low-light conditions.
+\end{itemize}
+
+\section{Settings Import / Export / Reset}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \btn{Export Settings} — saves all current settings as a JSON file for backup or transfer to another machine.
+  \item \btn{Import Settings} — loads a previously exported JSON settings file.
+  \item \btn{Reset Settings} — resets \textit{all} settings to factory defaults. A confirmation dialog appears first.
+\end{itemize}
+
+\section{Admin: User Management}
+
+\begin{notebox}
+  This section is visible only to accounts with the \textit{Admin} role.
+\end{notebox}
+
+The User Management panel lists all registered accounts with columns for Username, Email, Role, Created Date, and Actions. Use the search box to filter users.
+
+Available admin actions per user:
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \btn{Suspend / Activate} — temporarily prevents or restores login access.
+  \item \btn{Reset Password} — sends a password reset email to the user.
+  \item \btn{Make Admin / Remove Admin} — promotes or demotes the user's role.
+\end{itemize}
+
+Actions on your own account are disabled (shown greyed out).
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Terminal}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+\screenshotplaceholder{Terminal Screen}{Embedded terminal window for direct pipeline interaction.}
+
+The Terminal page provides an embedded command-line interface for advanced users who need direct access to the underlying Snakemake pipeline and system shell.
+
+\section{Use Cases}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item Running Snakemake manually with custom \texttt{--config} flags.
+  \item Inspecting pipeline log files.
+  \item Running \texttt{build\_clark\_db.py} with custom parameters.
+  \item Debugging Docker or SSH connectivity issues.
+  \item Executing arbitrary shell commands without leaving the application.
+\end{itemize}
+
+\begin{warningbox}
+  The embedded terminal runs with your system user privileges. Take care when executing commands that modify files, databases, or system configuration.
+\end{warningbox}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{GPU Mode (Jetson Nano)}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+GPU mode offloads the classification step to a Jetson Nano edge device running CU-CLARK-L, providing substantial speed improvements for large FASTQ files. Communication is secured via Tailscale VPN and SSH.
+
+\section{Prerequisites}
+
+Before using GPU mode:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Install and log in to \textbf{Tailscale} on both your workstation and the Jetson Nano.
+  \item Ensure the Jetson Nano is reachable at its Tailscale IP (verify with \texttt{ping <ip>}).
+  \item Configure SSH key-based authentication between your machine and the Jetson Nano (recommended for \texttt{ssh\_batch\_mode: true}).
+  \item Set up the CLARK database on the Jetson at the path specified in \texttt{config.yaml → jetson\_nano.remote\_db}.
+\end{enumerate}
+
+\section{Configuring the Connection}
+
+Edit \texttt{Patho-genius/config.yaml}:
+
+\begin{verbatim}
+  jetson_nano:
+    host: "100.71.242.74"       # Tailscale IP of the Jetson Nano
+    user: "pathogen"            # SSH username
+    ssh_batch_mode: true        # true = key auth; false = password prompts
+    remote_db: "/home/pathogen/cuclark_db"
+    remote_workspace: "/home/pathogen/pathogenius_ws"
+    cuclark_dir: "/home/pathogen/cuclark"
+\end{verbatim}
+
+\section{GPU Pipeline Steps}
+
+When GPU engine is selected, the Snakemake pipeline performs the following operations automatically:
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item \textbf{Connectivity check} — SSH pre-check with a descriptive error if the Jetson is unreachable.
+  \item \textbf{FASTQ upload} — SCP transfer of the input file (skipped if the file already exists remotely).
+  \item \textbf{GPU memory cleanup} — drops page caches to free unified GPU memory.
+  \item \textbf{Stale result removal} — deletes previous \texttt{.clark.csv} to prevent false completion detection.
+  \item \textbf{CU-CLARK-L launch} — classification runs in background via \texttt{nohup} with \texttt{-b 128} batch size.
+  \item \textbf{Polling loop} — checks every 30 seconds: Running $\to$ DONE $\to$ result downloaded.
+  \item \textbf{CSV validation} — confirms the output file contains more than a header row.
+  \item \textbf{Result download} — SCP retrieves the classification CSV to the local machine.
+  \item \textbf{Remote cleanup} — removes intermediate files (FASTQ is retained for subsequent runs).
+  \item \textbf{Local abundance estimation} — reads NCBI taxonomy (cached after first download) to compute abundance percentages.
+\end{enumerate}
+
+\section{Syncing a Database to the Jetson Nano}
+
+When creating a custom database, enable the \textbf{Sync to Jetson Nano} toggle in the Database Management page. The database will be transferred to the Jetson after the build completes. Custom databases must be synced before they can be used in GPU mode.
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Cloud Synchronisation}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Overview}
+
+Pathogenius integrates with Firebase Storage and Firestore to allow registered users to back up and share encrypted analysis results across devices.
+
+\begin{notebox}
+  Cloud sync is \textbf{not available in Guest Mode}. You must be logged in with a registered account.
+\end{notebox}
+
+\section{Uploading a Result}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Navigate to the \textbf{Results} page.
+  \item Locate the completed analysis in the history table.
+  \item Click the \faUpload\ \btn{Upload} icon on the right side of the row.
+  \item The result is encrypted with AES-256-GCM using your account key and uploaded to Firebase Storage.
+  \item The row gains a \faCloud\ cloud icon to indicate it is synchronised.
+\end{enumerate}
+
+\section{Downloading a Cloud Result}
+
+\begin{enumerate}[leftmargin=1.5em]
+  \item Switch to the \textbf{Cloud Results} tab on the Results page.
+  \item Click \faSync\ \btn{Refresh} to fetch the latest list from Firebase.
+  \item Locate the analysis you wish to retrieve.
+  \item Click \faDownload\ \btn{Download}.
+  \item The result is decrypted and stored locally, and its status changes to \badge{success}{Local copy}.
+\end{enumerate}
+
+\section{Encryption Details}
+
+All cloud-stored results are encrypted using:
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Algorithm:} AES-256-GCM
+  \item \textbf{Key storage:} OS keychain via \texttt{keytar} — the key never leaves your machine in plaintext
+  \item \textbf{At rest:} Data is encrypted before leaving the application; Firebase never receives unencrypted content
+\end{itemize}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Sample Workflows}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Scenario 1: Standard Clinical Sample Analysis}
+
+\textit{A researcher receives a FASTQ file from a clinical metagenomics run and needs to identify pathogens.}
+
+\begin{stepbox}{Step-by-Step Walkthrough}
+\begin{enumerate}[leftmargin=1em, itemsep=2pt]
+  \item Launch Pathogenius and log in with your credentials.
+  \item Click \textbf{New Analysis} in the sidebar.
+  \item Drag the FASTQ file onto the upload zone. Click \btn{Next: Configuration}.
+  \item Select \textbf{CPU Workflow} (ensure Docker is running). Set the Analysis Name to the patient ID code. Set Sample Type to \textit{Clinical Sample}. Leave Confidence Threshold at 70\%. Click \btn{Next: Launch}.
+  \item Review the summary. Click \btn{Start Analysis}.
+  \item Monitor progress on the Dashboard. Expect 15--30 minutes for a typical dataset.
+  \item When complete, navigate to \textbf{Results}, find the analysis, and click \btn{View Report}.
+  \item Review pathogen cards and risk levels. Click \btn{Generate Summary} for the AI clinical interpretation.
+  \item Click \btn{Export Report} to save a PDF for the patient record.
+  \item Optionally, click the upload icon to back up the result to cloud storage.
+\end{enumerate}
+\end{stepbox}
+
+\section{Scenario 2: High-Throughput Field Analysis with GPU}
+
+\textit{A field worker has a large FASTQ dataset and a Jetson Nano device available.}
+
+\begin{stepbox}{Step-by-Step Walkthrough}
+\begin{enumerate}[leftmargin=1em, itemsep=2pt]
+  \item Ensure Tailscale is running on both the workstation and the Jetson Nano.
+  \item Launch Pathogenius. Click \textbf{New Analysis}.
+  \item Select the large FASTQ file. If a \textit{"Large file detected"} warning appears, enable \textbf{Batch Processing}.
+  \item Click \btn{Next: Configuration}. Select \textbf{GPU Accelerated}.
+  \item Name the analysis, choose the appropriate database (ensure it is synced to the Jetson), and set confidence threshold. Click \btn{Next: Launch}.
+  \item Review and click \btn{Start Analysis}.
+  \item The pipeline uploads the FASTQ to the Jetson, runs CU-CLARK-L, polls for completion, and downloads results automatically.
+  \item View results as in Scenario 1.
+\end{enumerate}
+\end{stepbox}
+
+\section{Scenario 3: Building a Custom Pathogen Database}
+
+\textit{A researcher has assembled novel pathogen genomes and wants to add them to Pathogenius.}
+
+\begin{stepbox}{Step-by-Step Walkthrough}
+\begin{enumerate}[leftmargin=1em, itemsep=2pt]
+  \item Place genome FASTA files and the reads mapping TSV in a dedicated folder.
+  \item In Pathogenius, navigate to \textbf{Database} in the sidebar.
+  \item Under \textit{Create Reference Database}, click \btn{Browse} for \field{Genomes Folder} and select the folder.
+  \item Click \btn{Browse} for \field{Reads Mapping File} and select the \texttt{.tsv} or \texttt{.tsv.gz} file.
+  \item Click \btn{Next: Configure}. Enter a descriptive name.
+  \item If GPU analyses are planned, enable \textbf{Sync to Jetson Nano}.
+  \item Click \btn{Build Database} and wait for the build to complete.
+  \item The new database now appears in \textit{Your Reference Databases} and in the database dropdown when creating a new analysis.
+\end{enumerate}
+\end{stepbox}
+
+\section{Scenario 4: Multi-User Lab Setup with Admin Controls}
+
+\textit{A lab administrator manages multiple researcher accounts.}
+
+\begin{stepbox}{Step-by-Step Walkthrough}
+\begin{enumerate}[leftmargin=1em, itemsep=2pt]
+  \item Log in with an admin account. Navigate to \textbf{Settings}.
+  \item Scroll to the \textbf{Admin: User Management} section.
+  \item Use the search box to find a specific user.
+  \item To grant admin access, click \btn{Make Admin} on that user's row.
+  \item To temporarily block a user, click \btn{Suspend}; they will see an error on their next login.
+  \item To help a user who cannot log in, click \btn{Reset Password} to send them a reset email.
+\end{enumerate}
+\end{stepbox}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Troubleshooting}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\begin{longtable}{p{5.5cm} p{9cm}}
+  \toprule
+  \textbf{Problem} & \textbf{Solution} \\
+  \midrule
+  \endhead
+  \texttt{npm start} fails with \textit{"electron not found"} &
+  Run \texttt{npm install} inside the \texttt{frontend/} directory first. \\[4pt]
+
+  \textit{"Workflow directory not found"} &
+  Ensure the \texttt{Patho-genius/} directory exists alongside \texttt{frontend/}. \\[4pt]
+
+  Analysis stuck at \textit{"Starting\ldots"} &
+  Check that Docker Desktop is running (CPU mode) or Tailscale is connected and the Jetson Nano is reachable (GPU mode). \\[4pt]
+
+  \textit{"Could not start Snakemake"} &
+  Install Python 3 and run \texttt{pip install snakemake}. \\[4pt]
+
+  Database build fails at NCBI lookup &
+  Check your internet connection. NCBI rate-limits requests — wait a few minutes and retry. \\[4pt]
+
+  \texttt{build\_clark\_db.py} — \textit{"No genome\_sources defined"} &
+  Add entries under \texttt{genome\_sources} in \texttt{config.yaml}. \\[4pt]
+
+  100\% unclassified reads &
+  Rebuild the database: delete \texttt{clark\_db/Custom/} and \texttt{targets.txt}, then rerun \texttt{build\_clark\_db.py}. \\[4pt]
+
+  Docker permission errors &
+  Enable file sharing for the workspace directory in Docker Desktop settings. \\[4pt]
+
+  GPU mode — \textit{"Cannot reach Jetson Nano"} &
+  Verify Tailscale VPN is active on both machines. If using password auth, set \texttt{ssh\_batch\_mode: false} in \texttt{config.yaml}. \\[4pt]
+
+  GPU — header-only CSV / 0 taxa &
+  CUDA watchdog timeout. Ensure \texttt{-b 128} is in the CU-CLARK-L command. Alternatively, disable the watchdog: \texttt{echo 0 | sudo tee /sys/kernel/debug/gpu.0/timeouts\_enabled}. \\[4pt]
+
+  GPU — poll loop stuck on RUNNING &
+  Stale process detection. Ensure the poll command uses \texttt{pgrep -f '[c]uCLARK-l'} (bracket trick). \\[4pt]
+
+  GPU — \textit{"Nothing to be done"} &
+  Stale cached results. The analysis service auto-cleans \texttt{.clark.csv}, \texttt{.abundance.csv}, and \texttt{.json} before each run. If running standalone, add \texttt{--rerun-incomplete}. \\[4pt]
+
+  LLM — \textit{"Failed to load model"} &
+  Ensure Node.js 22+ is installed. Check that a \texttt{.gguf} file exists in \texttt{frontend/models/}. \\[4pt]
+
+  LLM — \textit{"Unexpected token 'with'"} &
+  Upgrade Node.js to v22+ and reinstall: \texttt{rm -rf node\_modules \&\& npm install}. \\[4pt]
+
+  Blank Electron window on startup &
+  Open the DevTools console: uncomment \texttt{mainWindow.webContents.openDevTools()} in \texttt{main.js}, restart, and check the console for errors. \\[4pt]
+
+  Cloud sync — \textit{"Not authenticated"} &
+  Log in with a registered account. Cloud features are unavailable in Guest Mode. \\[4pt]
+
+  Email verification email not received &
+  Check spam/junk folders. Click \btn{Resend Verification Email} on the login page. \\[4pt]
+
+  Settings not saving &
+  Ensure you have write permissions to the \texttt{frontend/} directory. Restart the application and try again. \\
+
+  \bottomrule
+\end{longtable}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Frequently Asked Questions}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\begin{description}[style=nextline, leftmargin=0pt, itemsep=10pt]
+
+\item[Q: Can I use Pathogenius without Docker?]
+  Docker is required for CPU-mode classification (CLARK-l runs inside a container). If Docker is unavailable, you can use GPU mode via the Jetson Nano instead. Building the reference database also requires Docker.
+
+\item[Q: How long does an analysis typically take?]
+  A typical clinical FASTQ file (300 MB–2 GB) takes 15--30 minutes in CPU mode on an 8-core machine. GPU mode on a Jetson Nano is 3--5$\times$ faster for large files. Very large files (10+ GB) may take over an hour in CPU mode.
+
+\item[Q: Is my patient data sent to the cloud?]
+  Only if you explicitly upload results using the cloud sync feature. All classification runs on your local machine. The AI summary also runs locally. If you do upload, data is encrypted with AES-256-GCM before leaving the application.
+
+\item[Q: What FASTQ formats are supported?]
+  Standard FASTQ (\texttt{.fastq}) and gzip-compressed FASTQ (\texttt{.fastq.gz}). Both single-end and paired-end reads are accepted; however, the pipeline currently processes a single file per analysis.
+
+\item[Q: How do I update the pathogen reference database?]
+  Add new genome FASTA files to your genome source directory and rebuild using \texttt{build\_clark\_db.py} (via the Terminal page or command line). Alternatively, use the Database Management page to create a new custom database from the updated files.
+
+\item[Q: What does the confidence threshold control?]
+  The confidence threshold is the minimum score assigned by CLARK-l to accept a species identification. A higher threshold (e.g., 90\%) reduces false positives but may miss low-abundance pathogens. A lower threshold (e.g., 50\%) increases sensitivity but may produce more noise.
+
+\item[Q: Can multiple users share the same installation?]
+  Yes. Each user has a separate account and their results are stored under their user profile. Admin accounts can manage all users via the Settings page.
+
+\item[Q: The AI summary card is not visible. What should I do?]
+  Ensure \textbf{Enable Local AI Summary} is toggled ON in Settings. Also verify that a \texttt{.gguf} model file exists in \texttt{frontend/models/}. The model status is displayed in the AI summary card header.
+
+\item[Q: How do I run Pathogenius in development/demo mode without real data?]
+  Set the environment variable \texttt{PATHOGENIUS\_MOCK\_ANALYSIS=1} before launching. On Windows: \texttt{set PATHOGENIUS\_MOCK\_ANALYSIS=1 \&\& npm start}. This returns synthetic results after a simulated delay, allowing UI testing without Docker or a database.
+
+\item[Q: Can I export results to share with a colleague?]
+  Yes — two options are available from the detail view: \btn{Export Report} generates a formatted PDF, and \btn{View Raw Data} shows the JSON output which can be saved manually. Registered users can also share results via cloud sync.
+
+\end{description}
+
+%%─────────────────────────────────────────────────────────────────────────────
+\chapter{Appendix}
+%%─────────────────────────────────────────────────────────────────────────────
+
+\section{Output JSON Format}
+
+Each completed analysis produces a JSON file with the following structure:
+
+\begin{verbatim}
+{
+  "analysis_name": "Patient_001_Sample",
+  "sample_type":   "clinical",
+  "completed_at":  "2026-04-25T20:20:00.000Z",
+  "classifier":    "CU-CLARK-L",
+  "summary": {
+    "total_reads":         908893,
+    "classified_reads":    14585,
+    "classification_rate": 1.6,
+    "species_detected":    23,
+    "pathogens_detected":  3
+  },
+  "pathogens": [
+    {
+      "name":             "Escherichia coli",
+      "strain":           "Escherichia coli",
+      "tax_id":           562,
+      "abundance":        45.2,
+      "reads":            6594,
+      "confidence":       95,
+      "risk_level":       "high",
+      "amr_genes":        5,
+      "virulence_genes":  12
+    }
+  ],
+  "taxonomy": {
+    "bacteria":       63.6,
+    "viruses":         4.8,
+    "proteobacteria": 48.0,
+    "firmicutes":     18.0
+  }
+}
+\end{verbatim}
+
+\section{Configuration Reference (\texttt{config.yaml})}
+
+\begin{longtable}{p{5cm} p{3cm} p{5.5cm}}
+  \toprule
+  \textbf{Key} & \textbf{Default} & \textbf{Description} \\
+  \midrule
+  \endhead
+  \texttt{engine} & \texttt{"cpu"} & Active classification engine: \texttt{"cpu"} or \texttt{"gpu"} \\
+  \texttt{paths.db\_host\_windows} & \texttt{"./clark\_db"} & Path to the CLARK reference database \\
+  \texttt{paths.data\_host\_windows} & \texttt{"./fastQ\_reads"} & Directory for input FASTQ files \\
+  \texttt{sample} & \texttt{"SRR7497167\_1"} & Default sample basename \\
+  \texttt{clark.image} & (CLARK image tag) & Docker image for CPU classification \\
+  \texttt{clark.threads} & \texttt{8} & Classification threads \\
+  \texttt{clark.kmer\_length} & \texttt{27} & k-mer length \\
+  \texttt{clark.sampling\_factor} & \texttt{2} & Sampling factor (higher = faster, less sensitive) \\
+  \texttt{jetson\_nano.host} & — & Tailscale IP of the Jetson Nano \\
+  \texttt{jetson\_nano.user} & — & SSH username on the Jetson \\
+  \texttt{jetson\_nano.ssh\_batch\_mode} & \texttt{true} & \texttt{true} = key auth, \texttt{false} = password auth \\
+  \texttt{jetson\_nano.remote\_db} & — & Database path on the Jetson \\
+  \texttt{jetson\_nano.remote\_workspace} & — & Working directory on the Jetson \\
+  \texttt{jetson\_nano.cuclark\_dir} & — & CU-CLARK-L installation path on the Jetson \\
+  \bottomrule
+\end{longtable}
+
+\section{Environment Variables}
+
+\begin{center}
+\begin{tabularx}{\textwidth}{lXl}
+  \toprule
+  \textbf{Variable} & \textbf{Description} & \textbf{Default} \\
+  \midrule
+  \texttt{SNAKEMAKE\_WORKFLOW\_DIR}   & Path to the Snakemake workflow directory      & \texttt{<repo>/Patho-genius} \\
+  \texttt{RESULTS\_DIR}               & Output directory for analysis JSON files      & \texttt{<repo>/frontend/results} \\
+  \texttt{PATHOGENIUS\_MOCK\_ANALYSIS} & Set to \texttt{1} to return synthetic results & \texttt{0} \\
+  \bottomrule
+\end{tabularx}
+\end{center}
+
+\section{Keyboard Shortcuts \& Quick Reference}
+
+\begin{center}
+\begin{tabular}{ll}
+  \toprule
+  \textbf{Action} & \textbf{Shortcut / Location} \\
+  \midrule
+  Open Dashboard        & Click \faHome\ in the sidebar \\
+  Start New Analysis    & Click \faPlus\ in the sidebar \\
+  View Results          & Click \faFile\ in the sidebar \\
+  Open Terminal         & Click \faTerminal\ in the sidebar \\
+  Open Database Manager & Click \faDatabase\ in the sidebar \\
+  Open Settings         & Click \faCog\ in the user card \\
+  Logout                & Click \faSignOut\ Logout at sidebar bottom \\
+  Refresh System Status & Click \faSync\ in the user card \\
+  \bottomrule
+\end{tabular}
+\end{center}
+
+\chapter*{Disclaimer}
+\addcontentsline{toc}{chapter}{Disclaimer}
+
+Pathogenius is provided as a research and decision-support tool. The results produced by the classification pipeline are computational predictions based on sequence similarity to reference databases and are subject to the quality of those databases and the input data.
+
+\textbf{Pathogenius results must not be used as the sole basis for clinical diagnosis, patient treatment decisions, or public health interventions.} All findings should be confirmed using validated clinical laboratory methods by qualified healthcare professionals.
+
+The Pathogenius Team makes no warranty, express or implied, regarding the accuracy, completeness, or fitness for any particular purpose of the results generated by this software.
+
+\end{document}

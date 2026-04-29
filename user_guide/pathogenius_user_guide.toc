@@ -1,0 +1,105 @@
+\contentsline {chapter}{\numberline {1}Introduction}{5}{chapter.1}%
+\contentsline {section}{\numberline {1.1}About Pathogenius}{5}{section.1.1}%
+\contentsline {section}{\numberline {1.2}Intended Audience}{5}{section.1.2}%
+\contentsline {section}{\numberline {1.3}Document Conventions}{6}{section.1.3}%
+\contentsline {section}{\numberline {1.4}System Requirements}{6}{section.1.4}%
+\contentsline {chapter}{\numberline {2}Getting Started}{7}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Installation Overview}{7}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Step 1 — Install Prerequisites}{7}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Step 2 — Install Frontend Dependencies}{7}{subsection.2.1.2}%
+\contentsline {subsection}{\numberline {2.1.3}Step 3 — Build the Reference Database (First-Time)}{7}{subsection.2.1.3}%
+\contentsline {subsection}{\numberline {2.1.4}Step 4 — Launch the Application}{8}{subsection.2.1.4}%
+\contentsline {section}{\numberline {2.2}First Launch}{8}{section.2.2}%
+\contentsline {chapter}{\numberline {3}Authentication}{9}{chapter.3}%
+\contentsline {section}{\numberline {3.1}Login}{9}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}Logging In}{9}{subsection.3.1.1}%
+\contentsline {subsection}{\numberline {3.1.2}Common Login Errors}{9}{subsection.3.1.2}%
+\contentsline {subsection}{\numberline {3.1.3}Forgot Password}{10}{subsection.3.1.3}%
+\contentsline {section}{\numberline {3.2}Creating a New Account}{10}{section.3.2}%
+\contentsline {subsubsection}{Password Requirements}{10}{Item.22}%
+\contentsline {section}{\numberline {3.3}Guest Mode (Offline Access)}{11}{section.3.3}%
+\contentsline {chapter}{\numberline {4}Application Layout}{12}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Main Window Structure}{12}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Sidebar Navigation}{12}{section.4.2}%
+\contentsline {subsection}{\numberline {4.2.1}Brand \& User Card}{12}{subsection.4.2.1}%
+\contentsline {subsection}{\numberline {4.2.2}Navigation Menu}{13}{subsection.4.2.2}%
+\contentsline {subsection}{\numberline {4.2.3}System Status Widget}{13}{subsection.4.2.3}%
+\contentsline {chapter}{\numberline {5}Dashboard}{14}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Overview}{14}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Running Analysis Banner}{14}{section.5.2}%
+\contentsline {section}{\numberline {5.3}System Resources Card}{14}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Storage Card}{15}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Analysis Summary Card}{15}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Recent Analyses Table}{15}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Quick Actions}{15}{section.5.7}%
+\contentsline {chapter}{\numberline {6}Running a New Analysis}{16}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Overview}{16}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Step 1: Input Files}{16}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Selecting FASTQ Files}{16}{subsection.6.2.1}%
+\contentsline {section}{\numberline {6.3}Step 2: Configuration}{17}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Engine Selection}{17}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}FASTQ Statistics Banner}{18}{subsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.3.3}Large File Warning and Batch Processing}{18}{subsection.6.3.3}%
+\contentsline {subsection}{\numberline {6.3.4}Analysis Configuration Form}{19}{subsection.6.3.4}%
+\contentsline {section}{\numberline {6.4}Step 3: Review \& Launch}{19}{section.6.4}%
+\contentsline {section}{\numberline {6.5}Monitoring Progress}{20}{section.6.5}%
+\contentsline {subsection}{\numberline {6.5.1}Pausing and Resuming}{20}{subsection.6.5.1}%
+\contentsline {subsection}{\numberline {6.5.2}Cancelling an Analysis}{20}{subsection.6.5.2}%
+\contentsline {chapter}{\numberline {7}Viewing Results}{21}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Results Page Overview}{21}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Analysis History Table}{21}{section.7.2}%
+\contentsline {subsection}{\numberline {7.2.1}Action Buttons}{22}{subsection.7.2.1}%
+\contentsline {section}{\numberline {7.3}Detailed Results View}{22}{section.7.3}%
+\contentsline {subsection}{\numberline {7.3.1}Header}{22}{subsection.7.3.1}%
+\contentsline {subsection}{\numberline {7.3.2}Overview Tab — Pathogen Cards}{22}{subsection.7.3.2}%
+\contentsline {subsection}{\numberline {7.3.3}AI Summary Card}{23}{subsection.7.3.3}%
+\contentsline {subsection}{\numberline {7.3.4}Pathogen Details Tab}{23}{subsection.7.3.4}%
+\contentsline {subsection}{\numberline {7.3.5}Charts Tab}{24}{subsection.7.3.5}%
+\contentsline {section}{\numberline {7.4}Cloud Results}{24}{section.7.4}%
+\contentsline {subsection}{\numberline {7.4.1}Cloud Status Banner}{25}{subsection.7.4.1}%
+\contentsline {subsection}{\numberline {7.4.2}Cloud Results Table}{25}{subsection.7.4.2}%
+\contentsline {chapter}{\numberline {8}Database Management}{26}{chapter.8}%
+\contentsline {section}{\numberline {8.1}Overview}{26}{section.8.1}%
+\contentsline {section}{\numberline {8.2}Default Reference Database}{26}{section.8.2}%
+\contentsline {section}{\numberline {8.3}Creating a Custom Reference Database}{26}{section.8.3}%
+\contentsline {subsection}{\numberline {8.3.1}Step 1 — File Selection}{27}{subsection.8.3.1}%
+\contentsline {subsection}{\numberline {8.3.2}Step 2 — Configuration}{27}{subsection.8.3.2}%
+\contentsline {section}{\numberline {8.4}Managing Custom Databases}{27}{section.8.4}%
+\contentsline {chapter}{\numberline {9}Settings}{28}{chapter.9}%
+\contentsline {section}{\numberline {9.1}Overview}{28}{section.9.1}%
+\contentsline {section}{\numberline {9.2}Account Security}{28}{section.9.2}%
+\contentsline {subsection}{\numberline {9.2.1}Change Password}{28}{subsection.9.2.1}%
+\contentsline {section}{\numberline {9.3}AI Analysis Settings}{29}{section.9.3}%
+\contentsline {section}{\numberline {9.4}Analysis Thresholds}{29}{section.9.4}%
+\contentsline {section}{\numberline {9.5}Data Management}{29}{section.9.5}%
+\contentsline {section}{\numberline {9.6}Notifications}{29}{section.9.6}%
+\contentsline {section}{\numberline {9.7}Appearance}{29}{section.9.7}%
+\contentsline {section}{\numberline {9.8}Settings Import / Export / Reset}{29}{section.9.8}%
+\contentsline {section}{\numberline {9.9}Admin: User Management}{30}{section.9.9}%
+\contentsline {chapter}{\numberline {10}Terminal}{31}{chapter.10}%
+\contentsline {section}{\numberline {10.1}Overview}{31}{section.10.1}%
+\contentsline {section}{\numberline {10.2}Use Cases}{31}{section.10.2}%
+\contentsline {chapter}{\numberline {11}GPU Mode (Jetson Nano)}{32}{chapter.11}%
+\contentsline {section}{\numberline {11.1}Overview}{32}{section.11.1}%
+\contentsline {section}{\numberline {11.2}Prerequisites}{32}{section.11.2}%
+\contentsline {section}{\numberline {11.3}Configuring the Connection}{32}{section.11.3}%
+\contentsline {section}{\numberline {11.4}GPU Pipeline Steps}{32}{section.11.4}%
+\contentsline {section}{\numberline {11.5}Syncing a Database to the Jetson Nano}{33}{section.11.5}%
+\contentsline {chapter}{\numberline {12}Cloud Synchronisation}{34}{chapter.12}%
+\contentsline {section}{\numberline {12.1}Overview}{34}{section.12.1}%
+\contentsline {section}{\numberline {12.2}Uploading a Result}{34}{section.12.2}%
+\contentsline {section}{\numberline {12.3}Downloading a Cloud Result}{34}{section.12.3}%
+\contentsline {section}{\numberline {12.4}Encryption Details}{34}{section.12.4}%
+\contentsline {chapter}{\numberline {13}Sample Workflows}{36}{chapter.13}%
+\contentsline {section}{\numberline {13.1}Scenario 1: Standard Clinical Sample Analysis}{36}{section.13.1}%
+\contentsline {section}{\numberline {13.2}Scenario 2: High-Throughput Field Analysis with GPU}{36}{section.13.2}%
+\contentsline {section}{\numberline {13.3}Scenario 3: Building a Custom Pathogen Database}{37}{section.13.3}%
+\contentsline {section}{\numberline {13.4}Scenario 4: Multi-User Lab Setup with Admin Controls}{37}{section.13.4}%
+\contentsline {chapter}{\numberline {14}Troubleshooting}{38}{chapter.14}%
+\contentsline {chapter}{\numberline {15}Frequently Asked Questions}{40}{chapter.15}%
+\contentsline {chapter}{\numberline {16}Appendix}{42}{chapter.16}%
+\contentsline {section}{\numberline {16.1}Output JSON Format}{42}{section.16.1}%
+\contentsline {section}{\numberline {16.2}Configuration Reference (\texttt {config.yaml})}{43}{section.16.2}%
+\contentsline {section}{\numberline {16.3}Environment Variables}{43}{section.16.3}%
+\contentsline {section}{\numberline {16.4}Keyboard Shortcuts \& Quick Reference}{44}{section.16.4}%
+\contentsline {chapter}{Disclaimer}{45}{chapter*.17}%
