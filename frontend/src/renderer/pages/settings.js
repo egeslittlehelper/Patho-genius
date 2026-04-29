@@ -9,7 +9,6 @@ const SettingsPage = {
     defaults: {
         localAiEnabled: true,
         confidenceThreshold: 0.7,
-        minReadCount: 100,
         showLowConfidenceResults: false,
         theme: 'light',
         notificationsEnabled: true,
@@ -52,15 +51,6 @@ const SettingsPage = {
         if (confidenceSelect) {
             confidenceSelect.addEventListener('change', (e) => {
                 this.settings.confidenceThreshold = parseFloat(e.target.value);
-                this.saveSettings();
-                this.showSavedNotification();
-            });
-        }
-
-        const minReadInput = document.getElementById('settings-min-read-count');
-        if (minReadInput) {
-            minReadInput.addEventListener('change', (e) => {
-                this.settings.minReadCount = parseInt(e.target.value) || 100;
                 this.saveSettings();
                 this.showSavedNotification();
             });
@@ -155,7 +145,6 @@ const SettingsPage = {
         set('toggle-notifications', this.settings.notificationsEnabled);
         set('toggle-dark-mode', this.settings.theme === 'dark');
         setVal('settings-confidence-threshold', this.settings.confidenceThreshold);
-        setVal('settings-min-read-count', this.settings.minReadCount);
     },
 
     applyTheme() {

@@ -95,18 +95,11 @@
                 <div class="form-group">
                     <label for="settings-confidence-threshold">Result Display Threshold</label>
                     <select id="settings-confidence-threshold" class="input-field">
-                        <option value="0.5">50% - Show all results</option>
-                        <option value="0.6">60% - Sensitive</option>
+                        <option value="0.5">50% - More sensitive</option>
                         <option value="0.7" selected>70% - Balanced (recommended)</option>
-                        <option value="0.8">80% - High precision only</option>
-                        <option value="0.9">90% - Very high precision only</option>
+                        <option value="0.9">90% - High precision only</option>
                     </select>
                     <small class="form-hint">Minimum confidence to display a detected pathogen in results. Does not affect the classifier — only filters what you see.</small>
-                </div>
-                <div class="form-group">
-                    <label for="settings-min-read-count">Minimum Read Count</label>
-                    <input type="number" id="settings-min-read-count" class="input-field" value="100" min="10" max="10000">
-                    <small class="form-hint">Minimum reads required to report a species</small>
                 </div>
             </div>
             <div class="setting-row">

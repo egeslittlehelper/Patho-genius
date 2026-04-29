@@ -26,6 +26,25 @@ const llmService = require('./services/llm-service');
 // Global reference to main window
 let mainWindow = null;
 
+// si.graphics() is slow on Windows (WMI query). Cache the result after the first call
+// so subsequent dashboard loads are instant.
+let _cachedGpuInfo = null;
+async function getGpuInfoCached() {
+    if (_cachedGpuInfo) return _cachedGpuInfo;
+    try {
+        const info = await si.graphics();
+        const primary = info.controllers?.find(g => g.vendor !== 'Microsoft') || info.controllers?.[0];
+        _cachedGpuInfo = {
+            available: !!primary,
+            name: primary?.model || 'No GPU detected',
+            vendor: primary?.vendor || '—'
+        };
+    } catch {
+        _cachedGpuInfo = { available: false, name: 'No GPU detected', vendor: '—' };
+    }
+    return _cachedGpuInfo;
+}
+
 // In-memory ownership map: analysisId -> uid (or 'guest')
 // Rebuilt from .owner files on disk, so survives across sessions.
 const analysisUserMap = new Map();
@@ -564,18 +583,17 @@ ipcMain.handle('app:delete-analysis', async (event, analysisId) => {
 
 ipcMain.handle('app:get-system-stats', async () => {
     try {
-        const [cpuInfo, cpuLoad, memInfo, diskInfo, gpuInfo, networkInterfaces] = await Promise.all([
+        // si.graphics() is fetched via cached helper (slow WMI call, once per session).
+        // si.networkInterfaces() is excluded — not displayed anywhere in the UI.
+        const [cpuInfo, cpuLoad, memInfo, diskInfo, gpu] = await Promise.all([
             si.cpu(),
             si.currentLoad(),
             si.mem(),
             si.fsSize(),
-            si.graphics(),
-            si.networkInterfaces()
+            getGpuInfoCached()
         ]);
 
         const mainDisk = diskInfo.find(d => d.mount === 'C:' || d.mount === '/') || diskInfo[0];
-        const primaryGpu = gpuInfo.controllers.find(g => g.vendor !== 'Microsoft') || gpuInfo.controllers[0];
-        const activeInterface = networkInterfaces.find(i => i.operstate === 'up' && i.ip4);
 
         return {
             cpu: {
@@ -595,16 +613,8 @@ ipcMain.handle('app:get-system-stats', async () => {
                 used: mainDisk ? mainDisk.used : 0,
                 percentUsed: mainDisk ? Math.round(mainDisk.use) : 0
             },
-            gpu: {
-                available: gpuInfo.controllers.length > 0,
-                name: primaryGpu ? primaryGpu.model : 'No GPU detected',
-                vendor: primaryGpu ? primaryGpu.vendor : 'Unknown'
-            },
-            network: {
-                connected: !!activeInterface,
-                interface: activeInterface ? activeInterface.iface : 'None',
-                ip: activeInterface ? activeInterface.ip4 : 'N/A'
-            },
+            gpu,
+            network: { connected: null, interface: '—', ip: '—' },
             platform: os.platform(),
             hostname: os.hostname(),
             analysisConfig: {
@@ -627,8 +637,8 @@ ipcMain.handle('app:get-system-stats', async () => {
                 percentUsed: Math.round(((totalMemory - freeMemory) / totalMemory) * 100)
             },
             disk: { free: 0, total: 0, used: 0, percentUsed: 0 },
-            gpu: { available: false, name: 'Unknown', vendor: 'Unknown' },
-            network: { connected: false, interface: 'Unknown', ip: 'N/A' },
+            gpu: { available: false, name: '—', vendor: '—' },
+            network: { connected: null, interface: '—', ip: '—' },
             platform: os.platform(),
             hostname: os.hostname(),
             analysisConfig: {

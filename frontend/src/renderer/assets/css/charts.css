@@ -2,6 +2,19 @@
  * CHARTS & VISUALIZATIONS STYLES
  */
 
+/* Empty state shown when chart data is not available */
+.chart-empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 200px;
+    color: var(--text-muted);
+    font-size: 0.875rem;
+    background-color: var(--gray-50);
+    border: 2px dashed var(--border-color);
+    border-radius: var(--radius-md);
+}
+
 /* Chart Placeholder */
 .chart-placeholder {
     background-color: var(--gray-50);

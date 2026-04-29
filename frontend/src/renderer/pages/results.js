@@ -777,10 +777,8 @@ const ResultsPage = {
 
         try {
             if (window.api?.analysis?.cancel) {
-                const result = await window.api.analysis.cancel(analysisId);
-                if (result.success) {
-                    this.loadAnalyses(); // Refresh
-                }
+                await window.api.analysis.cancel(analysisId);
+                this.loadAnalyses();
             } else {
                 // Mock for development
                 const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);

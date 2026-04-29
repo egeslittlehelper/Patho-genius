@@ -87,9 +87,12 @@ const Charts = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        // Use mock data if not provided
-        const chartData = data || this.getMockSunburstData();
-        
+        if (!data) {
+            container.innerHTML = '<div class="chart-empty-state">No taxonomy data available</div>';
+            return;
+        }
+        const chartData = data;
+
         // Calculate dimensions
         const width = container.clientWidth || 400;
         const height = 400;
@@ -251,8 +254,12 @@ const Charts = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const chartData = data || this.getMockSankeyData();
-        
+        if (!data) {
+            container.innerHTML = '<div class="chart-empty-state">No read classification data available</div>';
+            return;
+        }
+        const chartData = data;
+
         const width = container.clientWidth || 600;
         const height = 400;
         const nodeWidth = 20;
@@ -457,7 +464,11 @@ const Charts = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const chartData = data || this.getMockTreemapData();
+        if (!data || (Array.isArray(data) && data.length === 0)) {
+            container.innerHTML = '<div class="chart-empty-state">No pathogen abundance data available</div>';
+            return;
+        }
+        const chartData = data;
         const width = container.clientWidth || 600;
         const height = 400;
 
@@ -632,7 +643,11 @@ const Charts = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        const chartData = data || this.getMockRadarData();
+        if (!data || !data.pathogens?.length) {
+            container.innerHTML = '<div class="chart-empty-state">No pathogen comparison data available</div>';
+            return;
+        }
+        const chartData = data;
         const width = container.clientWidth || 400;
         const height = 400;
         const centerX = width / 2;
@@ -967,25 +982,14 @@ const Charts = {
         }
     },
 
-    getFallbackChartData(chartType) {
-        switch (chartType) {
-            case 'sunburst':
-                return this.getMockSunburstData();
-            case 'sankey':
-                return this.getMockSankeyData();
-            case 'treemap':
-                return this.getMockTreemapData();
-            case 'radar':
-                return this.getMockRadarData();
-            default:
-                return null;
-        }
+    getFallbackChartData(_chartType) {
+        return null;
     },
 
     transformTreemapData(apiResponse) {
         const pathogens = apiResponse?.pathogens || [];
         if (!Array.isArray(pathogens) || pathogens.length === 0) {
-            return this.getMockTreemapData();
+            return null;
         }
 
         return pathogens.map((p, idx, arr) => ({
@@ -1007,7 +1011,7 @@ const Charts = {
             .slice(0, 5);
 
         if (!pathogens.length) {
-            return this.getMockRadarData();
+            return null;
         }
 
         return {
@@ -1029,14 +1033,14 @@ const Charts = {
     transformSunburstData(apiResponse) {
         const taxonomy = apiResponse?.taxonomy;
         if (!taxonomy || typeof taxonomy !== 'object') {
-            return this.getMockSunburstData();
+            return null;
         }
 
         const entries = Object.entries(taxonomy)
             .filter(([, value]) => Number(value || 0) > 0);
 
         if (!entries.length) {
-            return this.getMockSunburstData();
+            return null;
         }
 
         return {
@@ -1059,7 +1063,7 @@ const Charts = {
         const unclassifiedReads = Math.max(totalReads - classifiedReads, 0);
 
         if (!totalReads) {
-            return this.getMockSankeyData();
+            return null;
         }
 
         const bacteriaReads = Math.round((Number(taxonomy.bacteria || 0) / 100) * classifiedReads);

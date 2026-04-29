@@ -37,15 +37,24 @@ const AnalysisPage = {
      */
     init() {
         console.log('AnalysisPage initializing...');
-        
+
         if (!this.isEventsBound) {
             this.bindEvents();
             this.isEventsBound = true;
+            // First visit only: start from a clean slate
+            this.reset();
+            this._applySettingsDefaults();
         }
-        
-        this.reset();
+
         this.loadDatabases();
         console.log('AnalysisPage initialized');
+    },
+
+    _applySettingsDefaults() {
+        const threshold = window.SettingsPage?.settings?.confidenceThreshold ?? 0.7;
+        this.config.confidenceThreshold = threshold;
+        const el = document.getElementById('confidence-threshold');
+        if (el) el.value = String(threshold);
     },
 
     /**
@@ -568,6 +577,9 @@ const AnalysisPage = {
                 
                 if (result.success) {
                     console.log('Analysis started:', result.analysisId);
+                    // Reset so the next visit starts clean
+                    this.reset();
+                    this._applySettingsDefaults();
                     App.navigateTo('results');
                 } else {
                     alert(result.error || 'Failed to start analysis');
