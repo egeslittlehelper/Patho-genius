@@ -36,13 +36,7 @@
     <!-- Running Analyses Section -->
     <div id="running-analyses-section" class="card running-analyses-card">
         <div class="card-header-row">
-            <h3 class="card-title">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="icon-spin">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M12 6v6l4 2"></path>
-                </svg>
-                Running Analyses
-            </h3>
+            <h3 class="card-title">Running Analyses</h3>
             <span class="count-badge" id="running-analyses-count">0 active</span>
         </div>
         <div id="running-analyses-list">
@@ -67,10 +61,10 @@
             <table class="data-table" id="results-history-table">
                 <thead>
                     <tr>
-                        <th>Analysis Name</th>
-                        <th>Date</th>
+                        <th class="sortable" onclick="ResultsPage.sortBy('name')">Analysis Name <span class="sort-icon" data-col="name">↕</span></th>
+                        <th class="sortable" onclick="ResultsPage.sortBy('date')">Date <span class="sort-icon sort-active sort-desc" data-col="date">↓</span></th>
                         <th>Sample Type</th>
-                        <th>Status</th>
+                        <th class="sortable" onclick="ResultsPage.sortBy('status')">Status <span class="sort-icon" data-col="status">↕</span></th>
                         <th>Pathogens Found</th>
                         <th>Report</th>
                         <th style="width: 100px;">Actions</th>
@@ -117,18 +111,12 @@
             </div>
 
             <!-- Guest Mode Warning -->
-            <div id="cloud-guest-warning" class="cloud-warning hidden">
+            <div id="cloud-guest-warning" class="cloud-login-prompt hidden">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                     <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
                     <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
                 </svg>
-                <div>
-                    <strong>Login Required</strong>
-                    <p>Cloud sync features are only available for registered users. <a href="#"
-                            onclick="App.navigateTo('login'); return false;">Login</a> or <a href="#"
-                            onclick="App.showRegister(); return false;">Create an account</a> to access your cloud
-                        results.</p>
-                </div>
+                <span><a href="#" onclick="App.navigateTo('login'); return false;">Sign in</a> or <a href="#" onclick="App.showRegister(); return false;">create an account</a> to access cloud-synced results.</span>
             </div>
 
             <!-- Cloud Results Table -->

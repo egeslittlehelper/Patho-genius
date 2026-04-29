@@ -59,8 +59,7 @@
 
 /* Running Analyses Section */
 .running-analyses-card {
-    border-left: 4px solid var(--primary);
-    background: linear-gradient(to right, var(--primary-light), var(--bg-card));
+    background: var(--primary-light);
 }
 
 .running-analyses-card .card-title {
@@ -70,58 +69,63 @@
 }
 
 .running-analyses-card .card-title svg {
-    width: 18px;
-    height: 18px;
-    color: var(--primary);
+    width: 16px;
+    height: 16px;
+    stroke: var(--text-muted);
 }
 
 .running-analysis-item {
-    display: flex;
+    display: grid;
+    grid-template-columns: 1fr 180px 36px auto;
     align-items: center;
     gap: 16px;
-    padding: 16px;
-    background: var(--bg-card);
-    border-radius: var(--radius-md);
-    margin-top: 12px;
-    box-shadow: var(--shadow-sm);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-light);
 }
 
-.running-analysis-item .analysis-info {
-    flex: 1;
+.running-analysis-item:last-child {
+    border-bottom: none;
+    padding-bottom: 0;
 }
 
-.running-analysis-item h4 {
-    font-size: 0.9375rem;
+.running-analysis-item .analysis-name {
+    font-size: 0.875rem;
+    font-weight: 500;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 2px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .running-analysis-item .analysis-status {
-    font-size: 0.8125rem;
+    font-size: 0.75rem;
     color: var(--text-muted);
-    display: flex;
-    align-items: center;
-    gap: 8px;
 }
 
 .running-analysis-item .progress-container {
-    flex: 1;
-    max-width: 200px;
+    min-width: 0;
 }
 
 .running-analysis-item .progress-bar {
-    height: 8px;
-    margin-bottom: 4px;
+    height: 6px;
 }
 
-.running-analysis-item .progress-text {
+.running-analysis-item .progress-pct {
     font-size: 0.75rem;
     color: var(--text-muted);
     text-align: right;
+    white-space: nowrap;
+}
+
+.running-analysis-item .analysis-controls {
+    display: flex;
+    gap: 6px;
+    justify-content: flex-end;
 }
 
 .running-analysis-item .btn-cancel {
-    padding: 6px 12px;
+    padding: 4px 10px;
     font-size: 0.75rem;
     color: var(--danger);
     border: 1px solid var(--danger);
@@ -129,11 +133,65 @@
     border-radius: var(--radius-sm);
     cursor: pointer;
     transition: all 0.2s;
+    font-family: inherit;
 }
 
 .running-analysis-item .btn-cancel:hover {
     background: var(--danger);
     color: white;
+}
+
+/* Sortable Column Headers */
+.sortable {
+    cursor: pointer;
+    user-select: none;
+    white-space: nowrap;
+}
+
+.sortable:hover {
+    color: var(--primary);
+}
+
+.sort-icon {
+    font-size: 0.7rem;
+    color: var(--text-light);
+    margin-left: 4px;
+    display: inline-block;
+}
+
+.sort-icon.sort-active {
+    color: var(--primary);
+}
+
+/* Cloud Login Prompt */
+.cloud-login-prompt {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--gray-50);
+    border: 1px solid var(--border-color);
+    border-radius: var(--radius-md);
+    margin-bottom: 16px;
+    font-size: 0.875rem;
+    color: var(--text-secondary);
+}
+
+.cloud-login-prompt svg {
+    width: 15px;
+    height: 15px;
+    stroke: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.cloud-login-prompt a {
+    color: var(--primary);
+    font-weight: 500;
+    text-decoration: none;
+}
+
+.cloud-login-prompt a:hover {
+    text-decoration: underline;
 }
 
 /* Results Detail View */

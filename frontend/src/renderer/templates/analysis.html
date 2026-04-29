@@ -101,55 +101,36 @@
             </div>
         </div>
 
-        <!-- FASTQ Stats & Batch Processing -->
-        <div id="fastq-stats-banner" class="card hidden"
-            style="margin-bottom: 20px; border-left: 3px solid var(--primary);">
-            <h3 class="card-title" style="font-size: 0.95rem; margin-bottom: 8px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18"
-                    style="vertical-align: middle; margin-right: 6px;">
-                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
-                    <polyline points="14 2 14 8 20 8"></polyline>
-                    <line x1="16" y1="13" x2="8" y2="13"></line>
-                    <line x1="16" y1="17" x2="8" y2="17"></line>
+        <!-- FASTQ Stats -->
+        <div id="fastq-stats-banner" class="fastq-stats-panel hidden">
+            <div id="fastq-stats-loading" class="fastq-stats-loading hidden">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14" class="icon-spin">
+                    <circle cx="12" cy="12" r="10"></circle>
+                    <path d="M12 6v6l4 2"></path>
                 </svg>
-                FASTQ File Statistics
-            </h3>
-            <div id="fastq-stats-content"
-                style="display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 10px; font-size: 0.85rem;">
-                <!-- Populated dynamically by newanalysis.js -->
+                Reading file statistics...
             </div>
-            <div id="fastq-stats-loading" class="hidden"
-                style="color: var(--text-muted); font-size: 0.85rem; padding: 8px 0;">
-                <span class="spinner-inline"></span> Analysing FASTQ with SeqKit...
+            <div id="fastq-stats-content" class="fastq-stats-row">
+                <!-- Populated dynamically by newanalysis.js -->
             </div>
         </div>
 
         <!-- Large file warning -->
-        <div id="fastq-large-warning" class="card hidden"
-            style="margin-bottom: 20px; border-left: 3px solid #f59e0b; background: rgba(245, 158, 11, 0.06);">
-            <div style="display: flex; align-items: flex-start; gap: 12px;">
-                <svg viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" width="24" height="24"
-                    style="flex-shrink: 0; margin-top: 2px;">
-                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
-                    </path>
-                    <line x1="12" y1="9" x2="12" y2="13"></line>
-                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                </svg>
-                <div>
-                    <p style="color: #f59e0b; font-weight: 600; margin: 0 0 4px 0; font-size: 0.95rem;">FASTQ file too
-                        large — Batch processing recommended</p>
-                    <p id="fastq-large-warning-detail" style="color: var(--text-muted); margin: 0; font-size: 0.85rem;">
-                        The total sequence length exceeds 4.5 Gbp. Splitting the file into smaller batches may improve
-                        classification reliability.
-                    </p>
-                    <div style="display: flex; align-items: center; gap: 12px; margin-top: 12px;">
-                        <label class="toggle-switch" for="batch-processing-toggle">
-                            <input type="checkbox" id="batch-processing-toggle">
-                            <span class="toggle-slider"></span>
-                        </label>
-                        <span style="font-size: 0.9rem; color: var(--text-primary);">Enable Batch Processing</span>
-                        <span style="font-size: 0.75rem; color: var(--text-muted); margin-left: 4px;"></span>
-                    </div>
+        <div id="fastq-large-warning" class="fastq-large-warning hidden">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            <div>
+                <strong>Large file — batch processing recommended</strong>
+                <span id="fastq-large-warning-detail">The total sequence length exceeds 4.5 Gbp.</span>
+                <div class="batch-toggle-row">
+                    <label class="toggle-switch" for="batch-processing-toggle">
+                        <input type="checkbox" id="batch-processing-toggle">
+                        <span class="toggle-slider"></span>
+                    </label>
+                    <span>Enable Batch Processing</span>
                 </div>
             </div>
         </div>

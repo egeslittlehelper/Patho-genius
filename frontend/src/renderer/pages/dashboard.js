@@ -286,6 +286,21 @@ const DashboardPage = {
             set('stat-failed', failed);
             set('stat-running', running);
 
+            // Show cloud count for logged-in users
+            const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
+            const cloudRow = document.getElementById('stat-cloud-row');
+            if (!isGuest && window.api?.cloud?.getResults) {
+                try {
+                    const cloudResp = await window.api.cloud.getResults();
+                    if (cloudResp.success && cloudResp.results?.length > 0) {
+                        set('stat-cloud', cloudResp.results.length);
+                        if (cloudRow) cloudRow.classList.remove('hidden');
+                    }
+                } catch {}
+            } else {
+                if (cloudRow) cloudRow.classList.add('hidden');
+            }
+
             if (recent.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="6" class="text-muted" style="text-align:center;padding:24px;">No analyses yet. Start a new analysis to see results here.</td></tr>';
                 return;

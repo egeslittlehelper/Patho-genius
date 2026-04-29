@@ -31,10 +31,51 @@ const App = {
         // Setup refresh button
         this.setupRefreshButton();
 
+        // Setup sidebar collapse toggle
+        this.setupSidebarToggle();
+
         // Check for existing session
         await this.checkExistingSession();
 
         console.log('App initialized');
+    },
+
+    /**
+     * Setup sidebar collapse toggle button and Ctrl+B shortcut
+     */
+    setupSidebarToggle() {
+        const btn = document.getElementById('sidebar-toggle-btn');
+        if (btn) {
+            btn.addEventListener('click', () => this.toggleSidebar());
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey && e.key === 'b') {
+                e.preventDefault();
+                this.toggleSidebar();
+            }
+        });
+
+        // Restore saved state
+        try {
+            if (localStorage.getItem('sidebarCollapsed') === '1') {
+                const sidebar = document.querySelector('.sidebar');
+                if (sidebar) sidebar.classList.add('collapsed');
+                if (btn) btn.title = 'Expand sidebar (Ctrl+B)';
+            }
+        } catch {}
+    },
+
+    /**
+     * Toggle sidebar collapsed/expanded state
+     */
+    toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        if (!sidebar) return;
+        const collapsed = sidebar.classList.toggle('collapsed');
+        const btn = document.getElementById('sidebar-toggle-btn');
+        if (btn) btn.title = collapsed ? 'Expand sidebar (Ctrl+B)' : 'Collapse sidebar (Ctrl+B)';
+        try { localStorage.setItem('sidebarCollapsed', collapsed ? '1' : '0'); } catch {}
     },
 
     /**

@@ -18,7 +18,9 @@ const ResultsPage = {
         completedAnalyses: [],
         cloudResults: [],
         currentSource: 'local', // 'local' or 'cloud'
-        localCopyIds: new Set() // analysisIds that have been downloaded to local this session
+        localCopyIds: new Set(), // analysisIds that have been downloaded to local this session
+        sortColumn: 'date',
+        sortDir: 'desc'
     },
     
     isEventsBound: false, // Prevent duplicate event binding
@@ -164,36 +166,50 @@ const ResultsPage = {
         container.innerHTML = running.map(analysis => `
             <div class="running-analysis-item" data-id="${analysis.id}">
                 <div class="analysis-info">
-                    <h4>${analysis.config?.analysis_name || analysis.id}</h4>
-                    <div class="analysis-status">
-                        <span class="status-indicator">${this.getStatusLabel(analysis.status)}</span>
-                        ${analysis.message ? `<span>• ${analysis.message}</span>` : ''}
-                    </div>
+                    <div class="analysis-name">${analysis.config?.analysis_name || analysis.id}</div>
+                    <div class="analysis-status">${this.getStatusLabel(analysis.status)}${analysis.message ? ` · ${analysis.message}` : ''}</div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-bar">
                         <div class="progress-fill" style="width: ${analysis.progress || 0}%"></div>
                     </div>
-                    <div class="progress-text">${analysis.progress || 0}% complete</div>
                 </div>
+                <span class="progress-pct">${analysis.progress || 0}%</span>
                 <div class="analysis-controls">
-                    ${analysis.status === 'paused' 
-                        ? `<button class="btn-resume" onclick="ResultsPage.resumeAnalysis('${analysis.id}')" title="Resume">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                            Resume
-                           </button>`
-                        : `<button class="btn-pause" onclick="ResultsPage.pauseAnalysis('${analysis.id}')" title="Pause">
-                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>
-                            Pause
-                           </button>`
+                    ${analysis.status === 'paused'
+                        ? `<button class="btn-resume" onclick="ResultsPage.resumeAnalysis('${analysis.id}')">Resume</button>`
+                        : `<button class="btn-pause" onclick="ResultsPage.pauseAnalysis('${analysis.id}')">Pause</button>`
                     }
-                    <button class="btn-cancel" onclick="ResultsPage.cancelAnalysis('${analysis.id}')" title="Cancel">
-                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
-                        Cancel
-                    </button>
+                    <button class="btn-cancel" onclick="ResultsPage.cancelAnalysis('${analysis.id}')">Cancel</button>
                 </div>
             </div>
         `).join('');
+    },
+
+    /**
+     * Sort history by column — toggles direction when same column is clicked
+     */
+    sortBy(column) {
+        if (this.state.sortColumn === column) {
+            this.state.sortDir = this.state.sortDir === 'asc' ? 'desc' : 'asc';
+        } else {
+            this.state.sortColumn = column;
+            this.state.sortDir = column === 'date' ? 'desc' : 'asc';
+        }
+        this.renderAnalysisHistory();
+    },
+
+    _updateSortIndicators() {
+        document.querySelectorAll('#results-history-table .sort-icon').forEach(el => {
+            const col = el.dataset.col;
+            if (col === this.state.sortColumn) {
+                el.textContent = this.state.sortDir === 'asc' ? '↑' : '↓';
+                el.classList.add('sort-active');
+            } else {
+                el.textContent = '↕';
+                el.classList.remove('sort-active');
+            }
+        });
     },
 
     /**
@@ -205,6 +221,27 @@ const ResultsPage = {
 
         const analyses = [...this.state.completedAnalyses];
         const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
+
+        // Sort
+        const { sortColumn, sortDir } = this.state;
+        analyses.sort((a, b) => {
+            let va, vb;
+            if (sortColumn === 'date') {
+                va = new Date(a.completed_at || a.endTime || a.startTime || 0).getTime();
+                vb = new Date(b.completed_at || b.endTime || b.startTime || 0).getTime();
+            } else if (sortColumn === 'name') {
+                va = (a.analysis_name || a.config?.analysis_name || a.id || '').toLowerCase();
+                vb = (b.analysis_name || b.config?.analysis_name || b.id || '').toLowerCase();
+            } else if (sortColumn === 'status') {
+                va = a.status || '';
+                vb = b.status || '';
+            } else {
+                return 0;
+            }
+            if (va < vb) return sortDir === 'asc' ? -1 : 1;
+            if (va > vb) return sortDir === 'asc' ? 1 : -1;
+            return 0;
+        });
 
         if (analyses.length === 0) {
             tbody.innerHTML = `
@@ -258,6 +295,8 @@ const ResultsPage = {
                 </td>
             </tr>
         `).join('');
+
+        this._updateSortIndicators();
     },
 
     /**

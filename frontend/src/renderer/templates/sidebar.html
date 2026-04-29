@@ -9,6 +9,11 @@
         <div class="brand-text">
             <span class="brand-name">Pathogenius</span>
         </div>
+        <button id="sidebar-toggle-btn" class="sidebar-collapse-btn" title="Collapse sidebar (Ctrl+B)">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="15 18 9 12 15 6"></polyline>
+            </svg>
+        </button>
     </div>
 
     <div class="user-card">
@@ -38,21 +43,21 @@
     </div>
         
     <nav class="nav-menu">
-        <button class="nav-item active" data-target="dashboard">
+        <button class="nav-item active" data-target="dashboard" title="Dashboard">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
                 <polyline points="9 22 9 12 15 12 15 22"></polyline>
             </svg>
             <span>Dashboard</span>
         </button>
-        <button class="nav-item" data-target="analysis">
+        <button class="nav-item" data-target="analysis" title="New Analysis">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19"></line>
                 <line x1="5" y1="12" x2="19" y2="12"></line>
             </svg>
             <span>New Analysis</span>
         </button>
-        <button class="nav-item" data-target="results">
+        <button class="nav-item" data-target="results" title="Results">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                 <polyline points="14 2 14 8 20 8"></polyline>
@@ -62,14 +67,14 @@
             <span>Results</span>
             <span class="nav-badge hidden" id="running-count">0</span>
         </button>
-        <button class="nav-item" data-target="terminal">
+        <button class="nav-item" data-target="terminal" title="Terminal">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <polyline points="4 17 10 11 4 5"></polyline>
                 <line x1="12" y1="19" x2="20" y2="19"></line>
             </svg>
             <span>Terminal</span>
         </button>
-        <button class="nav-item" data-target="database">
+        <button class="nav-item" data-target="database" title="Database">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
                 <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
@@ -102,20 +107,17 @@
         </div>
     </div>
 
-    <!-- Guest Mode Notice -->
-    <div id="guest-mode-warning" class="guest-warning hidden">
+    <!-- Guest Mode Indicator -->
+    <div id="guest-mode-warning" class="guest-label hidden">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
             <circle cx="12" cy="7" r="4"></circle>
             <line x1="22" y1="2" x2="2" y2="22"></line>
         </svg>
-        <div>
-            <strong>Guest Mode</strong>
-            <span>Results saved locally (no cloud sync)</span>
-        </div>
+        <span>Guest — local only</span>
     </div>
 
-    <button class="logout-btn" id="logout-btn">
+    <button class="logout-btn" id="logout-btn" title="Logout">
         <svg id="logout-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
             <polyline points="16 17 21 12 16 7"></polyline>
