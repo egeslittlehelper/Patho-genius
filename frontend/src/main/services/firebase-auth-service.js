@@ -5,6 +5,7 @@
  * Data: Firestore REST API
  */
 
+const crypto = require('crypto');
 const keytar = require('keytar');
 const { firebaseConfig } = require('./firebase-config');
 const encryptionService = require('./encryption-service');
@@ -135,40 +136,35 @@ async function clearSession() {
     currentSession = null;
 }
 
-async function initUserEncryption(uid, idToken = null, userData = null) {
-    const account = `key-${uid}`;
-    let stored = await keytar.getPassword(KEYTAR_SERVICE, account);
+async function initUserEncryption(uid, idToken, userData) {
+    let keyMaterial, salt;
 
-    if (!stored) {
-        // Not in keytar — try Firestore (cross-machine / reinstall scenario)
-        if (userData?.encKeyMaterial && userData?.encKeySalt) {
-            stored = JSON.stringify({ keyMaterial: userData.encKeyMaterial, salt: userData.encKeySalt });
-            await keytar.setPassword(KEYTAR_SERVICE, account, stored);
-        }
-    }
+    if (userData?.encKeyMaterial && userData?.encKeySalt) {
+        // Key already exists in Firestore — use it directly
+        keyMaterial = userData.encKeyMaterial;
+        salt = userData.encKeySalt;
+    } else {
+        // Firestore has no key — generate a fresh account key
+        keyMaterial = crypto.randomBytes(32).toString('hex');
+        salt = crypto.randomBytes(16).toString('base64');
 
-    if (!stored) {
-        // Generate a new key and persist it to both keytar and Firestore
-        const crypto = require('crypto');
-        const keyMaterial = crypto.randomBytes(32).toString('hex');
-        const salt = crypto.randomBytes(16).toString('base64');
-        stored = JSON.stringify({ keyMaterial, salt });
-        await keytar.setPassword(KEYTAR_SERVICE, account, stored);
-
-        if (idToken) {
+        // Write to Firestore — must succeed so all future machines converge on this key
+        let lastError;
+        for (let attempt = 0; attempt < 3; attempt++) {
             try {
                 await fsUpdate(`users/${uid}`, { encKeyMaterial: keyMaterial, encKeySalt: salt }, idToken);
-            } catch { /* non-fatal — key still works locally */ }
+                lastError = null;
+                break;
+            } catch (err) {
+                lastError = err;
+                if (attempt < 2) await new Promise(r => setTimeout(r, 500 * (attempt + 1)));
+            }
         }
-    } else if (idToken && userData && !userData.encKeyMaterial) {
-        // Key exists in keytar but was never synced to Firestore — backfill once
-        const { keyMaterial, salt } = JSON.parse(stored);
-        try {
-            await fsUpdate(`users/${uid}`, { encKeyMaterial: keyMaterial, encKeySalt: salt }, idToken);
-        } catch { /* non-fatal */ }
+        if (lastError) {
+            throw new Error('Failed to initialize account encryption key. Please check your connection and try again.');
+        }
     }
 
-    const { keyMaterial, salt } = JSON.parse(stored);
     encryptionService.unlockEncryption(keyMaterial, salt);
 }
 

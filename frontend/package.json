@@ -6,12 +6,14 @@
   "scripts": {
     "start": "electron .",
     "pack": "electron-builder --dir",
-    "dist": "electron-builder"
+    "dist": "electron-builder",
+    "postinstall": "electron-rebuild -f -w keytar"
   },
   "author": "",
   "license": "ISC",
   "devDependencies": {
-    "electron": "^35.0.0"
+    "electron": "^35.0.0",
+    "electron-rebuild": "^3.2.9"
   },
   "dependencies": {
     "firebase": "^12.12.1",

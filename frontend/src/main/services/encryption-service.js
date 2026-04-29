@@ -35,36 +35,6 @@ function deriveKey(password, salt) {
 }
 
 /**
- * Initialize encryption with user password
- * @param {string} password - User password for encryption
- * @returns {{success: boolean, salt?: string, error?: string}}
- */
-function initializeEncryption(password) {
-    try {
-        if (!password || password.length < 6) {
-            return { success: false, error: 'Password must be at least 6 characters' };
-        }
-
-        // Generate new salt
-        const salt = crypto.randomBytes(ENCRYPTION_CONFIG.SALT_LENGTH);
-        
-        // Derive key from password
-        encryptionKey = deriveKey(password, salt);
-        isEncryptionEnabled = true;
-
-        console.log('Encryption initialized');
-        
-        return { 
-            success: true, 
-            salt: salt.toString('base64')
-        };
-    } catch (error) {
-        console.error('Encryption init error:', error);
-        return { success: false, error: error.message };
-    }
-}
-
-/**
  * Unlock encryption with existing salt
  * @param {string} password - User password
  * @param {string} saltBase64 - Salt from previous initialization
@@ -218,7 +188,6 @@ function generateToken(length = 32) {
 }
 
 module.exports = {
-    initializeEncryption,
     unlockEncryption,
     encrypt,
     decrypt,
