@@ -52,13 +52,14 @@ async function saveResultLocally(analysisId, uid, resultData, meta = null) {
             fs.writeFileSync(path.join(dir, `${analysisId}.enc`), encrypted.encrypted, 'utf8');
         }
 
-        // Plain sidecar — non-sensitive index fields only, no user-provided labels
+        // Plain sidecar — index fields + analysis_name for failed results (no .enc exists for them)
         if (meta) {
             const safeMeta = {
                 status: meta.status || 'completed',
                 completed_at: meta.completed_at || new Date().toISOString(),
                 detectedCount: meta.detectedCount ?? 0,
                 ...(meta.error ? { error: meta.error } : {}),
+                ...(!hasResult && meta.analysis_name ? { analysis_name: meta.analysis_name } : {}),
             };
             fs.writeFileSync(
                 path.join(dir, `${analysisId}.meta.json`),

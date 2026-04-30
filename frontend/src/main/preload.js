@@ -139,6 +139,10 @@ contextBridge.exposeInMainWorld('api', {
         getStats: () =>
             ipcRenderer.invoke('app:get-system-stats'),
 
+        onGpuReady: (callback) => {
+            ipcRenderer.once('system:gpu-ready', (_event, gpu) => callback(gpu));
+        },
+
         getAppVersion: () => {
             try { return require('../../package.json').version; } catch { return '—'; }
         },

@@ -262,7 +262,7 @@ const ResultsPage = {
                             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
                             <polyline points="14 2 14 8 20 8"></polyline>
                         </svg>
-                        ${analysis.analysis_name || analysis.config?.analysis_name || analysis.id}
+                        ${esc(analysis.analysis_name || analysis.config?.analysis_name || analysis.id)}
                         ${analysis.synced ? '<span class="synced-indicator" title="Synced to cloud">&#x2601;</span>' : ''}
                     </div>
                 </td>
@@ -667,10 +667,10 @@ const ResultsPage = {
                 <div class="pathogen-detail-card">
                     <div class="pathogen-detail-header">
                         <div>
-                            <h3>${p.name}</h3>
-                            <p class="pathogen-strain">Strain: ${p.strain || 'Unknown'}</p>
+                            <h3>${esc(p.name)}</h3>
+                            <p class="pathogen-strain">Strain: ${esc(p.strain || 'Unknown')}</p>
                         </div>
-                        <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
+                        <span class="risk-badge risk-${risk}">${esc(this.capitalize(risk))} Risk</span>
                     </div>
 
                     <div class="pathogen-detail-stats">
@@ -699,7 +699,7 @@ const ResultsPage = {
 
                     <div class="alert alert-info">
                         <strong>Taxonomy</strong>
-                        <p>Tax ID: ${p.tax_id || 'Unknown'}</p>
+                        <p>Tax ID: ${esc(p.tax_id || 'Unknown')}</p>
                     </div>
                 </div>
             `;
@@ -1225,7 +1225,8 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
                         uploadedAt: r.completedAt || r.updatedAt,
                         sampleType: r.sampleType || '—',
                         size: null,
-                        localCopy: this.state.localCopyIds.has(r.analysisId), // restored from session set
+                        localCopy: this.state.localCopyIds.has(r.analysisId) ||
+                                   this.state.completedAnalyses.some(a => a.id === r.analysisId),
                         cloudPath: r.cloudPath
                     }));
                 } else {
@@ -1309,11 +1310,11 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <path d="M18 10h-1.26A8 8 0 1 0 9 20h9a5 5 0 0 0 0-10z"></path>
                         </svg>
-                        ${result.name}
+                        ${esc(result.name)}
                     </div>
                 </td>
                 <td>${this.formatDate(result.uploadedAt)}</td>
-                <td class="text-muted">${result.sampleType || '—'}</td>
+                <td class="text-muted">${esc(result.sampleType || '—')}</td>
                 <td>${this.formatFileSize(result.size)}</td>
                 <td>
                     <span class="synced-badge ${result.localCopy ? 'synced' : 'not-synced'}">
@@ -1335,7 +1336,7 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
                             </svg>
                             Download
                         </button>
-                        <button class="btn btn-outline btn-sm btn-danger-outline" onclick="ResultsPage.deleteCloudResult('${result.id}', '${result.name}')" title="Delete from cloud">
+                        <button class="btn btn-outline btn-sm btn-danger-outline" onclick="ResultsPage.deleteCloudResult('${result.id}')" title="Delete from cloud">
                             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px;">
                                 <polyline points="3 6 5 6 21 6"></polyline>
                                 <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
@@ -1413,8 +1414,9 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
     /**
      * Delete a cloud result permanently
      */
-    async deleteCloudResult(resultId, resultName) {
-        const displayName = resultName || resultId;
+    async deleteCloudResult(resultId) {
+        const cloudResult = this.state.cloudResults.find(r => r.id === resultId);
+        const displayName = cloudResult?.name || resultId;
         if (!confirm(`Delete "${displayName}" from the cloud permanently?\n\nThis cannot be undone. Your local copy (if any) will not be affected.`)) return;
 
         try {

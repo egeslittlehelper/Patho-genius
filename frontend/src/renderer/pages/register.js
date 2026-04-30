@@ -160,7 +160,7 @@ const RegisterPage = {
             ui.id = 'verify-link-ui';
             ui.innerHTML = `
                 <p style="margin:16px 0 8px;color:var(--text-muted);font-size:0.9rem;">
-                    A verification link has been sent to <strong>${email}</strong>.<br>
+                    A verification link has been sent to <strong>${esc(email)}</strong>.<br>
                     Click the link in the email, then come back here and click the button below.
                 </p>
                 <button id="check-verification-btn" class="btn btn-primary" style="margin-top:12px;width:100%;">

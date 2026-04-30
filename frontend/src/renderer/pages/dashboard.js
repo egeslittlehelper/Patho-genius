@@ -199,6 +199,11 @@ const DashboardPage = {
                 this.systemStats = await window.api.system.getStats();
                 this.updateSystemDisplay();
             }
+            window.api?.system?.onGpuReady?.((gpu) => {
+                if (this.systemStats) this.systemStats.gpu = gpu;
+                const gpuEl = document.getElementById('gpu-usage');
+                if (gpuEl) gpuEl.textContent = gpu.available ? gpu.name : 'No GPU detected';
+            });
         } catch (error) {
             console.error('Failed to load system stats:', error);
         }

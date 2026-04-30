@@ -258,3 +258,13 @@ const Utils = {
 };
 
 window.Utils = Utils;
+
+// HTML-escape for safe innerHTML interpolation.
+// Use esc(value) anywhere untrusted data appears inside a template literal
+// that is assigned to innerHTML.
+function esc(s) {
+    const d = document.createElement('div');
+    d.textContent = (s === null || s === undefined) ? '' : String(s);
+    return d.innerHTML;
+}
+window.esc = esc;

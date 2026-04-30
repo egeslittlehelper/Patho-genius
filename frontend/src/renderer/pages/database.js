@@ -106,7 +106,7 @@ const DatabasePage = {
             <div class="db-list-entry" data-id="${db.id}">
                 <div class="db-list-info">
                     <div class="db-list-name-row">
-                        <span class="db-list-name">${db.name}</span>
+                        <span class="db-list-name">${esc(db.name)}</span>
                         ${db.isActive ? '<span class="status-badge status-active" style="font-size: 0.7rem; padding: 2px 8px;">Active</span>' : ''}
                         ${db.isBuilt ? '<span class="status-badge status-completed" style="font-size: 0.7rem; padding: 2px 8px;">Built</span>' : '<span class="status-badge status-failed" style="font-size: 0.7rem; padding: 2px 8px;">Not Built</span>'}
                         ${db.syncedToJetson ? '<span class="status-badge status-running" style="font-size: 0.7rem; padding: 2px 8px;">Jetson</span>' : ''}

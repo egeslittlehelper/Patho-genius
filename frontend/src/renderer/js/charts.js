@@ -147,7 +147,7 @@ const Charts = {
                     stroke="white"
                     stroke-width="2"
                     class="sunburst-segment"
-                    data-name="${item.name}"
+                    data-name="${esc(item.name)}"
                     data-value="${item.value}"
                     data-percentage="${((item.value / totalValue) * 100).toFixed(1)}"
                     data-level="${level}"
@@ -172,7 +172,7 @@ const Charts = {
                         dominant-baseline="middle"
                         fill="${level === 0 ? 'white' : '#374151'}"
                         font-size="${level === 0 ? '12' : '10'}"
-                    >${item.name}</text>
+                    >${esc(item.name)}</text>
                 `);
             }
 
@@ -197,7 +197,7 @@ const Charts = {
         return items.map((item, idx) => `
             <span class="legend-item">
                 <span class="legend-dot" style="background: ${item.color || this.getColorForIndex(idx, items.length)}"></span>
-                ${item.name} (${item.value}%)
+                ${esc(item.name)} (${item.value}%)
             </span>
         `).join('');
     },
@@ -372,10 +372,10 @@ const Charts = {
                     stroke="url(#link-gradient-${idx})"
                     stroke-width="${link.thickness}"
                     class="sankey-link"
-                    data-source="${link.sourceNode.name}"
-                    data-target="${link.targetNode.name}"
+                    data-source="${esc(link.sourceNode.name)}"
+                    data-target="${esc(link.targetNode.name)}"
                     data-value="${link.value}"
-                    data-label="${link.label || ''}"
+                    data-label="${esc(link.label || '')}"
                 />
             `;
         }).join('');
@@ -386,7 +386,7 @@ const Charts = {
      */
     generateSankeyNodes(nodes, nodeWidth) {
         return nodes.map(node => `
-            <g class="sankey-node" data-name="${node.name}" data-value="${node.value}" data-info="${node.info || ''}">
+            <g class="sankey-node" data-name="${esc(node.name)}" data-value="${node.value}" data-info="${esc(node.info || '')}">
                 <rect 
                     x="${node.x}" 
                     y="${node.y}" 
@@ -403,7 +403,7 @@ const Charts = {
                     class="sankey-label"
                     fill="#374151"
                     font-size="11"
-                >${node.name}</text>
+                >${esc(node.name)}</text>
             </g>
         `).join('');
     },
@@ -565,7 +565,7 @@ const Charts = {
                         height: ${cell.height}px;
                         background-color: ${cell.color};
                     "
-                    data-name="${cell.name}"
+                    data-name="${esc(cell.name)}"
                     data-value="${cell.value}"
                     data-reads="${cell.reads || 'N/A'}"
                     data-confidence="${cell.confidence || 'N/A'}"
@@ -573,7 +573,7 @@ const Charts = {
                     data-amr="${cell.amrGenes ?? 'N/A'}"
                     data-virulence="${cell.virulenceFactors ?? 'N/A'}"
                 >
-                    ${showLabel ? `<span class="treemap-cell-label">${cell.name}</span>` : ''}
+                    ${showLabel ? `<span class="treemap-cell-label">${esc(cell.name)}</span>` : ''}
                     ${showValue ? `<span class="treemap-cell-value">${cell.value}%</span>` : ''}
                     ${showConfidence ? `<span class="treemap-cell-confidence">${cell.confidence}% conf.</span>` : ''}
                 </div>
@@ -607,7 +607,7 @@ const Charts = {
                     <div class="tooltip-row"><strong>Relative Abundance:</strong> ${value}%</div>
                     ${reads !== 'N/A' ? `<div class="tooltip-row"><strong>Read Count:</strong> ${this.formatNumber(reads)}</div>` : ''}
                     ${confidence !== 'N/A' ? `<div class="tooltip-row"><strong>Confidence Score:</strong> <span class="confidence-highlight">${confidence}%</span></div>` : ''}
-                    ${risk !== 'N/A' && risk !== 'Unknown' ? `<div class="tooltip-row"><strong>Risk Level:</strong> <span class="risk-badge-sm risk-${riskClass}">${risk}</span></div>` : ''}
+                    ${risk !== 'N/A' && risk !== 'Unknown' ? `<div class="tooltip-row"><strong>Risk Level:</strong> <span class="risk-badge-sm risk-${riskClass}">${esc(risk)}</span></div>` : ''}
                     ${amr !== 'N/A' && amr !== 'null' ? `<div class="tooltip-row"><strong>AMR Genes:</strong> ${amr}</div>` : ''}
                     ${virulence !== 'N/A' && virulence !== 'null' ? `<div class="tooltip-row"><strong>Virulence Factors:</strong> ${virulence}</div>` : ''}
                 `);

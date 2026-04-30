@@ -6,11 +6,11 @@ const crypto = require('crypto');
 
 const ENCRYPTION_CONFIG = {
     ALGORITHM: 'aes-256-gcm',
-    KEY_LENGTH: 32, // 256 bits
+    KEY_LENGTH: 32,
     IV_LENGTH: 16,
     SALT_LENGTH: 16,
     TAG_LENGTH: 16,
-    ITERATIONS: 100000, // PBKDF2 iterations
+    ITERATIONS: 210000, // PBKDF2 SHA-512 iterations (default for new accounts)
     DIGEST: 'sha512'
 };
 
@@ -24,11 +24,11 @@ let isEncryptionEnabled = false;
  * @param {Buffer} salt - Salt for key derivation
  * @returns {Buffer} Derived key
  */
-function deriveKey(password, salt) {
+function deriveKey(password, salt, iterations) {
     return crypto.pbkdf2Sync(
         password,
         salt,
-        ENCRYPTION_CONFIG.ITERATIONS,
+        iterations || ENCRYPTION_CONFIG.ITERATIONS,
         ENCRYPTION_CONFIG.KEY_LENGTH,
         ENCRYPTION_CONFIG.DIGEST
     );
@@ -40,12 +40,11 @@ function deriveKey(password, salt) {
  * @param {string} saltBase64 - Salt from previous initialization
  * @returns {{success: boolean, error?: string}}
  */
-function unlockEncryption(password, saltBase64) {
+function unlockEncryption(password, saltBase64, iterations) {
     try {
         const salt = Buffer.from(saltBase64, 'base64');
-        encryptionKey = deriveKey(password, salt);
+        encryptionKey = deriveKey(password, salt, iterations);
         isEncryptionEnabled = true;
-        
         console.log('Encryption unlocked');
         return { success: true };
     } catch (error) {
@@ -161,20 +160,14 @@ function isEnabled() {
  */
 function hashPassword(password) {
     const salt = crypto.randomBytes(16);
-    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512');
+    const hash = crypto.pbkdf2Sync(password, salt, 210000, 64, 'sha512');
     return salt.toString('hex') + ':' + hash.toString('hex');
 }
 
-/**
- * Verify password against hash
- * @param {string} password - Password to verify
- * @param {string} storedHash - Stored hash to compare
- * @returns {boolean}
- */
 function verifyPassword(password, storedHash) {
     const [saltHex, hashHex] = storedHash.split(':');
     const salt = Buffer.from(saltHex, 'hex');
-    const hash = crypto.pbkdf2Sync(password, salt, 10000, 64, 'sha512');
+    const hash = crypto.pbkdf2Sync(password, salt, 210000, 64, 'sha512');
     return hash.toString('hex') === hashHex;
 }
 

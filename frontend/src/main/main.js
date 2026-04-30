@@ -26,23 +26,40 @@ const llmService = require('./services/llm-service');
 // Global reference to main window
 let mainWindow = null;
 
-// si.graphics() is slow on Windows (WMI query). Cache the result after the first call
-// so subsequent dashboard loads are instant.
-let _cachedGpuInfo = null;
-async function getGpuInfoCached() {
-    if (_cachedGpuInfo) return _cachedGpuInfo;
-    try {
-        const info = await si.graphics();
-        const primary = info.controllers?.find(g => g.vendor !== 'Microsoft') || info.controllers?.[0];
-        _cachedGpuInfo = {
-            available: !!primary,
-            name: primary?.model || 'No GPU detected',
-            vendor: primary?.vendor || '—'
-        };
-    } catch {
-        _cachedGpuInfo = { available: false, name: 'No GPU detected', vendor: '—' };
-    }
-    return _cachedGpuInfo;
+// GPU: fetched once in background after app ready, never awaited in the stats handler
+let _cachedGpuInfo = { available: false, name: 'No GPU detected', vendor: '—' };
+let _gpuFetchStarted = false;
+
+function startGpuFetch() {
+    if (_gpuFetchStarted) return;
+    _gpuFetchStarted = true;
+    si.graphics().then(data => {
+        const controllers = data?.controllers || [];
+        const gpu = controllers.find(c => c.model && c.vendor !== 'Microsoft') || controllers[0];
+        if (gpu?.model) {
+            _cachedGpuInfo = { available: true, name: gpu.model, vendor: gpu.vendor || '—' };
+            mainWindow?.webContents.send('system:gpu-ready', _cachedGpuInfo);
+        }
+    }).catch(() => {});
+}
+
+// CPU usage via two os.cpus() snapshots 200ms apart — no WMI
+function cpuUsagePercent() {
+    return new Promise(resolve => {
+        const t1 = os.cpus();
+        setTimeout(() => {
+            const t2 = os.cpus();
+            let idle = 0, total = 0;
+            for (let i = 0; i < t1.length; i++) {
+                const d1 = t1[i].times, d2 = t2[i].times;
+                idle += d2.idle - d1.idle;
+                const dTotal = Object.values(d2).reduce((a, b) => a + b, 0) -
+                               Object.values(d1).reduce((a, b) => a + b, 0);
+                total += dTotal;
+            }
+            resolve(total > 0 ? Math.round(100 * (1 - idle / total)) : 0);
+        }, 200);
+    });
 }
 
 // In-memory ownership map: analysisId -> uid (or 'guest')
@@ -116,7 +133,7 @@ async function getEncryptedLocalAnalyses(uid) {
     if (!listed.success) return [];
     return listed.files.map(f => ({
         id: f.analysisId,
-        analysis_name: f.analysisId,   // name is encrypted — shown after user opens the result
+        analysis_name: f.analysis_name || f.analysisId,  // failed analyses store name in meta; others decrypt on open
         sample_type: '—',              // sample_type is encrypted
         status: f.status || 'completed',
         error: f.error || null,
@@ -243,6 +260,18 @@ function createWindow() {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
     // mainWindow.webContents.openDevTools();
 
+    // Allow about:blank popups (used by PDF export), deny everything else
+    mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+        if (url === 'about:blank') return { action: 'allow' };
+        return { action: 'deny' };
+    });
+
+    // Block navigating away from the local file — prevents renderer XSS from
+    // redirecting to a remote page that escapes the sandbox.
+    mainWindow.webContents.on('will-navigate', (event, url) => {
+        if (!url.startsWith('file://')) event.preventDefault();
+    });
+
     mainWindow.on('closed', () => {
         mainWindow = null;
         global.mainWindow = null;
@@ -251,6 +280,7 @@ function createWindow() {
 
 app.whenReady().then(() => {
     createWindow();
+    startGpuFetch();
 
     // ── Relay main-process console output to the renderer Terminal page ──
     const _origLog = console.log.bind(console);
@@ -259,8 +289,8 @@ app.whenReady().then(() => {
 
     function sendToTerminal(text, type) {
         try {
-            if (global.mainWindow && !global.mainWindow.isDestroyed()) {
-                global.mainWindow.webContents.send('terminal:log', { text: String(text), type });
+            if (mainWindow && !mainWindow.isDestroyed()) {
+                mainWindow.webContents.send('terminal:log', { text: String(text), type });
             }
         } catch { /* ignore if window is gone */ }
     }
@@ -583,37 +613,39 @@ ipcMain.handle('app:delete-analysis', async (event, analysisId) => {
 
 ipcMain.handle('app:get-system-stats', async () => {
     try {
-        // si.graphics() is fetched via cached helper (slow WMI call, once per session).
-        // si.networkInterfaces() is excluded — not displayed anywhere in the UI.
-        const [cpuInfo, cpuLoad, memInfo, diskInfo, gpu] = await Promise.all([
-            si.cpu(),
-            si.currentLoad(),
-            si.mem(),
-            si.fsSize(),
-            getGpuInfoCached()
+        const cpus = os.cpus();
+        const rootPath = os.platform() === 'win32' ? 'C:\\' : '/';
+        const [cpuUsage, diskStats] = await Promise.all([
+            cpuUsagePercent(),
+            fs.promises.statfs(rootPath)
         ]);
 
-        const mainDisk = diskInfo.find(d => d.mount === 'C:' || d.mount === '/') || diskInfo[0];
+        const totalMem = os.totalmem();
+        const freeMem = os.freemem();
+        const usedMem = totalMem - freeMem;
+        const totalDisk = diskStats.blocks * diskStats.bsize;
+        const freeDisk = diskStats.bavail * diskStats.bsize;
+        const usedDisk = totalDisk - freeDisk;
 
         return {
             cpu: {
-                cores: cpuInfo.cores,
-                model: cpuInfo.brand,
-                usage: Math.round(cpuLoad.currentLoad)
+                cores: cpus.length,
+                model: cpus[0]?.model || 'Unknown',
+                usage: cpuUsage
             },
             memory: {
-                total: memInfo.total,
-                used: memInfo.used,
-                free: memInfo.free,
-                percentUsed: Math.round((memInfo.used / memInfo.total) * 100)
+                total: totalMem,
+                used: usedMem,
+                free: freeMem,
+                percentUsed: Math.round((usedMem / totalMem) * 100)
             },
             disk: {
-                free: mainDisk ? mainDisk.available : 0,
-                total: mainDisk ? mainDisk.size : 0,
-                used: mainDisk ? mainDisk.used : 0,
-                percentUsed: mainDisk ? Math.round(mainDisk.use) : 0
+                free: freeDisk,
+                total: totalDisk,
+                used: usedDisk,
+                percentUsed: totalDisk > 0 ? Math.round((usedDisk / totalDisk) * 100) : 0
             },
-            gpu,
+            gpu: _cachedGpuInfo,
             network: { connected: null, interface: '—', ip: '—' },
             platform: os.platform(),
             hostname: os.hostname(),
@@ -637,7 +669,7 @@ ipcMain.handle('app:get-system-stats', async () => {
                 percentUsed: Math.round(((totalMemory - freeMemory) / totalMemory) * 100)
             },
             disk: { free: 0, total: 0, used: 0, percentUsed: 0 },
-            gpu: { available: false, name: '—', vendor: '—' },
+            gpu: _cachedGpuInfo,
             network: { connected: null, interface: '—', ip: '—' },
             platform: os.platform(),
             hostname: os.hostname(),
@@ -814,31 +846,45 @@ ipcMain.handle('cloud:sync-metadata', async (event, analysisId, metadata) => {
    IPC HANDLERS - Admin (Firebase)
    ============================================ */
 
+function requireAdmin() {
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not authenticated' };
+    if (user.role !== 'admin') return { success: false, error: 'Unauthorized' };
+    return null;
+}
+
 ipcMain.handle('admin:get-users', async () => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminGetUsers();
 });
 
 ipcMain.handle('admin:suspend-user', async (event, uid) => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminSuspendUser(uid);
 });
 
 ipcMain.handle('admin:activate-user', async (event, uid) => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminActivateUser(uid);
 });
 
 ipcMain.handle('admin:update-user-role', async (event, userId, newRole) => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminChangeUserRole(userId, newRole);
 });
 
 ipcMain.handle('admin:send-password-reset', async (event, email) => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminSendPasswordReset(email);
 });
 
 ipcMain.handle('admin:get-stats', async () => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminGetStats();
 });
 
 ipcMain.handle('admin:reset-user-password', async (event, userId) => {
+    const deny = requireAdmin(); if (deny) return deny;
     const users = await firebaseAuth.adminGetUsers();
     if (!users.success) return { success: false, error: users.error };
     const user = users.users.find(u => u.uid === userId);
@@ -847,6 +893,7 @@ ipcMain.handle('admin:reset-user-password', async (event, userId) => {
 });
 
 ipcMain.handle('admin:delete-user', async (event, userId) => {
+    const deny = requireAdmin(); if (deny) return deny;
     return await firebaseAuth.adminSuspendUser(userId);
 });
 

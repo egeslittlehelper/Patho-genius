@@ -308,7 +308,7 @@ const SettingsPage = {
             this.renderUserList(this.cachedUsers);
         } catch (error) {
             console.error('Failed to load users:', error);
-            tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">Failed to load users: ${error.message}</td></tr>`;
+            tbody.innerHTML = `<tr><td colspan="5" class="text-muted" style="text-align:center;">Failed to load users: ${esc(error.message)}</td></tr>`;
         }
     },
 
@@ -331,13 +331,13 @@ const SettingsPage = {
                             <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
                             <circle cx="12" cy="7" r="4"></circle>
                         </svg>
-                        ${user.username || user.email}
+                        ${esc(user.username || user.email)}
                         ${user.uid === currentUid ? '<span class="you-badge">(You)</span>' : ''}
                     </div>
                 </td>
-                <td class="text-muted">${user.email || '—'}</td>
+                <td class="text-muted">${esc(user.email || '—')}</td>
                 <td>
-                    <span class="user-role-badge ${(user.role || 'user').toLowerCase()}">${user.role || 'user'}</span>
+                    <span class="user-role-badge ${user.role === 'admin' ? 'admin' : 'user'}">${esc(user.role || 'user')}</span>
                     ${user.status === 'suspended' ? '<span class="user-role-badge" style="background:#FEE2E2;color:#EF4444;margin-left:4px;">Suspended</span>' : ''}
                 </td>
                 <td class="text-muted">${user.createdAt ? this.formatDate(user.createdAt) : '—'}</td>
@@ -348,7 +348,7 @@ const SettingsPage = {
                                 ? `<button class="btn btn-outline btn-sm" onclick="SettingsPage.activateUser('${user.uid}')">Activate</button>`
                                 : `<button class="btn btn-outline btn-sm" onclick="SettingsPage.suspendUser('${user.uid}')">Suspend</button>`
                             }
-                            <button class="btn btn-outline btn-sm" onclick="SettingsPage.sendPasswordReset('${user.uid}', '${user.email}')">
+                            <button class="btn btn-outline btn-sm" onclick="SettingsPage.openResetPasswordModal('${user.uid}')">
                                 Reset Password
                             </button>
                             ${user.role !== 'admin'

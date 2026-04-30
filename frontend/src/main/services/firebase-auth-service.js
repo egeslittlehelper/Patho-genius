@@ -22,6 +22,10 @@ const FS_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/data
 // In-memory session (cleared on app exit)
 let currentSession = null; // { idToken, refreshToken, uid, email }
 
+// Cached refresh token from a just-registered account, used to check email
+// verification without doing a full sign-in on every button click.
+let pendingVerificationRefreshToken = null;
+
 /* ─── Firestore helpers ─────────────────────────────────────── */
 
 function toFsVal(v) {
@@ -134,25 +138,34 @@ async function storeSession(session) {
 async function clearSession() {
     await keytar.deletePassword(KEYTAR_SERVICE, KEYTAR_SESSION);
     currentSession = null;
+    pendingVerificationRefreshToken = null;
 }
 
 async function initUserEncryption(uid, idToken, userData) {
-    let keyMaterial, salt;
+    let keyMaterial, salt, iterations;
 
     if (userData?.encKeyMaterial && userData?.encKeySalt) {
-        // Key already exists in Firestore — use it directly
+        // Key already exists in Firestore — use it with stored iteration count.
+        // Legacy accounts that predate the 210k bump will have no encKeyIterations
+        // field; default to 100000 so their existing blobs still decrypt.
         keyMaterial = userData.encKeyMaterial;
         salt = userData.encKeySalt;
+        iterations = userData.encKeyIterations || 100000;
     } else {
-        // Firestore has no key — generate a fresh account key
+        // Fresh account — generate key with current iteration target.
         keyMaterial = crypto.randomBytes(32).toString('hex');
         salt = crypto.randomBytes(16).toString('base64');
+        iterations = 210000;
 
         // Write to Firestore — must succeed so all future machines converge on this key
         let lastError;
         for (let attempt = 0; attempt < 3; attempt++) {
             try {
-                await fsUpdate(`users/${uid}`, { encKeyMaterial: keyMaterial, encKeySalt: salt }, idToken);
+                await fsUpdate(`users/${uid}`, {
+                    encKeyMaterial: keyMaterial,
+                    encKeySalt: salt,
+                    encKeyIterations: iterations
+                }, idToken);
                 lastError = null;
                 break;
             } catch (err) {
@@ -165,7 +178,7 @@ async function initUserEncryption(uid, idToken, userData) {
         }
     }
 
-    encryptionService.unlockEncryption(keyMaterial, salt);
+    encryptionService.unlockEncryption(keyMaterial, salt, iterations);
 }
 
 function mapAuthError(message) {
@@ -198,8 +211,9 @@ async function register({ username, email, password, displayName, institution })
         const authData = await authPost('signUp', { email, password, returnSecureToken: true });
         const { localId: uid, idToken } = authData;
 
-        // 3. Send verification email
+        // 3. Send verification email; cache refresh token for verification polling
         await authPost('sendOobCode', { requestType: 'VERIFY_EMAIL', idToken });
+        pendingVerificationRefreshToken = authData.refreshToken;
 
         // 4. Write user profile to Firestore (authenticated with fresh idToken)
         const now = new Date();
@@ -251,7 +265,7 @@ async function login(username, password) {
         if (userData.status === 'suspended') return { success: false, error: 'account-suspended' };
 
         // 5. Store session
-        currentSession = { idToken, refreshToken, uid, email: userData.email };
+        currentSession = { idToken, refreshToken, uid, email: userData.email, role: userData.role || 'user' };
         await storeSession(currentSession);
 
         // 6. Initialize local file encryption for this user
@@ -304,6 +318,9 @@ async function restoreSession() {
 
         const userData = await fsGet(`users/${currentSession.uid}`, idToken);
         if (!userData || userData.status === 'suspended') { await clearSession(); return { success: false }; }
+
+        // Keep role in sync with Firestore (may have changed since session was stored)
+        currentSession.role = userData.role || 'user';
 
         // Re-init encryption
         await initUserEncryption(currentSession.uid, idToken, userData);
@@ -386,16 +403,41 @@ async function resendVerificationEmail(email, password) {
 
 async function checkEmailVerified(email, password) {
     try {
-        const authData = await authPost('signInWithPassword', { email, password, returnSecureToken: true });
-        const userInfo = await authPost('lookup', { idToken: authData.idToken });
-        return { success: true, verified: userInfo.users[0].emailVerified };
+        let idToken;
+
+        // Prefer refreshing the token from registration rather than a full re-auth,
+        // to avoid hitting Firebase's rate limiter when the user polls the button.
+        if (pendingVerificationRefreshToken) {
+            try {
+                const res = await fetch(`${TOKEN_BASE}?key=${API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ grant_type: 'refresh_token', refresh_token: pendingVerificationRefreshToken })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    pendingVerificationRefreshToken = data.refresh_token;
+                    idToken = data.id_token;
+                }
+            } catch { /* fall through to full sign-in */ }
+        }
+
+        if (!idToken) {
+            const authData = await authPost('signInWithPassword', { email, password, returnSecureToken: true });
+            idToken = authData.idToken;
+        }
+
+        const userInfo = await authPost('lookup', { idToken });
+        const verified = userInfo.users[0].emailVerified;
+        if (verified) pendingVerificationRefreshToken = null;
+        return { success: true, verified };
     } catch {
         return { success: false, verified: false };
     }
 }
 
 function getCurrentUser() {
-    return currentSession ? { uid: currentSession.uid, email: currentSession.email } : null;
+    return currentSession ? { uid: currentSession.uid, email: currentSession.email, role: currentSession.role || 'user' } : null;
 }
 
 async function getIdToken() {
