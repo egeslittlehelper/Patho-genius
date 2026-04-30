@@ -482,7 +482,7 @@ const App = {
             const node = sys.getNodeVersion?.() || 'Unknown';
             set('system-node', 'v' + node);
 
-            const appVer = sys.getAppVersion?.() || '—';
+            const appVer = (await sys.getAppVersion?.()) || '—';
             set('system-app-version', appVer);
 
             const electronVer = sys.getElectronVersion?.() || '—';

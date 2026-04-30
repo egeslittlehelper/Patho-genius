@@ -741,7 +741,7 @@ const Charts = {
                          stroke="${pathogen.color}"
                          stroke-width="2"
                          class="radar-polygon"
-                         data-name="${pathogen.name}"
+                         data-name="${esc(pathogen.name)}"
                          data-metrics="${JSON.stringify(pathogen.metrics).replace(/"/g, '&quot;')}"/>
             `;
         });
@@ -756,7 +756,7 @@ const Charts = {
         return pathogens.map(pathogen => `
             <span class="legend-item">
                 <span class="legend-dot" style="background: ${pathogen.color}"></span>
-                ${pathogen.name}
+                ${esc(pathogen.name)}
             </span>
         `).join('');
     },

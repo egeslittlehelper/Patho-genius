@@ -355,6 +355,7 @@ const SettingsPage = {
                                 ? `<button class="btn btn-outline btn-sm" onclick="SettingsPage.makeAdmin('${user.uid}')">Make Admin</button>`
                                 : `<button class="btn btn-outline btn-sm" onclick="SettingsPage.removeAdmin('${user.uid}')">Remove Admin</button>`
                             }
+                            <button class="btn btn-outline btn-sm btn-danger-outline" onclick="SettingsPage.deleteUser('${user.uid}', '${esc(user.username || user.email || '')}')">Delete</button>
                         </div>
                     ` : '<span class="text-muted">—</span>'}
                 </td>
@@ -421,6 +422,17 @@ const SettingsPage = {
             this.loadUserList();
         } else {
             alert('Failed to update role: ' + result.error);
+        }
+    },
+
+    async deleteUser(uid, displayName) {
+        const label = displayName || uid;
+        if (!confirm(`Permanently delete user "${label}"? This cannot be undone.`)) return;
+        const result = await window.api.admin.deleteUser(uid);
+        if (result.success) {
+            this.loadUserList();
+        } else {
+            alert('Failed to delete user: ' + result.error);
         }
     },
 

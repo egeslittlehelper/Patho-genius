@@ -336,12 +336,12 @@ const DashboardPage = {
                 <tr>
                     <td><div class="cell-with-icon">
                         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline></svg>
-                        ${name}
+                        ${esc(name)}
                     </div></td>
                     <td>${date}</td>
-                    <td class="text-muted">${sampleType}</td>
+                    <td class="text-muted">${esc(sampleType)}</td>
                     <td>${statusBadge(a.status)}</td>
-                    <td>${topPathogen}</td>
+                    <td>${esc(topPathogen)}</td>
                     <td>${a.status === 'completed' ? `<button class="btn-link" onclick="App.navigateTo('results')">View Report</button>` : '<span class="text-muted">—</span>'}</td>
                 </tr>`;
             }).join('');

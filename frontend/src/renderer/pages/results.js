@@ -166,8 +166,8 @@ const ResultsPage = {
         container.innerHTML = running.map(analysis => `
             <div class="running-analysis-item" data-id="${analysis.id}">
                 <div class="analysis-info">
-                    <div class="analysis-name">${analysis.config?.analysis_name || analysis.id}</div>
-                    <div class="analysis-status">${this.getStatusLabel(analysis.status)}${analysis.message ? ` · ${analysis.message}` : ''}</div>
+                    <div class="analysis-name">${esc(analysis.config?.analysis_name || analysis.id)}</div>
+                    <div class="analysis-status">${this.getStatusLabel(analysis.status)}${analysis.message ? ` · ${esc(analysis.message)}` : ''}</div>
                 </div>
                 <div class="progress-container">
                     <div class="progress-bar">
@@ -965,8 +965,8 @@ const ResultsPage = {
             <div class="pathogen-card ${p.risk_level === 'high' ? 'pathogen-card-critical' : ''}">
                 <div class="pathogen-header">
                     <div>
-                        <h4>${p.name}</h4>
-                        <span class="pathogen-strain">${p.strain || 'Unknown strain'}</span>
+                        <h4>${esc(p.name)}</h4>
+                        <span class="pathogen-strain">${esc(p.strain || 'Unknown strain')}</span>
                     </div>
                     <div class="confidence-badge confidence-${this.getConfidenceLevel(p.confidence)}">
                         <span class="confidence-value">${p.confidence != null ? p.confidence + '%' : '—'}</span>
@@ -1084,53 +1084,271 @@ const ResultsPage = {
         }
 
         if (format === 'pdf') {
-            const name     = result.analysis_name || 'Analysis';
-            const date     = result.completed_at ? new Date(result.completed_at).toLocaleString() : '—';
-            const pathogens = result.pathogens || [];
+            const esc2 = (s) => String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+            const name       = result.analysis_name || 'Analysis';
+            const dateObj    = result.completed_at ? new Date(result.completed_at) : null;
+            const dateStr    = dateObj ? dateObj.toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }) : '—';
+            const timeStr    = dateObj ? dateObj.toLocaleTimeString('en-US', { hour:'2-digit', minute:'2-digit' }) : '';
+            const reportId   = (result.id || Date.now().toString(36)).toUpperCase();
+            const pathogens  = (result.pathogens || []).slice().sort((a, b) => {
+                const order = { high: 0, medium: 1, low: 2 };
+                return (order[a.risk_level] ?? 3) - (order[b.risk_level] ?? 3);
+            });
+            const quality    = result.quality || {};
+            const engine     = result.engine || result.config?.engine || '—';
+            const classifier = result.classifier || result.config?.classifier || '—';
+            const confThresh = result.confidence_threshold ?? result.config?.confidence_threshold ?? '—';
+            const inputFiles = (result.input_files || result.config?.input_files || []);
+            const aiSummary  = document.getElementById('ai-summary-content')?.innerText?.trim() || '';
 
-            const pathogenRows = pathogens.map(p => `
-                <tr>
-                    <td>${p.name || '—'}</td>
-                    <td>${p.strain || '—'}</td>
-                    <td>${p.abundance != null ? p.abundance + '%' : '—'}</td>
-                    <td>${p.reads != null ? p.reads.toLocaleString() : '—'}</td>
-                    <td>${p.confidence != null ? p.confidence + '%' : '—'}</td>
-                    <td>${(p.risk_level || '—').charAt(0).toUpperCase() + (p.risk_level || '').slice(1)}</td>
-                    <td>${p.amr_genes != null ? p.amr_genes : '—'}</td>
-                </tr>`).join('');
+            const highRisk   = pathogens.filter(p => p.risk_level === 'high').length;
+            const medRisk    = pathogens.filter(p => p.risk_level === 'medium').length;
+            const lowRisk    = pathogens.filter(p => p.risk_level === 'low').length;
+
+            const riskLabel = (r) => {
+                const map = { high: 'HIGH', medium: 'MEDIUM', low: 'LOW' };
+                return map[r] || (r ? r.toUpperCase() : 'UNKNOWN');
+            };
+            const riskClass = (r) => ({ high: 'risk-high', medium: 'risk-medium', low: 'risk-low' }[r] || '');
+
+            const dl = (label, value) => value && value !== '—'
+                ? `<tr><td class="dl-label">${esc2(label)}</td><td class="dl-value">${esc2(value)}</td></tr>`
+                : '';
+
+            const summaryRows = pathogens.map((p, i) => {
+                const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join(', ') : (p.amr_genes != null ? String(p.amr_genes) : '');
+                return `<tr class="${i % 2 === 1 ? 'row-alt' : ''}">
+  <td style="font-style:italic;">${esc2(p.name || '—')}</td>
+  <td>${esc2(p.strain || '—')}</td>
+  <td class="num">${p.abundance != null ? esc2(p.abundance) + '%' : '—'}</td>
+  <td class="num">${p.reads != null ? Number(p.reads).toLocaleString() : '—'}</td>
+  <td class="num">${p.confidence != null ? esc2(p.confidence) + '%' : '—'}</td>
+  <td class="num"><span class="${riskClass(p.risk_level)}">${riskLabel(p.risk_level)}</span></td>
+  <td>${esc2(amr || '—')}</td>
+</tr>`;
+            }).join('');
+
+            const detailBlocks = pathogens.map((p, i) => {
+                const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join('; ') : (p.amr_genes != null ? String(p.amr_genes) : '—');
+                const vir = Array.isArray(p.virulence_genes) ? p.virulence_genes.join('; ') : (p.virulence_genes != null ? String(p.virulence_genes) : '—');
+                return `<div class="organism-block">
+  <div class="organism-header">
+    <span class="organism-index">${i + 1}.</span>
+    <span class="organism-name">${esc2(p.name || 'Unknown Organism')}</span>
+    <span class="risk-tag ${riskClass(p.risk_level)}">${riskLabel(p.risk_level)} RISK</span>
+  </div>
+  ${p.strain ? `<div class="organism-strain">${esc2(p.strain)}</div>` : ''}
+  <table class="detail-table">
+    ${dl('Taxonomic ID', p.tax_id)}
+    ${dl('Relative Abundance', p.abundance != null ? p.abundance + '%' : null)}
+    ${dl('Assigned Reads', p.reads != null ? Number(p.reads).toLocaleString() : null)}
+    ${dl('Classification Confidence', p.confidence != null ? p.confidence + '%' : null)}
+    ${dl('AMR Genes Detected', amr !== '—' ? amr : null)}
+    ${dl('Virulence Genes', vir !== '—' ? vir : null)}
+  </table>
+</div>`;
+            }).join('');
 
             const html = `<!DOCTYPE html>
-<html><head><meta charset="utf-8">
-<title>Pathogenius Report — ${name}</title>
+<html lang="en"><head><meta charset="utf-8">
+<title>Pathogenius Report — ${esc2(name)}</title>
 <style>
-  body { font-family: Arial, sans-serif; margin: 40px; color: #111; }
-  h1 { color: #008080; }
-  h2 { margin-top: 32px; border-bottom: 1px solid #ccc; padding-bottom: 4px; }
-  table { border-collapse: collapse; width: 100%; margin-top: 12px; font-size: 13px; }
-  th { background: #f0f0f0; padding: 8px; text-align: left; border: 1px solid #ddd; }
-  td { padding: 6px 8px; border: 1px solid #ddd; }
-  .meta { color: #555; font-size: 13px; margin-top: 8px; }
-  @media print { body { margin: 20px; } }
+  @page {
+    size: A4;
+    margin: 14mm 15mm 14mm 15mm;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: Georgia, 'Times New Roman', serif; font-size: 9pt; color: #111; background: #fff; line-height: 1.45; }
+  a { color: inherit; text-decoration: none; }
+
+  /* ── Letterhead ── */
+  .letterhead { display: flex; justify-content: space-between; align-items: flex-end; padding-bottom: 7px; border-bottom: 2.5px solid #111; margin-bottom: 5px; }
+  .lh-brand { font-family: Arial, sans-serif; }
+  .lh-brand .brand-name { font-size: 18pt; font-weight: 700; letter-spacing: -0.5px; color: #111; }
+  .lh-brand .brand-sub  { font-size: 7.5pt; color: #555; letter-spacing: 1px; text-transform: uppercase; }
+  .lh-meta { text-align: right; font-family: Arial, sans-serif; font-size: 7.5pt; color: #444; line-height: 1.6; }
+  .report-title-bar { background: #111; color: #fff; padding: 4px 8px; margin-bottom: 12px; font-family: Arial, sans-serif; font-size: 8.5pt; font-weight: 600; letter-spacing: 0.5px; text-transform: uppercase; }
+
+  /* ── Sections ── */
+  .section { margin-bottom: 14px; page-break-inside: avoid; }
+  .section-heading {
+    font-family: Arial, sans-serif; font-size: 7.5pt; font-weight: 700;
+    text-transform: uppercase; letter-spacing: 1.2px; color: #111;
+    border-bottom: 1.5px solid #111; padding-bottom: 2px; margin-bottom: 7px;
+  }
+
+  /* ── Key-value definition list ── */
+  table.kv { border-collapse: collapse; width: 100%; font-size: 8.5pt; }
+  table.kv td { padding: 2px 6px 2px 0; vertical-align: top; }
+  table.kv td:first-child { width: 36%; color: #444; font-family: Arial, sans-serif; font-size: 8pt; padding-right: 10px; }
+
+  /* ── Summary statistics row ── */
+  .stat-row { display: flex; gap: 0; border: 1px solid #bbb; margin-bottom: 10px; }
+  .stat-cell { flex: 1; padding: 7px 10px; border-right: 1px solid #bbb; text-align: center; }
+  .stat-cell:last-child { border-right: none; }
+  .stat-num  { font-family: Arial, sans-serif; font-size: 16pt; font-weight: 700; line-height: 1; }
+  .stat-num.high   { color: #b91c1c; }
+  .stat-num.medium { color: #92400e; }
+  .stat-num.low    { color: #166534; }
+  .stat-lbl  { font-family: Arial, sans-serif; font-size: 6.5pt; text-transform: uppercase; letter-spacing: 0.5px; color: #555; margin-top: 2px; }
+
+  /* ── Main summary table ── */
+  table.main-table { border-collapse: collapse; width: 100%; font-size: 8.5pt; }
+  table.main-table thead tr { background: #111; color: #fff; }
+  table.main-table th { font-family: Arial, sans-serif; font-size: 7pt; font-weight: 600; padding: 4px 7px; text-align: left; text-transform: uppercase; letter-spacing: 0.3px; }
+  table.main-table td { padding: 3.5px 7px; border-bottom: 1px solid #e4e4e4; vertical-align: top; }
+  table.main-table .row-alt { background: #f5f5f5; }
+  table.main-table .num { text-align: right; font-family: Arial, sans-serif; }
+
+  /* ── Risk labels ── */
+  .risk-high   { color: #b91c1c; font-family: Arial, sans-serif; font-size: 7.5pt; font-weight: 700; }
+  .risk-medium { color: #92400e; font-family: Arial, sans-serif; font-size: 7.5pt; font-weight: 700; }
+  .risk-low    { color: #166534; font-family: Arial, sans-serif; font-size: 7.5pt; font-weight: 700; }
+
+  /* ── Organism detail blocks ── */
+  .organism-block { border: 1px solid #ccc; padding: 7px 10px; margin-bottom: 7px; page-break-inside: avoid; }
+  .organism-header { display: flex; align-items: baseline; gap: 7px; margin-bottom: 3px; }
+  .organism-index  { font-family: Arial, sans-serif; font-size: 8pt; font-weight: 700; color: #555; }
+  .organism-name   { font-size: 9.5pt; font-weight: 700; font-style: italic; flex: 1; }
+  .organism-strain { font-size: 8pt; font-style: italic; color: #555; margin-bottom: 4px; }
+  .risk-tag  { font-family: Arial, sans-serif; font-size: 7pt; font-weight: 700; font-style: normal; letter-spacing: 0.3px; padding: 1px 4px; border: 1px solid; }
+  .risk-tag.risk-high   { border-color: #b91c1c; color: #b91c1c; }
+  .risk-tag.risk-medium { border-color: #92400e; color: #92400e; }
+  .risk-tag.risk-low    { border-color: #166534; color: #166534; }
+  table.detail-table { border-collapse: collapse; width: 100%; font-size: 8.5pt; margin-top: 4px; }
+  .dl-label { width: 32%; color: #444; font-family: Arial, sans-serif; font-size: 8pt; padding: 1.5px 8px 1.5px 0; vertical-align: top; }
+  .dl-value { padding: 1.5px 0; vertical-align: top; }
+
+  /* ── AI summary ── */
+  .ai-section { border-left: 2.5px solid #555; padding: 6px 10px; font-size: 8.5pt; line-height: 1.6; white-space: pre-wrap; color: #222; page-break-inside: avoid; }
+  .ai-label { font-family: Arial, sans-serif; font-size: 7pt; text-transform: uppercase; letter-spacing: 0.7px; color: #555; margin-bottom: 4px; }
+
+  /* ── Disclaimer & footer ── */
+  .disclaimer { border-top: 1px solid #ccc; margin-top: 16px; padding-top: 7px; font-family: Arial, sans-serif; font-size: 7pt; color: #555; line-height: 1.55; }
+  .doc-footer { margin-top: 8px; font-family: Arial, sans-serif; font-size: 7pt; color: #888; text-align: center; border-top: 1px solid #e0e0e0; padding-top: 6px; }
+
+  @media print {
+    .organism-block { page-break-inside: avoid; }
+    .section { page-break-inside: avoid; }
+  }
 </style>
 </head><body>
-<h1>Pathogenius Analysis Report</h1>
-<p class="meta"><strong>Analysis:</strong> ${name}<br>
-<strong>Completed:</strong> ${date}<br>
-<strong>Sample Type:</strong> ${result.sample_type || '—'}</p>
 
-<h2>Detected Pathogens (${pathogens.length})</h2>
-${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
-<table>
-  <thead><tr><th>Name</th><th>Strain</th><th>Abundance</th><th>Reads</th><th>Confidence</th><th>Risk</th><th>AMR Genes</th></tr></thead>
-  <tbody>${pathogenRows}</tbody>
-</table>`}
+<!-- Letterhead -->
+<div class="letterhead">
+  <div class="lh-brand">
+    <div class="brand-name">Pathogenius</div>
+    <div class="brand-sub">Metagenomic Pathogen Detection System</div>
+  </div>
+  <div class="lh-meta">
+    Report ID: ${esc2(reportId)}<br>
+    Date: ${esc2(dateStr)}${timeStr ? ' &bull; ' + esc2(timeStr) : ''}<br>
+    Generated: ${esc2(new Date().toLocaleDateString('en-US', { year:'numeric', month:'long', day:'numeric' }))}
+  </div>
+</div>
+<div class="report-title-bar">Metagenomic Analysis Report</div>
+
+<!-- Section 1: Analysis Information -->
+<div class="section">
+  <div class="section-heading">1. Analysis Information</div>
+  <table class="kv">
+    <tr><td>Analysis Name</td><td>${esc2(name)}</td></tr>
+    <tr><td>Sample Type</td><td>${esc2(result.sample_type || '—')}</td></tr>
+    <tr><td>Date Completed</td><td>${esc2(dateStr)}${timeStr ? ', ' + esc2(timeStr) : ''}</td></tr>
+    <tr><td>Classification Engine</td><td>${esc2(classifier)}${engine !== '—' ? ' (' + esc2(engine) + ')' : ''}</td></tr>
+    <tr><td>Confidence Threshold</td><td>${confThresh !== '—' ? esc2(confThresh) + '%' : '—'}</td></tr>
+    ${inputFiles.length > 0 ? `<tr><td>Input File(s)</td><td style="font-size:9pt;">${inputFiles.map(f => esc2(f)).join('<br>')}</td></tr>` : ''}
+  </table>
+</div>
+
+<!-- Section 2: Executive Summary -->
+<div class="section">
+  <div class="section-heading">2. Executive Summary</div>
+  <div class="stat-row">
+    <div class="stat-cell"><div class="stat-num">${pathogens.length}</div><div class="stat-lbl">Total Detected</div></div>
+    <div class="stat-cell"><div class="stat-num high">${highRisk}</div><div class="stat-lbl">High Risk</div></div>
+    <div class="stat-cell"><div class="stat-num medium">${medRisk}</div><div class="stat-lbl">Medium Risk</div></div>
+    <div class="stat-cell"><div class="stat-num low">${lowRisk}</div><div class="stat-lbl">Low Risk</div></div>
+    ${quality.high_quality_rate != null ? `<div class="stat-cell"><div class="stat-num">${esc2(quality.high_quality_rate)}%</div><div class="stat-lbl">High-Quality Reads</div></div>` : ''}
+  </div>
+  <p style="font-size:9.5pt;color:#333;">
+    ${pathogens.length === 0
+      ? 'No pathogenic organisms were detected in this sample at the configured confidence threshold.'
+      : `This analysis identified <strong>${pathogens.length}</strong> organism${pathogens.length !== 1 ? 's' : ''}` +
+        (highRisk > 0 ? `, including <strong>${highRisk}</strong> high-risk pathogen${highRisk !== 1 ? 's' : ''}` : '') +
+        '. Refer to Sections 3 and 4 for detailed findings.'}
+  </p>
+</div>
+
+${(quality.average_quality != null || quality.mean_coverage != null || quality.high_quality_rate != null) ? `
+<!-- Section 3: Sequencing Quality -->
+<div class="section">
+  <div class="section-heading">3. Sequencing Quality Metrics</div>
+  <table class="kv">
+    ${quality.average_quality != null ? `<tr><td>Average Quality Score</td><td>${esc2(quality.average_quality)}</td></tr>` : ''}
+    ${quality.high_quality_rate != null ? `<tr><td>High-Quality Read Rate</td><td>${esc2(quality.high_quality_rate)}%</td></tr>` : ''}
+    ${quality.mean_coverage != null ? `<tr><td>Mean Coverage Depth</td><td>${esc2(quality.mean_coverage)}&times;</td></tr>` : ''}
+    ${quality.note ? `<tr><td>Quality Note</td><td style="font-style:italic;">${esc2(quality.note)}</td></tr>` : ''}
+  </table>
+</div>` : ''}
+
+<!-- Section 4: Detected Organisms — Summary Table -->
+<div class="section">
+  <div class="section-heading">${quality.average_quality != null || quality.mean_coverage != null || quality.high_quality_rate != null ? '4' : '3'}. Detected Organisms</div>
+  ${pathogens.length === 0 ? `<p style="font-style:italic;color:#555;">No organisms detected above the confidence threshold.</p>` : `
+  <table class="main-table">
+    <thead>
+      <tr>
+        <th>Organism</th>
+        <th>Strain / Variant</th>
+        <th style="text-align:right">Abundance</th>
+        <th style="text-align:right">Reads</th>
+        <th style="text-align:right">Confidence</th>
+        <th style="text-align:right">Risk Level</th>
+        <th>AMR Genes</th>
+      </tr>
+    </thead>
+    <tbody>${summaryRows}</tbody>
+  </table>`}
+</div>
+
+${pathogens.length > 0 ? `
+<!-- Section 5: Detailed Profiles -->
+<div class="section">
+  <div class="section-heading">${quality.average_quality != null || quality.mean_coverage != null || quality.high_quality_rate != null ? '5' : '4'}. Detailed Organism Profiles</div>
+  ${detailBlocks}
+</div>` : ''}
+
+${aiSummary ? `
+<!-- Section: AI Clinical Interpretation -->
+<div class="section">
+  <div class="section-heading">Clinical Interpretation (AI-Generated)</div>
+  <div class="ai-label">The following summary was generated by an AI model and has not been reviewed by a clinician.</div>
+  <div class="ai-section">${esc2(aiSummary)}</div>
+</div>` : ''}
+
+<!-- Disclaimer -->
+<div class="disclaimer">
+  <strong>Medical Disclaimer.</strong> This report is produced by the Pathogenius software system for informational and research purposes only. Results have not been validated by a licensed clinical laboratory and do not constitute a medical diagnosis. All findings should be interpreted by a qualified healthcare professional in the context of clinical presentation and other diagnostic data. Pathogenius and its developers assume no liability for clinical decisions made on the basis of this report.
+</div>
+
+<div class="doc-footer">
+  Pathogenius Metagenomic Analysis System &bull; Report ID: ${esc2(reportId)} &bull; Generated ${esc2(new Date().toLocaleString())}
+</div>
+
 </body></html>`;
 
-            const win = window.open('', '_blank', 'width=900,height=700');
-            if (!win) { alert('Pop-up blocked. Please allow pop-ups for PDF export.'); return; }
-            win.document.write(html);
-            win.document.close();
-            win.onload = () => { win.focus(); win.print(); };
+            if (window.api?.system?.printReport) {
+                const res = await window.api.system.printReport(html);
+                if (!res?.success) alert('Failed to open report: ' + (res?.error || 'unknown error'));
+            } else {
+                // Fallback: data URI download
+                const blob = new Blob([html], { type: 'text/html' });
+                const url = URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url; a.download = `${name.replace(/[^a-z0-9]/gi, '_')}_report.html`;
+                a.click(); URL.revokeObjectURL(url);
+            }
             return;
         }
 
@@ -1238,6 +1456,15 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
                 this.state.cloudResults = [];
                 if (statusText) statusText.textContent = 'Cloud storage unavailable';
                 if (statusBanner) statusBanner.classList.add('connected');
+            }
+
+            // Reconcile: clear synced flag on any local analysis not present in cloud
+            const cloudIds = new Set(this.state.cloudResults.map(r => r.id));
+            const stale = this.state.completedAnalyses.filter(a => a.synced && !cloudIds.has(a.id));
+            if (stale.length > 0) {
+                stale.forEach(a => { a.synced = false; });
+                this.renderAnalysisHistory();
+                stale.forEach(a => window.api?.cloud?.unmarkSync?.(a.id));
             }
 
             this.renderCloudResults();
@@ -1427,6 +1654,14 @@ ${pathogens.length === 0 ? '<p>No pathogens detected.</p>' : `
 
             this.state.cloudResults = this.state.cloudResults.filter(r => r.id !== resultId);
             this.renderCloudResults();
+
+            // Clear synced flag on matching local analysis so cloud icon disappears
+            // and the upload button reappears in the history tab
+            const local = this.state.completedAnalyses.find(a => a.id === resultId);
+            if (local) {
+                local.synced = false;
+                this.renderAnalysisHistory();
+            }
         } catch (error) {
             console.error('Failed to delete cloud result:', error);
             alert(`Failed to delete: ${error.message}`);

@@ -253,7 +253,7 @@
     <div class="card">
         <h3 class="card-title">About</h3>
         <p class="text-muted" style="margin: 0 0 8px;">For support, bug reports, or feedback:</p>
-        <a href="mailto:pathogenius.team@gmail.com" style="color: var(--primary); font-weight: 500;">pathogenius.team@gmail.com</a>
+        <a href="#" onclick="window.api?.system?.openExternal('mailto:pathogenius.team@gmail.com?subject=Patho-genius%20Support&body=App%20version%3A%20' + encodeURIComponent(document.getElementById('system-app-version')?.textContent || '') + '%0A%0ADescribe%20your%20issue%20here%3A'); return false;" style="color: var(--primary); font-weight: 500;">pathogenius.team@gmail.com</a>
     </div>
 </div>
 

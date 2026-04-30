@@ -8,7 +8,7 @@
  *   - User isolation (analysisUserMap, .owner files)
  */
 
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, shell } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -822,7 +822,8 @@ ipcMain.handle('cloud:download-result', async (event, analysisId) => {
     const meta = {
         analysis_name: resultData?.analysis_name || analysisId,
         sample_type: resultData?.sample_type || '—',
-        completed_at: resultData?.completed_at || new Date().toISOString()
+        completed_at: resultData?.completed_at || new Date().toISOString(),
+        hasCloudBackup: true
     };
     await localStorageService.saveResultLocally(analysisId, user.uid, resultData, meta);
 
@@ -833,7 +834,18 @@ ipcMain.handle('cloud:delete-result', async (event, analysisId) => {
     if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
     const user = firebaseAuth.getCurrentUser();
     if (!user) return { success: false, error: 'Not logged in' };
-    return await cloudService.deleteCloudResult(analysisId, user.uid);
+    const delResult = await cloudService.deleteCloudResult(analysisId, user.uid);
+    if (delResult.success) {
+        await localStorageService.unmarkCloudSync(analysisId, user.uid);
+    }
+    return delResult;
+});
+
+ipcMain.handle('cloud:unmark-sync', async (event, analysisId) => {
+    if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
+    const user = firebaseAuth.getCurrentUser();
+    if (!user) return { success: false, error: 'Not logged in' };
+    return await localStorageService.unmarkCloudSync(analysisId, user.uid);
 });
 
 ipcMain.handle('cloud:sync-metadata', async (event, analysisId, metadata) => {
@@ -894,7 +906,7 @@ ipcMain.handle('admin:reset-user-password', async (event, userId) => {
 
 ipcMain.handle('admin:delete-user', async (event, userId) => {
     const deny = requireAdmin(); if (deny) return deny;
-    return await firebaseAuth.adminSuspendUser(userId);
+    return await firebaseAuth.adminDeleteUser(userId);
 });
 
 /* ============================================
@@ -933,6 +945,61 @@ ipcMain.handle('llm:generate-summary', async (event, resultData) => {
     } catch (err) {
         return { success: false, error: err.message };
     }
+});
+
+ipcMain.handle('system:get-app-version', () => app.getVersion());
+
+ipcMain.handle('system:open-external', async (event, url) => {
+    // Only allow mailto: and https: to prevent arbitrary shell execution
+    if (!url.startsWith('mailto:') && !url.startsWith('https://')) {
+        return { success: false, error: 'Blocked URL scheme' };
+    }
+    await shell.openExternal(url);
+    return { success: true };
+});
+
+ipcMain.handle('system:print-report', async (event, html) => {
+    return new Promise((resolve) => {
+        const htmlPath = path.join(app.getPath('temp'), `pathogenius-report-${Date.now()}.html`);
+        const pdfPath  = htmlPath.replace('.html', '.pdf');
+
+        try {
+            fs.writeFileSync(htmlPath, html, 'utf8');
+        } catch (e) {
+            return resolve({ success: false, error: e.message });
+        }
+
+        const printWin = new BrowserWindow({
+            show: false,
+            webPreferences: { sandbox: true, contextIsolation: true, nodeIntegration: false }
+        });
+
+        printWin.loadFile(htmlPath);
+
+        printWin.webContents.once('did-finish-load', () => {
+            printWin.webContents.printToPDF({ pageSize: 'A4', printBackground: false })
+                .then((pdfData) => {
+                    printWin.destroy();
+                    try { fs.unlinkSync(htmlPath); } catch {}
+                    fs.writeFileSync(pdfPath, pdfData);
+                    shell.openPath(pdfPath);
+                    // Clean up PDF after viewer has had time to load it
+                    setTimeout(() => { try { fs.unlinkSync(pdfPath); } catch {} }, 60000);
+                    resolve({ success: true });
+                })
+                .catch((err) => {
+                    printWin.destroy();
+                    try { fs.unlinkSync(htmlPath); } catch {}
+                    resolve({ success: false, error: err.message });
+                });
+        });
+
+        printWin.webContents.once('did-fail-load', () => {
+            printWin.destroy();
+            try { fs.unlinkSync(htmlPath); } catch {}
+            resolve({ success: false, error: 'Failed to load report' });
+        });
+    });
 });
 
 console.log('\n Pathogenius Main Process Ready');

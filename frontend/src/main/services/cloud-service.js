@@ -56,11 +56,13 @@ async function uploadResult(analysisId, uid, resultData) {
 
         // Parse metadata from result data to populate Firestore fields
         let sampleName = analysisId;
+        let sampleType = '';
         let completedAt = new Date();
         let detectedCount = 0;
         try {
             const parsed = typeof resultData === 'string' ? JSON.parse(resultData) : resultData;
             sampleName = parsed.analysis_name || parsed.config?.analysis_name || analysisId;
+            sampleType = parsed.sample_type || parsed.config?.sample_type || '';
             completedAt = parsed.completed_at ? new Date(parsed.completed_at) : new Date();
             detectedCount = Array.isArray(parsed.pathogens) ? parsed.pathogens.length : 0;
         } catch {}
@@ -69,6 +71,7 @@ async function uploadResult(analysisId, uid, resultData) {
         await syncMetadataField(uid, analysisId, {
             analysisId,
             sampleName,
+            sampleType,
             hasCloudBackup: true,
             cloudPath,
             completedAt,
@@ -165,6 +168,7 @@ async function syncAnalysisMetadata(uid, analysisId, metadata) {
         await syncMetadataField(uid, analysisId, {
             analysisId,
             sampleName: metadata.sampleName || '',
+            sampleType: metadata.sampleType || '',
             status: metadata.status || 'completed',
             createdAt: metadata.createdAt ? new Date(metadata.createdAt) : new Date(),
             completedAt: new Date(),

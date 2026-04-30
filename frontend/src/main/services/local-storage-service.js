@@ -58,6 +58,7 @@ async function saveResultLocally(analysisId, uid, resultData, meta = null) {
                 status: meta.status || 'completed',
                 completed_at: meta.completed_at || new Date().toISOString(),
                 detectedCount: meta.detectedCount ?? 0,
+                ...(meta.hasCloudBackup !== undefined ? { hasCloudBackup: meta.hasCloudBackup } : {}),
                 ...(meta.error ? { error: meta.error } : {}),
                 ...(!hasResult && meta.analysis_name ? { analysis_name: meta.analysis_name } : {}),
             };
@@ -173,6 +174,20 @@ async function markAsCloudSynced(analysisId, uid) {
     }
 }
 
+async function unmarkCloudSync(analysisId, uid) {
+    try {
+        const metaPath = path.join(resultsDir(uid), `${analysisId}.meta.json`);
+        if (!fs.existsSync(metaPath)) return { success: false, error: 'Meta not found' };
+        const meta = JSON.parse(fs.readFileSync(metaPath, 'utf8'));
+        meta.hasCloudBackup = false;
+        delete meta.cloudPath;
+        fs.writeFileSync(metaPath, JSON.stringify(meta), 'utf8');
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 async function clearGuestData() {
     try {
         const dir = path.join(app.getPath('userData'), 'results', 'guest');
@@ -190,5 +205,6 @@ module.exports = {
     deleteLocalResult,
     listLocalResults,
     markAsCloudSynced,
+    unmarkCloudSync,
     clearGuestData
 };

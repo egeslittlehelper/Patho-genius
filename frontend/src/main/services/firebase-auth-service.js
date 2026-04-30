@@ -101,6 +101,17 @@ async function fsList(path, idToken) {
     return (data.documents || []).map(doc => fromFsFields(doc.fields || {}));
 }
 
+async function fsDelete(path, idToken) {
+    const res = await fetch(`${FS_BASE}/${path}`, {
+        method: 'DELETE',
+        headers: authHeaders(idToken)
+    });
+    if (!res.ok && res.status !== 404) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(`Firestore DELETE ${path} failed: ${res.status} ${err.error?.message || ''}`);
+    }
+}
+
 /* ─── Auth REST helpers ─────────────────────────────────────── */
 
 async function authPost(endpoint, body) {
@@ -522,6 +533,16 @@ async function adminSendPasswordReset(email) {
     }
 }
 
+async function adminDeleteUser(uid) {
+    try {
+        const idToken = await getIdToken();
+        await fsDelete(`users/${uid}`, idToken);
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
 async function adminGetStats() {
     try {
         const idToken = await getIdToken();
@@ -558,10 +579,12 @@ module.exports = {
     adminActivateUser,
     adminChangeUserRole,
     adminSendPasswordReset,
+    adminDeleteUser,
     adminGetStats,
     // Expose Firestore helpers for cloud-service
     fsGet,
     fsSet,
     fsUpdate,
-    fsList
+    fsList,
+    fsDelete
 };

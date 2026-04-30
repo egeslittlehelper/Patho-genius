@@ -143,12 +143,12 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.once('system:gpu-ready', (_event, gpu) => callback(gpu));
         },
 
-        getAppVersion: () => {
-            try { return require('../../package.json').version; } catch { return '—'; }
-        },
+        getAppVersion: () => ipcRenderer.invoke('system:get-app-version'),
         getElectronVersion: () => process.versions.electron,
         getPlatform: () => process.platform,
-        getNodeVersion: () => process.versions.node
+        getNodeVersion: () => process.versions.node,
+        openExternal: (url) => ipcRenderer.invoke('system:open-external', url),
+        printReport: (html) => ipcRenderer.invoke('system:print-report', html)
     },
 
     /* SETTINGS (Firebase) */
@@ -176,6 +176,9 @@ contextBridge.exposeInMainWorld('api', {
 
         deleteResult: (analysisId) =>
             ipcRenderer.invoke('cloud:delete-result', analysisId),
+
+        unmarkSync: (analysisId) =>
+            ipcRenderer.invoke('cloud:unmark-sync', analysisId),
 
         syncMetadata: (analysisId, metadata) =>
             ipcRenderer.invoke('cloud:sync-metadata', analysisId, metadata)
