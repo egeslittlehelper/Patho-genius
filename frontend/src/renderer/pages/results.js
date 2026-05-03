@@ -90,6 +90,30 @@ const ResultsPage = {
             searchInput.addEventListener('input', (e) => this.filterAnalyses(e.target.value));
         }
 
+        const pathogenFilterIds = [
+            'pathogen-search-filter',
+            'risk-filter',
+            'min-confidence-filter',
+            'min-reads-filter'
+        ];
+
+        pathogenFilterIds.forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.addEventListener('input', () => {
+                    if (this.state.currentResult) {
+                        this.renderPathogenDetails(this.state.currentResult);
+                    }
+                });
+
+                el.addEventListener('change', () => {
+                    if (this.state.currentResult) {
+                        this.renderPathogenDetails(this.state.currentResult);
+                    }
+                });
+            }
+        });
+
         // Re-render pathogen cards and update AI card visibility when settings change
         window.addEventListener('settingsChanged', () => {
             if (this.state.view === 'detail' && this.state.currentResult) {
@@ -429,6 +453,148 @@ const ResultsPage = {
     /**
      * Update detail view with current result
      */
+    updateOverviewCards(result) {
+        const summary = result?.summary || {};
+        const pathogens = result?.pathogens || [];
+
+        const totalReadsValue = document.getElementById('summary-total-reads-value');
+        const totalReadsSub = document.getElementById('summary-total-reads-sub');
+        const speciesValue = document.getElementById('summary-species-value');
+        const speciesSub = document.getElementById('summary-species-sub');
+        const pathogensValue = document.getElementById('summary-pathogens-value');
+        const pathogensSub = document.getElementById('summary-pathogens-sub');
+
+        if (totalReadsValue) {
+            totalReadsValue.textContent = this.formatReads(summary.total_reads || 0);
+        }
+
+        if (totalReadsSub) {
+            totalReadsSub.textContent = '';
+        }
+
+        if (speciesValue) {
+            speciesValue.textContent = summary.species_detected ?? '—';
+        }
+
+        if (speciesSub) {
+            speciesSub.textContent = summary.classification_rate != null
+                ? `${summary.classification_rate}% classified`
+                : 'Classification data unavailable';
+        }
+
+        const pathogenCount = summary.pathogens_detected ?? pathogens.length ?? 0;
+        const highRisk = pathogens.filter(
+            p => (p.risk_level || '').toLowerCase() === 'high'
+        ).length;
+
+        if (pathogensValue) {
+            pathogensValue.textContent = `${pathogenCount} Detected`;
+        }
+
+        if (pathogensSub) {
+            pathogensSub.textContent = highRisk > 0
+                ? `${highRisk} high-risk pathogen${highRisk > 1 ? 's' : ''}`
+                : 'No high-risk pathogens';
+        }
+    },
+
+    updateQualityTab(result) {
+        const quality = result?.quality || {};
+        const summary = result?.summary || {};
+
+        const avgQuality = document.getElementById('qc-average-quality-value');
+        const avgQualitySub = document.getElementById('qc-average-quality-sub');
+        const avgQualityBar = document.getElementById('qc-average-quality-bar');
+
+        const classRate = document.getElementById('qc-classification-rate-value');
+        const classRateSub = document.getElementById('qc-classification-rate-sub');
+        const classRateBar = document.getElementById('qc-classification-rate-bar');
+
+        const coverage = document.getElementById('qc-coverage-value');
+        const coverageSub = document.getElementById('qc-coverage-sub');
+        const coverageBar = document.getElementById('qc-coverage-bar');
+
+        const qualityNote = quality.note || 'Not computed by this pipeline';
+
+        // Average Read Quality
+        if (avgQuality) {
+            avgQuality.textContent =
+                quality.average_quality != null ? `Q${quality.average_quality}` : 'Not computed';
+        }
+
+        if (avgQualitySub) {
+            avgQualitySub.textContent =
+                quality.average_quality != null
+                    ? (
+                        quality.high_quality_rate != null
+                            ? `${quality.high_quality_rate}% reads passed high-quality threshold`
+                            : 'Average quality score reported by backend'
+                    )
+                    : qualityNote;
+        }
+
+        if (avgQualityBar) {
+            if (quality.average_quality != null) {
+                avgQualityBar.style.width = `${Math.min(100, Number(quality.average_quality) * 2.5)}%`;
+                avgQualityBar.style.opacity = '1';
+            } else {
+                avgQualityBar.style.width = '0%';
+                avgQualityBar.style.opacity = '0';
+            }
+        }
+
+        // Classification Rate
+        if (classRate) {
+            classRate.textContent =
+                summary.classification_rate != null ? `${summary.classification_rate}%` : 'N/A';
+        }
+
+        if (classRateSub) {
+            if (summary.classified_reads != null && summary.total_reads != null) {
+                classRateSub.textContent =
+                    `${this.formatReads(summary.classified_reads)} of ${this.formatReads(summary.total_reads)} reads classified`;
+            } else if (summary.classified_reads != null) {
+                classRateSub.textContent =
+                    `${this.formatReads(summary.classified_reads)} classified reads`;
+            } else {
+                classRateSub.textContent = 'Classification data unavailable';
+            }
+        }
+
+        if (classRateBar) {
+            if (summary.classification_rate != null) {
+                classRateBar.style.width = `${Math.min(100, Number(summary.classification_rate))}%`;
+                classRateBar.style.opacity = '1';
+            } else {
+                classRateBar.style.width = '0%';
+                classRateBar.style.opacity = '0';
+            }
+        }
+
+        // Mean Coverage Depth
+        if (coverage) {
+            coverage.textContent =
+                quality.mean_coverage != null ? `${quality.mean_coverage}x` : 'Not computed';
+        }
+
+        if (coverageSub) {
+            coverageSub.textContent =
+                quality.mean_coverage != null
+                    ? 'Mean sequencing depth across detected targets'
+                    : qualityNote;
+        }
+
+        if (coverageBar) {
+            if (quality.mean_coverage != null) {
+                coverageBar.style.width = `${Math.min(100, Number(quality.mean_coverage) / 2)}%`;
+                coverageBar.style.opacity = '1';
+            } else {
+                coverageBar.style.width = '0%';
+                coverageBar.style.opacity = '0';
+            }
+        }
+    },
+
     updateDetailView() {
         const result = this.state.currentResult;
         if (!result) return;
@@ -440,6 +606,9 @@ const ResultsPage = {
         if (nameEl) nameEl.textContent = result.analysis_name || 'Analysis Result';
         const classifierLabel = result.classifier ? ` · ${result.classifier}` : '';
         if (subtitleEl) subtitleEl.textContent = `Completed on ${this.formatDate(result.completed_at)}${classifierLabel}`;
+
+        this.updateOverviewCards(result);
+        this.updateQualityTab(result);
 
         // Render pathogen cards
         this.renderPathogenCards();
@@ -647,22 +816,54 @@ const ResultsPage = {
      * Render pathogen details in the Pathogen Details tab
      */
     renderPathogenDetails(result) {
-        const container = document.getElementById('tab-pathogens');
+        const container = document.getElementById('pathogen-details-list');
         if (!container) return;
 
-        const pathogens = result?.pathogens || [];
+        const searchTerm = (document.getElementById('pathogen-search-filter')?.value || '').toLowerCase();
+        const riskFilter = document.getElementById('risk-filter')?.value || 'all';
+        const minConfidence = Number(document.getElementById('min-confidence-filter')?.value || 0);
+        const minReads = Number(document.getElementById('min-reads-filter')?.value || 0);
 
-        if (!pathogens.length) {
-            container.innerHTML = `
-                <div class="card">
-                    <p class="text-muted">No pathogen detail data available.</p>
-                </div>
-            `;
+        const riskOrder = { high: 0, medium: 1, low: 2 };
+
+        const allPathogens = result?.pathogens || [];
+
+        const pathogens = allPathogens
+            .filter(p => {
+                const name = String(p.name || '').toLowerCase();
+                const strain = String(p.strain || '').toLowerCase();
+                const risk = String(p.risk_level || '').toLowerCase();
+                const confidence = Number(p.confidence || 0);
+                const reads = Number(p.reads || 0);
+
+                return (
+                    (!searchTerm || name.includes(searchTerm) || strain.includes(searchTerm)) &&
+                    (riskFilter === 'all' || risk === riskFilter) &&
+                    confidence >= minConfidence &&
+                    reads >= minReads
+                );
+            })
+            .sort((a, b) => {
+                const riskA = riskOrder[(a.risk_level || '').toLowerCase()] ?? 3;
+                const riskB = riskOrder[(b.risk_level || '').toLowerCase()] ?? 3;
+
+                if (riskA !== riskB) return riskA - riskB;
+                return Number(b.reads || 0) - Number(a.reads || 0);
+            });
+        
+        if (!allPathogens.length) {
+            container.innerHTML = `<p class="text-muted">No pathogen detail data available.</p>`;
             return;
         }
 
+        if (!pathogens.length) {
+            container.innerHTML = `<p class="text-muted">No pathogens match the selected filters.</p>`;
+            return;
+        }
+    
         container.innerHTML = pathogens.map(p => {
             const risk = (p.risk_level || 'low').toLowerCase();
+
             return `
                 <div class="pathogen-detail-card">
                     <div class="pathogen-detail-header">
@@ -686,10 +887,6 @@ const ResultsPage = {
                             <span class="detail-label">Confidence Score</span>
                             <span class="detail-value text-primary">${p.confidence ?? 'N/A'}%</span>
                         </div>
-                        <div class="detail-stat">
-                            <span class="detail-label">AMR Genes Detected</span>
-                            <span class="detail-value">${p.amr_genes || 0}</span>
-                        </div>
                     </div>
 
                     <div class="alert alert-danger-light">
@@ -704,6 +901,22 @@ const ResultsPage = {
                 </div>
             `;
         }).join('');
+    },
+
+    clearPathogenFilters() {
+        const search = document.getElementById('pathogen-search-filter');
+        const risk = document.getElementById('risk-filter');
+        const confidence = document.getElementById('min-confidence-filter');
+        const reads = document.getElementById('min-reads-filter');
+
+        if (search) search.value = '';
+        if (risk) risk.value = 'all';
+        if (confidence) confidence.value = '';
+        if (reads) reads.value = '';
+
+        if (this.state.currentResult) {
+            this.renderPathogenDetails(this.state.currentResult);
+        }
     },
 
     /**
@@ -939,67 +1152,63 @@ const ResultsPage = {
         const container = document.getElementById('pathogen-cards-overview');
         if (!container) return;
 
-        const pathogens = this.state.currentResult?.pathogens || [];
+        const riskOrder = { high: 0, medium: 1, low: 2 };
+        
+        const pathogens = (this.state.currentResult?.pathogens || [])
+            .slice()
+            .sort((a, b) => {
+                const riskA = riskOrder[(a.risk_level || '').toLowerCase()] ?? 3;
+                const riskB = riskOrder[(b.risk_level || '').toLowerCase()] ?? 3;
+                return riskA - riskB;
+            });
 
         if (pathogens.length === 0) {
             container.innerHTML = '<p class="text-muted">No pathogens detected in this sample.</p>';
             return;
         }
 
-        // Apply confidence threshold filter from settings
-        const threshold = this._getSetting('confidenceThreshold', 0.7) * 100;
-        const showLow = this._getSetting('showLowConfidenceResults', false);
-        const minReads = this._getSetting('minReadCount', 100);
+        container.innerHTML = pathogens.map(p => {
+            const conf = p.confidence ?? null;
+            const risk = (p.risk_level || 'low').toLowerCase();
 
-        const filtered = pathogens.filter(p =>
-            (showLow || p.confidence == null || p.confidence >= threshold) &&
-            (p.reads == null || p.reads >= minReads)
-        );
+            return `
+                <div class="pathogen-card ${risk === 'high' ? 'pathogen-card-critical' : ''}">
+                    <div class="pathogen-header">
+                        <div>
+                            <h4>${esc(p.name)}</h4>
+                            <span class="pathogen-strain">${esc(p.strain || 'Unknown strain')}</span>
+                        </div>
+                        <div class="confidence-badge confidence-${this.getConfidenceLevel(conf)}">
+                            <span class="confidence-value">${conf != null ? conf + '%' : '—'}</span>
+                            <span class="confidence-label">Confidence</span>
+                        </div>
+                    </div>
 
-        if (filtered.length === 0) {
-            container.innerHTML = '<p class="text-muted">No pathogens meet the current confidence threshold.</p>';
-            return;
-        }
+                    <div class="pathogen-metrics-row">
+                        <div class="pathogen-metric-item">
+                            <span class="metric-value-lg">${p.abundance != null ? p.abundance + '%' : '—'}</span>
+                            <span class="metric-label">Abundance</span>
+                        </div>
+                        <div class="pathogen-metric-item">
+                            <span class="metric-value-lg">${p.reads != null ? this.formatReads(p.reads) : '—'}</span>
+                            <span class="metric-label">Reads</span>
+                        </div>
+                    </div>
 
-        container.innerHTML = filtered.slice(0, 4).map(p => `
-            <div class="pathogen-card ${p.risk_level === 'high' ? 'pathogen-card-critical' : ''}">
-                <div class="pathogen-header">
-                    <div>
-                        <h4>${esc(p.name)}</h4>
-                        <span class="pathogen-strain">${esc(p.strain || 'Unknown strain')}</span>
+                    <div class="pathogen-confidence-bar">
+                        <div class="confidence-bar-track">
+                            <div class="confidence-bar-fill confidence-fill-${this.getConfidenceLevel(conf)}" style="width: ${conf || 0}%"></div>
+                        </div>
+                        <span class="confidence-bar-label">${this.getConfidenceLabel(conf)}</span>
                     </div>
-                    <div class="confidence-badge confidence-${this.getConfidenceLevel(p.confidence)}">
-                        <span class="confidence-value">${p.confidence != null ? p.confidence + '%' : '—'}</span>
-                        <span class="confidence-label">Confidence</span>
+
+                    <div class="pathogen-footer">
+                        <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
+                        ${p.virulence_genes != null ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
                     </div>
                 </div>
-                <div class="pathogen-metrics-row">
-                    <div class="pathogen-metric-item">
-                        <span class="metric-value-lg">${p.abundance != null ? p.abundance + '%' : '—'}</span>
-                        <span class="metric-label">Abundance</span>
-                    </div>
-                    <div class="pathogen-metric-item">
-                        <span class="metric-value-lg">${p.reads != null ? this.formatReads(p.reads) : '—'}</span>
-                        <span class="metric-label">Reads</span>
-                    </div>
-                    ${p.amr_genes != null ? `
-                    <div class="pathogen-metric-item">
-                        <span class="metric-value-lg ${p.amr_genes > 0 ? 'text-danger' : ''}">${p.amr_genes}</span>
-                        <span class="metric-label">AMR Genes</span>
-                    </div>` : ''}
-                </div>
-                <div class="pathogen-confidence-bar">
-                    <div class="confidence-bar-track">
-                        <div class="confidence-bar-fill confidence-fill-${this.getConfidenceLevel(p.confidence)}" style="width: ${p.confidence || 0}%"></div>
-                    </div>
-                    <span class="confidence-bar-label">${this.getConfidenceLabel(p.confidence)}</span>
-                </div>
-                <div class="pathogen-footer">
-                    <span class="risk-badge risk-${p.risk_level || 'low'}">${this.capitalize(p.risk_level || 'unknown')} Risk</span>
-                    ${p.virulence_genes != null ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
-                </div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
     },
 
     /**
@@ -1116,37 +1325,38 @@ const ResultsPage = {
                 : '';
 
             const summaryRows = pathogens.map((p, i) => {
-                const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join(', ') : (p.amr_genes != null ? String(p.amr_genes) : '');
+                // const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join(', ') : (p.amr_genes != null ? String(p.amr_genes) : '');
                 return `<tr class="${i % 2 === 1 ? 'row-alt' : ''}">
-  <td style="font-style:italic;">${esc2(p.name || '—')}</td>
-  <td>${esc2(p.strain || '—')}</td>
-  <td class="num">${p.abundance != null ? esc2(p.abundance) + '%' : '—'}</td>
-  <td class="num">${p.reads != null ? Number(p.reads).toLocaleString() : '—'}</td>
-  <td class="num">${p.confidence != null ? esc2(p.confidence) + '%' : '—'}</td>
-  <td class="num"><span class="${riskClass(p.risk_level)}">${riskLabel(p.risk_level)}</span></td>
-  <td>${esc2(amr || '—')}</td>
-</tr>`;
+                    <td style="font-style:italic;">${esc2(p.name || '—')}</td>
+                    <td>${esc2(p.strain || '—')}</td>
+                    <td class="num">${p.abundance != null ? esc2(p.abundance) + '%' : '—'}</td>
+                    <td class="num">${p.reads != null ? Number(p.reads).toLocaleString() : '—'}</td>
+                    <td class="num">${p.confidence != null ? esc2(p.confidence) + '%' : '—'}</td>
+                    <td class="num"><span class="${riskClass(p.risk_level)}">${riskLabel(p.risk_level)}</span></td>
+                    </tr>`;
             }).join('');
 
             const detailBlocks = pathogens.map((p, i) => {
-                const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join('; ') : (p.amr_genes != null ? String(p.amr_genes) : '—');
-                const vir = Array.isArray(p.virulence_genes) ? p.virulence_genes.join('; ') : (p.virulence_genes != null ? String(p.virulence_genes) : '—');
+                // const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join('; ') : (p.amr_genes != null ? String(p.amr_genes) : '—');
+                // const vir = Array.isArray(p.virulence_genes) ? p.virulence_genes.join('; ') : (p.virulence_genes != null ? String(p.virulence_genes) : '—');
+                const vir = Array.isArray(p.virulence_genes)
+                    ? p.virulence_genes.join('; ')
+                    : (p.virulence_genes != null ? String(p.virulence_genes) : '—');
                 return `<div class="organism-block">
-  <div class="organism-header">
-    <span class="organism-index">${i + 1}.</span>
-    <span class="organism-name">${esc2(p.name || 'Unknown Organism')}</span>
-    <span class="risk-tag ${riskClass(p.risk_level)}">${riskLabel(p.risk_level)} RISK</span>
-  </div>
-  ${p.strain ? `<div class="organism-strain">${esc2(p.strain)}</div>` : ''}
-  <table class="detail-table">
-    ${dl('Taxonomic ID', p.tax_id)}
-    ${dl('Relative Abundance', p.abundance != null ? p.abundance + '%' : null)}
-    ${dl('Assigned Reads', p.reads != null ? Number(p.reads).toLocaleString() : null)}
-    ${dl('Classification Confidence', p.confidence != null ? p.confidence + '%' : null)}
-    ${dl('AMR Genes Detected', amr !== '—' ? amr : null)}
-    ${dl('Virulence Genes', vir !== '—' ? vir : null)}
-  </table>
-</div>`;
+                    <div class="organism-header">
+                        <span class="organism-index">${i + 1}.</span>
+                        <span class="organism-name">${esc2(p.name || 'Unknown Organism')}</span>
+                        <span class="risk-tag ${riskClass(p.risk_level)}">${riskLabel(p.risk_level)} RISK</span>
+                    </div>
+                    ${p.strain ? `<div class="organism-strain">${esc2(p.strain)}</div>` : ''}
+                    <table class="detail-table">
+                        ${dl('Taxonomic ID', p.tax_id)}
+                        ${dl('Relative Abundance', p.abundance != null ? p.abundance + '%' : null)}
+                        ${dl('Assigned Reads', p.reads != null ? Number(p.reads).toLocaleString() : null)}
+                        ${dl('Classification Confidence', p.confidence != null ? p.confidence + '%' : null)}
+                        ${dl('Virulence Genes', vir !== '—' ? vir : null)}
+                    </table>
+                    </div>`;
             }).join('');
 
             const html = `<!DOCTYPE html>
@@ -1305,7 +1515,6 @@ ${(quality.average_quality != null || quality.mean_coverage != null || quality.h
         <th style="text-align:right">Reads</th>
         <th style="text-align:right">Confidence</th>
         <th style="text-align:right">Risk Level</th>
-        <th>AMR Genes</th>
       </tr>
     </thead>
     <tbody>${summaryRows}</tbody>

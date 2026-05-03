@@ -226,43 +226,38 @@
 
             <div class="stats-cards-grid">
                 <div class="stat-card">
-                    <div class="stat-card-header"><span>Total Reads</span><svg viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
-                        </svg></div>
-                    <div class="stat-card-value">11.89M</div>
-                    <div class="stat-card-sub">↑ 94.2% high quality</div>
+                    <div class="stat-card-header">
+                        <span>Total Reads</span>
+                    </div>
+                    <div class="stat-card-value" id="summary-total-reads-value">—</div>
+                    <div class="stat-card-sub" id="summary-total-reads-sub">—</div>
                 </div>
+
                 <div class="stat-card">
-                    <div class="stat-card-header"><span>Species Detected</span><svg viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
-                            <circle cx="9" cy="7" r="4"></circle>
-                        </svg></div>
-                    <div class="stat-card-value">342</div>
-                    <div class="stat-card-sub">63.6% classified</div>
+                    <div class="stat-card-header">
+                        <span>Species Detected</span>
+                    </div>
+                    <div class="stat-card-value" id="summary-species-value">—</div>
+                    <div class="stat-card-sub" id="summary-species-sub">—</div>
                 </div>
+
                 <div class="stat-card stat-card-danger">
-                    <div class="stat-card-header"><span>Pathogens</span><svg viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <path
-                                d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z">
-                            </path>
-                            <line x1="12" y1="9" x2="12" y2="13"></line>
-                            <line x1="12" y1="17" x2="12.01" y2="17"></line>
-                        </svg></div>
-                    <div class="stat-card-value">4 Critical</div>
-                    <div class="stat-card-sub">High virulence</div>
+                    <div class="stat-card-header">
+                        <span>Pathogens</span>
+                    </div>
+                    <div class="stat-card-value" id="summary-pathogens-value">—</div>
+                    <div class="stat-card-sub" id="summary-pathogens-sub">—</div>
                 </div>
+                
+                <!--
                 <div class="stat-card">
-                    <div class="stat-card-header"><span>AMR Genes</span><svg viewBox="0 0 24 24" fill="none"
-                            stroke="currentColor" stroke-width="2">
-                            <polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline>
-                            <polyline points="17 6 23 6 23 12"></polyline>
-                        </svg></div>
-                    <div class="stat-card-value">19 Total</div>
-                    <div class="stat-card-sub">Multi-drug resistant</div>
+                    <div class="stat-card-header">
+                        <span>AMR Genes</span>
+                    </div>
+                    <div class="stat-card-value" id="summary-amr-value">—</div>
+                    <div class="stat-card-sub" id="summary-amr-sub">—</div>
                 </div>
+                -->
             </div>
 
             <div class="pathogen-cards" id="pathogen-cards-overview"></div>
@@ -276,8 +271,8 @@
                 <div id="abundance-treemap-chart" style="min-height: 400px;"></div>
             </div>
             <div class="card">
-                <h3 class="card-title">Hierarchical Taxonomy (Sunburst)</h3>
-                <p class="text-muted">Multi-level taxonomic classification: Domain → Phylum → Species</p>
+                <h3 class="card-title">Hierarchical Taxonomy</h3>
+                <p class="text-muted">Multi-level taxonomic classification</p>
                 <div id="sunburst-chart" style="min-height: 450px;"></div>
             </div>
             <div class="card">
@@ -289,81 +284,76 @@
 
         <!-- Tab: Quality Control -->
         <div class="tab-content" id="tab-quality">
-            <div class="card">
+            <div class="card" id="quality-distribution-card">
                 <h3 class="card-title">Read Quality Score Distribution</h3>
-                <p class="text-muted">Phred quality scores across all reads (higher = better)</p>
-                <div class="bar-chart" id="quality-chart">
-                    <div class="bar-chart-y-axis">
-                        <span>32</span><span>24</span><span>16</span><span>8</span><span>0</span>
-                    </div>
-                    <div class="bar-chart-bars">
-                        <div class="bar-item">
-                            <div class="bar" style="height: 2%"></div><span>Q10</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 3%"></div><span>Q15</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 5%"></div><span>Q20</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 18%"></div><span>Q25</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 52%"></div><span>Q30</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 85%"></div><span>Q35</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 95%"></div><span>Q38</span>
-                        </div>
-                        <div class="bar-item">
-                            <div class="bar" style="height: 35%"></div><span>Q40</span>
-                        </div>
-                    </div>
-                    <div class="bar-chart-x-label">Quality Score</div>
-                </div>
+                <p class="text-muted" id="quality-distribution-subtitle">
+                    Quality score distribution is not available for this analysis.
+                </p>
             </div>
+
             <div class="card">
                 <h3 class="card-title">Quality Control Summary</h3>
                 <div class="qc-metrics">
                     <div class="qc-metric">
                         <span class="qc-label">Average Read Quality</span>
-                        <span class="qc-value">Q38</span>
+                        <span class="qc-value" id="qc-average-quality-value">N/A</span>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: 95%"></div>
+                            <div class="progress-fill" id="qc-average-quality-bar" style="width: 0%"></div>
                         </div>
-                        <span class="qc-sub">Excellent quality</span>
+                        <span class="qc-sub" id="qc-average-quality-sub">Quality unavailable</span>
                     </div>
+
                     <div class="qc-metric">
                         <span class="qc-label">Classification Rate</span>
-                        <span class="qc-value">63.6%</span>
+                        <span class="qc-value" id="qc-classification-rate-value">N/A</span>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: 63.6%"></div>
+                            <div class="progress-fill" id="qc-classification-rate-bar" style="width: 0%"></div>
                         </div>
-                        <span class="qc-sub">7.56M classified reads</span>
+                        <span class="qc-sub" id="qc-classification-rate-sub">Classification unavailable</span>
                     </div>
+
                     <div class="qc-metric">
                         <span class="qc-label">Mean Coverage Depth</span>
-                        <span class="qc-value">145x</span>
+                        <span class="qc-value" id="qc-coverage-value">N/A</span>
                         <div class="progress-bar">
-                            <div class="progress-fill" style="width: 90%"></div>
+                            <div class="progress-fill" id="qc-coverage-bar" style="width: 0%"></div>
                         </div>
-                        <span class="qc-sub">High confidence</span>
+                        <span class="qc-sub" id="qc-coverage-sub">Coverage unavailable</span>
                     </div>
                 </div>
             </div>
         </div>
 
         <!-- Tab: Pathogen Details -->
-        <div class="tab-content" id="tab-pathogens"></div>
+        <div class="tab-content" id="tab-pathogens">
+
+            <!-- FILTERS -->
+            <div class="pathogen-filters">
+                <input id="pathogen-search-filter" type="text" placeholder="Search pathogen name..." />
+
+                <select id="risk-filter">
+                    <option value="all">All Risks</option>
+                    <option value="high">High Risk</option>
+                    <option value="medium">Medium Risk</option>
+                    <option value="low">Low Risk</option>
+                </select>
+
+                <input id="min-confidence-filter" type="number" min="0" max="100" placeholder="Min confidence %" />
+
+                <input id="min-reads-filter" type="number" min="0" placeholder="Min reads" />
+
+                <button class="btn btn-outline btn-sm" onclick="ResultsPage.clearPathogenFilters()">Clear</button>
+            </div>
+            
+            <div id="pathogen-details-list"></div>
+
+        </div>
 
         <!-- Tab: Comparative Analysis -->
         <div class="tab-content" id="tab-comparative">
             <div class="card">
                 <h3 class="card-title">Pathogen Characteristic Comparison</h3>
-                <p class="text-muted">Radar plot showing relative abundance, confidence, virulence, and AMR profiles</p>
+                <p class="text-muted">Quadrant comparison of pathogen abundance, confidence, risk, and virulence</p>
                 <div id="radar-chart" style="min-height: 450px;"></div>
             </div>
         </div>

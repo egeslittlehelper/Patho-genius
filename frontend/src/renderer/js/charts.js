@@ -36,32 +36,34 @@ const Charts = {
      */
     showTooltip(x, y, title, content) {
         if (!this.tooltip) this.createTooltip();
-        
+
         const titleEl = this.tooltip.querySelector('.tooltip-title');
         const contentEl = this.tooltip.querySelector('.tooltip-content');
-        
+
         titleEl.textContent = title;
         contentEl.innerHTML = content;
-        
-        // Position tooltip
+
+        this.tooltip.classList.add('visible');
+        this.tooltip.style.left = '0px';
+        this.tooltip.style.top = '0px';
+
         const rect = this.tooltip.getBoundingClientRect();
         const offsetX = 15;
         const offsetY = 15;
-        
+
         let left = x + offsetX;
         let top = y + offsetY;
-        
-        // Keep tooltip in viewport
+
         if (left + rect.width > window.innerWidth) {
             left = x - rect.width - offsetX;
         }
+
         if (top + rect.height > window.innerHeight) {
             top = y - rect.height - offsetY;
         }
-        
-        this.tooltip.style.left = `${left}px`;
-        this.tooltip.style.top = `${top}px`;
-        this.tooltip.classList.add('visible');
+
+        this.tooltip.style.left = `${Math.max(8, left)}px`;
+        this.tooltip.style.top = `${Math.max(8, top)}px`;
     },
 
     /**
@@ -71,6 +73,24 @@ const Charts = {
         if (this.tooltip) {
             this.tooltip.classList.remove('visible');
         }
+    },
+
+    renderEmptyState(container, message = 'No data available') {
+        container.innerHTML = `
+            <div class="chart-empty-state" style="
+                display:flex;
+                align-items:center;
+                justify-content:center;
+                min-height:240px;
+                color:#6B7280;
+                font-size:14px;
+                border:1px dashed #D1D5DB;
+                border-radius:12px;
+                background:#F9FAFB;
+            ">
+                ${message}
+            </div>
+        `;
     },
 
     // ============================================
@@ -87,11 +107,12 @@ const Charts = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        if (!data) {
-            container.innerHTML = '<div class="chart-empty-state">No taxonomy data available</div>';
+        const chartData = data;
+
+        if (!chartData || !chartData.children || chartData.children.length === 0) {
+            this.renderEmptyState(container, 'No taxonomy data available');
             return;
         }
-        const chartData = data;
 
         // Calculate dimensions
         const width = container.clientWidth || 400;
@@ -121,38 +142,46 @@ const Charts = {
      */
     generateSunburstSegments(data, maxRadius, startAngle = 0, endAngle = 360, level = 0, parentColor = null) {
         const segments = [];
-        const innerRadius = level * (maxRadius / 3);
-        const outerRadius = (level + 1) * (maxRadius / 3);
+        const maxLevels = data.children?.some(c => Array.isArray(c.children) && c.children.length) ? 3 : 1;
+        const innerRadius = level * (maxRadius / maxLevels);
+        const outerRadius = (level + 1) * (maxRadius / maxLevels);
         
-        let currentAngle = startAngle;
-        const totalValue = data.children ? data.children.reduce((sum, c) => sum + c.value, 0) : data.value;
-
         const items = data.children || [data];
+        const totalValue = Math.max(
+            0.0001,
+            items.reduce((sum, item) => sum + Number(item.value || 0), 0)
+        );
+
+        let currentAngle = startAngle;
         
         items.forEach((item, idx) => {
-            const angleSpan = (item.value / totalValue) * (endAngle - startAngle);
+            const itemValue = Number(item.value || 0);
+            if (itemValue <= 0) return;
+
+            const angleSpan = (itemValue / totalValue) * (endAngle - startAngle);
             const itemEndAngle = currentAngle + angleSpan;
-            
-            // Generate color
+
             const color = item.color || parentColor || this.getColorForIndex(idx, items.length);
-            const lighterColor = this.lightenColor(color, level * 15);
-            
-            // Create arc path
+            const lighterColor = this.lightenColor(color, level * 12);
+
             const path = this.describeArc(0, 0, innerRadius, outerRadius, currentAngle, itemEndAngle);
+
+            const tooltipContent = `
+                <div><strong>Value:</strong> ${this.formatPercent(itemValue)}</div>
+                ${item.reads != null ? `<div><strong>Reads:</strong> ${this.formatNumber(item.reads)}</div>` : ''}
+                ${item.confidence != null ? `<div><strong>Confidence:</strong> ${this.formatPercent(item.confidence)}</div>` : ''}
+            `.trim();
             
             segments.push(`
-                <path 
-                    d="${path}" 
+                <path
+                    d="${path}"
                     fill="${lighterColor}"
                     stroke="white"
                     stroke-width="2"
                     class="sunburst-segment"
-                    data-name="${esc(item.name)}"
-                    data-value="${item.value}"
-                    data-percentage="${((item.value / totalValue) * 100).toFixed(1)}"
-                    data-level="${level}"
-                    data-reads="${item.reads || 'N/A'}"
-                    data-confidence="${item.confidence || 'N/A'}"
+                    data-name="${this.escapeAttr(item.name)}"
+                    data-value="${itemValue}"
+                    data-tooltip="${this.escapeAttr(tooltipContent)}"
                 />
             `);
 
@@ -162,25 +191,25 @@ const Charts = {
                 const labelRadius = (innerRadius + outerRadius) / 2;
                 const labelX = labelRadius * Math.cos((midAngle - 90) * Math.PI / 180);
                 const labelY = labelRadius * Math.sin((midAngle - 90) * Math.PI / 180);
-                
+
                 segments.push(`
-                    <text 
-                        x="${labelX}" 
-                        y="${labelY}" 
+                    <text
+                        x="${labelX}"
+                        y="${labelY}"
                         class="sunburst-label"
                         text-anchor="middle"
                         dominant-baseline="middle"
                         fill="${level === 0 ? 'white' : '#374151'}"
                         font-size="${level === 0 ? '12' : '10'}"
-                    >${esc(item.name)}</text>
+                    >${this.truncateLabel(item.name, 16)}</text>
                 `);
             }
 
             // Recurse for children
-            if (item.children && item.children.length > 0) {
-                segments.push(this.generateSunburstSegments(
-                    item, maxRadius, currentAngle, itemEndAngle, level + 1, color
-                ));
+            if (item.children && item.children.length > 0 && level < 2) {
+                segments.push(
+                    this.generateSunburstSegments(item, maxRadius, currentAngle, itemEndAngle, level + 1, color)
+                );
             }
 
             currentAngle = itemEndAngle;
@@ -197,7 +226,7 @@ const Charts = {
         return items.map((item, idx) => `
             <span class="legend-item">
                 <span class="legend-dot" style="background: ${item.color || this.getColorForIndex(idx, items.length)}"></span>
-                ${esc(item.name)} (${item.value}%)
+                ${item.name} (${this.formatPercent(item.value)})
             </span>
         `).join('');
     },
@@ -210,31 +239,29 @@ const Charts = {
         
         segments.forEach(segment => {
             segment.addEventListener('mouseenter', (e) => {
-                const name = segment.dataset.name;
-                const value = segment.dataset.percentage;
-                const reads = segment.dataset.reads;
-                const confidence = segment.dataset.confidence;
-                
-                segment.style.opacity = '0.8';
-                segment.style.transform = 'scale(1.02)';
-                
-                this.showTooltip(e.pageX, e.pageY, name, `
-                    <div><strong>Abundance:</strong> ${value}%</div>
-                    ${reads !== 'N/A' ? `<div><strong>Reads:</strong> ${reads}</div>` : ''}
-                    ${confidence !== 'N/A' ? `<div><strong>Confidence:</strong> ${confidence}%</div>` : ''}
-                `);
+                segment.style.opacity = '0.85';
+                segment.style.strokeWidth = '3';
+
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    segment.dataset.name || 'Taxonomy',
+                    this.unescapeAttr(segment.dataset.tooltip || '')
+                );
             });
             
             segment.addEventListener('mousemove', (e) => {
-                this.showTooltip(e.pageX, e.pageY, 
-                    segment.dataset.name, 
-                    this.tooltip.querySelector('.tooltip-content').innerHTML
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    segment.dataset.name || 'Taxonomy',
+                    this.unescapeAttr(segment.dataset.tooltip || '')
                 );
             });
             
             segment.addEventListener('mouseleave', () => {
                 segment.style.opacity = '1';
-                segment.style.transform = 'scale(1)';
+                segment.style.strokeWidth = '2';
                 this.hideTooltip();
             });
         });
@@ -294,49 +321,65 @@ const Charts = {
         // Group nodes by column
         data.nodes.forEach(node => {
             if (!columns[node.column]) columns[node.column] = [];
-            columns[node.column].push(node);
+            columns[node.column].push({ ...node });
         });
 
-        const columnCount = Object.keys(columns).length;
-        const columnWidth = (width - nodeWidth) / (columnCount - 1);
+        const columnKeys = Object.keys(columns).map(Number).sort((a, b) => a - b);
+        const columnCount = Math.max(1, columnKeys.length);
+        const columnWidth = columnCount > 1 ? (width - nodeWidth) / (columnCount - 1) : 0;
 
-        // Position nodes
-        Object.entries(columns).forEach(([col, nodes]) => {
-            const colIdx = parseInt(col);
-            const totalValue = nodes.reduce((sum, n) => sum + n.value, 0);
+        columnKeys.forEach(col => {
+            const nodes = columns[col];
+            const totalValue = Math.max(1, nodes.reduce((sum, n) => sum + Number(n.value || 0), 0));
             const availableHeight = height - (nodes.length - 1) * nodePadding;
-            
+
             let y = 0;
             nodes.forEach(node => {
-                node.x = colIdx * columnWidth;
-                node.height = (node.value / totalValue) * availableHeight;
+                node.x = col * columnWidth;
+                node.height = Math.max(16, (Number(node.value || 0) / totalValue) * availableHeight);
                 node.y = y;
                 y += node.height + nodePadding;
             });
         });
 
-        // Create node map for quick lookup
+        const flatNodes = columnKeys.flatMap(col => columns[col]);
         const nodeMap = {};
-        data.nodes.forEach(n => nodeMap[n.id] = n);
+        flatNodes.forEach(n => { nodeMap[n.id] = n; });
 
         // Calculate link paths
-        const links = data.links.map(link => {
-            const source = nodeMap[link.source];
-            const target = nodeMap[link.target];
-            
-            return {
-                ...link,
-                sourceX: source.x + nodeWidth,
-                sourceY: source.y + source.height / 2,
-                targetX: target.x,
-                targetY: target.y + target.height / 2,
-                sourceNode: source,
-                targetNode: target,
-                thickness: Math.max(2, (link.value / source.value) * source.height)
-            };
-        });
+        const links = (data.links || [])
+            .map(link => {
+                const source = nodeMap[link.source];
+                const target = nodeMap[link.target];
+                if (!source || !target) return null;
 
-        return { nodes: data.nodes, links };
+                const value = Number(link.value || 0);
+
+                const sourceThickness = Math.max(
+                    2,
+                    (value / Math.max(1, Number(source.value || 0))) * source.height
+                );
+
+                const targetThickness = Math.max(
+                    2,
+                    (value / Math.max(1, Number(target.value || 0))) * target.height
+                );
+
+                return {
+                    ...link,
+                    sourceX: source.x + nodeWidth,
+                    sourceY: source.y + source.height / 2,
+                    targetX: target.x,
+                    targetY: target.y + target.height / 2,
+                    sourceNode: source,
+                    targetNode: target,
+                    sourceThickness,
+                    targetThickness
+                };
+            })
+            .filter(Boolean);
+
+        return { nodes: flatNodes, links };
     },
 
     /**
@@ -356,26 +399,36 @@ const Charts = {
      */
     generateSankeyLinks(links) {
         return links.map((link, idx) => {
-            const curvature = 0.5;
             const x0 = link.sourceX;
             const x1 = link.targetX;
-            const xi = (x0 + x1) * curvature;
-            const x2 = xi;
-            const x3 = xi;
-            
-            const path = `M${x0},${link.sourceY} C${x2},${link.sourceY} ${x3},${link.targetY} ${x1},${link.targetY}`;
-            
+            const y0 = link.sourceY;
+            const y1 = link.targetY;
+            const xi = x0 + (x1 - x0) * 0.5;
+
+            const s = (link.sourceThickness || 2) / 2;
+            const t = (link.targetThickness || 2) / 2;
+
+            const path = `
+                M ${x0},${y0 - s}
+                C ${xi},${y0 - s} ${xi},${y1 - t} ${x1},${y1 - t}
+                L ${x1},${y1 + t}
+                C ${xi},${y1 + t} ${xi},${y0 + s} ${x0},${y0 + s}
+                Z
+            `;
+
+            const tooltipContent = `
+                <div><strong>Flow:</strong> ${this.formatNumber(link.value)} reads</div>
+                ${link.label ? `<div>${link.label}</div>` : ''}
+            `.trim();
+
             return `
-                <path 
+                <path
                     d="${path}"
-                    fill="none"
-                    stroke="url(#link-gradient-${idx})"
-                    stroke-width="${link.thickness}"
+                    fill="url(#link-gradient-${idx})"
+                    fill-opacity="0.55"
                     class="sankey-link"
-                    data-source="${esc(link.sourceNode.name)}"
-                    data-target="${esc(link.targetNode.name)}"
-                    data-value="${link.value}"
-                    data-label="${esc(link.label || '')}"
+                    data-title="${this.escapeAttr(`${link.sourceNode.name} → ${link.targetNode.name}`)}"
+                    data-tooltip="${this.escapeAttr(tooltipContent)}"
                 />
             `;
         }).join('');
@@ -385,66 +438,86 @@ const Charts = {
      * Generate sankey nodes
      */
     generateSankeyNodes(nodes, nodeWidth) {
-        return nodes.map(node => `
-            <g class="sankey-node" data-name="${esc(node.name)}" data-value="${node.value}" data-info="${esc(node.info || '')}">
-                <rect 
-                    x="${node.x}" 
-                    y="${node.y}" 
-                    width="${nodeWidth}" 
-                    height="${node.height}"
-                    fill="${node.color}"
-                    rx="2"
-                />
-                <text 
-                    x="${node.column === 0 ? node.x - 5 : node.x + nodeWidth + 5}" 
-                    y="${node.y + node.height / 2}"
-                    text-anchor="${node.column === 0 ? 'end' : 'start'}"
-                    dominant-baseline="middle"
-                    class="sankey-label"
-                    fill="#374151"
-                    font-size="11"
-                >${esc(node.name)}</text>
-            </g>
-        `).join('');
+        return nodes.map(node => {
+            const tooltipContent = `
+                <div><strong>Value:</strong> ${this.formatNumber(node.value)}</div>
+                ${node.info ? `<div>${node.info}</div>` : ''}
+            `.trim();
+
+            return `
+                <g class="sankey-node"
+                data-name="${this.escapeAttr(node.name)}"
+                data-tooltip="${this.escapeAttr(tooltipContent)}">
+                    <rect
+                        x="${node.x}"
+                        y="${node.y}"
+                        width="${nodeWidth}"
+                        height="${node.height}"
+                        fill="${node.color}"
+                        rx="2"
+                    />
+                    <text
+                        x="${node.column === 0 ? node.x - 5 : node.x + nodeWidth + 5}"
+                        y="${node.y + node.height / 2}"
+                        text-anchor="${node.column === 0 ? 'end' : 'start'}"
+                        dominant-baseline="middle"
+                        class="sankey-label"
+                        fill="#374151"
+                        font-size="11"
+                    >${this.truncateLabel(node.name, 28)}</text>
+                </g>
+            `;
+        }).join('');
     },
 
     /**
      * Attach sankey event listeners
      */
     attachSankeyEvents(container) {
-        // Node events
         container.querySelectorAll('.sankey-node').forEach(node => {
             node.addEventListener('mouseenter', (e) => {
-                const name = node.dataset.name;
-                const value = node.dataset.value;
-                const info = node.dataset.info;
-                
-                this.showTooltip(e.pageX, e.pageY, name, `
-                    <div><strong>Value:</strong> ${this.formatNumber(value)}</div>
-                    ${info ? `<div>${info}</div>` : ''}
-                `);
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    node.dataset.name || 'Node',
+                    this.unescapeAttr(node.dataset.tooltip || '')
+                );
             });
-            
+
+            node.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    node.dataset.name || 'Node',
+                    this.unescapeAttr(node.dataset.tooltip || '')
+                );
+            });
+
             node.addEventListener('mouseleave', () => this.hideTooltip());
         });
 
-        // Link events
         container.querySelectorAll('.sankey-link').forEach(link => {
             link.addEventListener('mouseenter', (e) => {
-                link.style.strokeOpacity = '0.8';
-                const source = link.dataset.source;
-                const target = link.dataset.target;
-                const value = link.dataset.value;
-                const label = link.dataset.label;
-                
-                this.showTooltip(e.pageX, e.pageY, `${source} → ${target}`, `
-                    <div><strong>Flow:</strong> ${this.formatNumber(value)} reads</div>
-                    ${label ? `<div>${label}</div>` : ''}
-                `);
+                link.style.strokeOpacity = '0.75';
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(link.dataset.title || 'Flow'),
+                    this.unescapeAttr(link.dataset.tooltip || '')
+                );
             });
-            
+
+            link.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(link.dataset.title || 'Flow'),
+                    this.unescapeAttr(link.dataset.tooltip || '')
+                );
+            });
+
             link.addEventListener('mouseleave', () => {
-                link.style.strokeOpacity = '0.5';
+                link.style.strokeOpacity = '0.55';
                 this.hideTooltip();
             });
         });
@@ -464,20 +537,21 @@ const Charts = {
         const container = document.getElementById(containerId);
         if (!container) return;
 
-        if (!data || (Array.isArray(data) && data.length === 0)) {
-            container.innerHTML = '<div class="chart-empty-state">No pathogen abundance data available</div>';
+        const chartData = data;
+        if (!Array.isArray(chartData) || chartData.length === 0) {
+            this.renderEmptyState(container, 'No pathogen abundance data available');
             return;
         }
-        const chartData = data;
-        const width = container.clientWidth || 600;
-        const height = 400;
 
-        // Calculate treemap layout
+        const width = Math.min(container.clientWidth || 1000, 900);
+        const height = 400;
         const layout = this.calculateTreemapLayout(chartData, 0, 0, width, height);
 
         container.innerHTML = `
-            <div class="treemap-chart" style="width: ${width}px; height: ${height}px; position: relative;">
-                ${this.generateTreemapCells(layout)}
+            <div style="display:flex; justify-content:center; width:100%;">
+                <div class="treemap-chart" style="width:${width}px; height:${height}px; position:relative;">
+                    ${this.generateTreemapCells(layout)}
+                </div>
             </div>
         `;
 
@@ -498,26 +572,23 @@ const Charts = {
         let isHorizontal = width >= height;
 
         // Sort by value descending
-        const sorted = [...data].sort((a, b) => b.value - a.value);
+        const sorted = [...data].sort((a, b) => Number(b.value || 0) - Number(a.value || 0));
 
         sorted.forEach((item, idx) => {
-            const ratio = item.value / total;
-            let cellWidth, cellHeight;
+            const ratio = Number(item.value || 0) / total;
+            let cellWidth;
+            let cellHeight;
 
             if (isHorizontal) {
-                cellWidth = remainingWidth * ratio * (width / remainingWidth);
+                cellWidth = idx === sorted.length - 1
+                    ? remainingWidth
+                    : remainingWidth * ratio * (width / Math.max(1, remainingWidth));
                 cellHeight = remainingHeight;
-                
-                if (idx === sorted.length - 1) {
-                    cellWidth = remainingWidth;
-                }
             } else {
                 cellWidth = remainingWidth;
-                cellHeight = remainingHeight * ratio * (height / remainingHeight);
-                
-                if (idx === sorted.length - 1) {
-                    cellHeight = remainingHeight;
-                }
+                cellHeight = idx === sorted.length - 1
+                    ? remainingHeight
+                    : remainingHeight * ratio * (height / Math.max(1, remainingHeight));
             }
 
             cells.push({
@@ -537,7 +608,6 @@ const Charts = {
                 remainingHeight -= cellHeight;
             }
 
-            // Alternate direction for better squarification
             if (idx % 2 === 0) {
                 isHorizontal = !isHorizontal;
             }
@@ -551,31 +621,49 @@ const Charts = {
      */
     generateTreemapCells(cells) {
         return cells.map(cell => {
-            const showLabel = cell.width > 60 && cell.height > 40;
-            const showValue = cell.width > 80 && cell.height > 60;
-            const showConfidence = cell.width > 100 && cell.height > 80 && cell.confidence;
+            const showLabel = cell.width > 90 && cell.height > 50;
+            const showValue = cell.width > 110 && cell.height > 65;
+            const showConfidence = cell.width > 130 && cell.height > 85 && cell.confidence != null;
             
+            const tooltipContent = `
+                <div class="tooltip-row"><strong>Relative Abundance:</strong> ${this.formatPercent(cell.value)}</div>
+                ${cell.reads != null ? `<div class="tooltip-row"><strong>Read Count:</strong> ${this.formatNumber(cell.reads)}</div>` : ''}
+                ${cell.confidence != null ? `<div class="tooltip-row"><strong>Confidence Score:</strong> <span class="confidence-highlight">${this.formatPercent(cell.confidence)}</span></div>` : ''}
+                ${cell.risk && cell.risk !== 'Unknown' ? `
+                    <div class="tooltip-row">
+                        <strong>Risk Level:</strong>
+                        <span style="
+                            font-weight:600;
+                            color:${
+                                cell.risk.toLowerCase() === 'high'
+                                    ? '#dc2626'
+                                    : cell.risk.toLowerCase() === 'medium'
+                                    ? '#f59e0b'
+                                    : '#16a34a'
+                            };
+                        ">
+                            ${cell.risk}
+                        </span>
+                    </div>` : ''}
+                ${cell.virulenceFactors != null ? `<div class="tooltip-row"><strong>Virulence Factors:</strong> ${cell.virulenceFactors}</div>` : ''}
+            `.trim();
+
             return `
-                <div 
+                <div
                     class="treemap-cell"
                     style="
-                        left: ${cell.x}px;
-                        top: ${cell.y}px;
-                        width: ${cell.width}px;
-                        height: ${cell.height}px;
-                        background-color: ${cell.color};
+                        left:${cell.x}px;
+                        top:${cell.y}px;
+                        width:${cell.width}px;
+                        height:${cell.height}px;
+                        background-color:${cell.color};
                     "
-                    data-name="${esc(cell.name)}"
-                    data-value="${cell.value}"
-                    data-reads="${cell.reads || 'N/A'}"
-                    data-confidence="${cell.confidence || 'N/A'}"
-                    data-risk="${cell.risk || 'N/A'}"
-                    data-amr="${cell.amrGenes ?? 'N/A'}"
-                    data-virulence="${cell.virulenceFactors ?? 'N/A'}"
+                    data-name="${this.escapeAttr(cell.name)}"
+                    data-tooltip="${this.escapeAttr(tooltipContent)}"
                 >
-                    ${showLabel ? `<span class="treemap-cell-label">${esc(cell.name)}</span>` : ''}
-                    ${showValue ? `<span class="treemap-cell-value">${cell.value}%</span>` : ''}
-                    ${showConfidence ? `<span class="treemap-cell-confidence">${cell.confidence}% conf.</span>` : ''}
+                    ${showLabel ? `<span class="treemap-cell-label">${this.truncateLabel(cell.name, 28)}</span>` : ''}
+                    ${showValue ? `<span class="treemap-cell-value">${this.formatPercent(cell.value)}</span>` : ''}
+                    ${showConfidence ? `<span class="treemap-cell-confidence">${this.formatPercent(cell.confidence)} conf.</span>` : ''}
                 </div>
             `;
         }).join('');
@@ -591,35 +679,23 @@ const Charts = {
                 cell.style.zIndex = '10';
                 cell.style.boxShadow = '0 4px 12px rgba(0,0,0,0.2)';
                 
-                const name = cell.dataset.name;
-                const value = cell.dataset.value;
-                const reads = cell.dataset.reads;
-                const confidence = cell.dataset.confidence;
-                const risk = cell.dataset.risk;
-                const amr = cell.dataset.amr;
-                const virulence = cell.dataset.virulence;
-                
-                let riskClass = 'low';
-                if (risk === 'High') riskClass = 'high';
-                else if (risk === 'Medium') riskClass = 'medium';
-                
-                this.showTooltip(e.pageX, e.pageY, name, `
-                    <div class="tooltip-row"><strong>Relative Abundance:</strong> ${value}%</div>
-                    ${reads !== 'N/A' ? `<div class="tooltip-row"><strong>Read Count:</strong> ${this.formatNumber(reads)}</div>` : ''}
-                    ${confidence !== 'N/A' ? `<div class="tooltip-row"><strong>Confidence Score:</strong> <span class="confidence-highlight">${confidence}%</span></div>` : ''}
-                    ${risk !== 'N/A' && risk !== 'Unknown' ? `<div class="tooltip-row"><strong>Risk Level:</strong> <span class="risk-badge-sm risk-${riskClass}">${esc(risk)}</span></div>` : ''}
-                    ${amr !== 'N/A' && amr !== 'null' ? `<div class="tooltip-row"><strong>AMR Genes:</strong> ${amr}</div>` : ''}
-                    ${virulence !== 'N/A' && virulence !== 'null' ? `<div class="tooltip-row"><strong>Virulence Factors:</strong> ${virulence}</div>` : ''}
-                `);
-            });
-            
-            cell.addEventListener('mousemove', (e) => {
-                this.showTooltip(e.pageX, e.pageY, 
-                    cell.dataset.name, 
-                    this.tooltip.querySelector('.tooltip-content').innerHTML
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(cell.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(cell.dataset.tooltip || '')
                 );
             });
             
+            cell.addEventListener('mousemove', (e) => {
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(cell.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(cell.dataset.tooltip || '')
+                );
+            });
+
             cell.addEventListener('mouseleave', () => {
                 cell.style.transform = 'scale(1)';
                 cell.style.zIndex = '1';
@@ -655,15 +731,13 @@ const Charts = {
         const maxRadius = Math.min(width, height) / 2 - 40;
 
         // Calculate radar axes
-        const axes = chartData.axes || ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'];
-        const numAxes = axes.length;
-        const angleStep = (Math.PI * 2) / numAxes;
+        const axes = chartData.axes || ['Confidence', 'Abundance', 'Risk', 'Virulence'];
 
         container.innerHTML = `
             <svg width="${width}" height="${height}" class="radar-chart">
                 <g transform="translate(${centerX}, ${centerY})">
-                    ${this.generateRadarAxes(axes, maxRadius)}
-                    ${this.generateRadarData(chartData.pathogens, axes, maxRadius)}
+                    ${this.generateQuadrantAxes(maxRadius)}
+                    ${this.generateQuadrantData(chartData.pathogens, maxRadius, chartData.maxValues)}
                 </g>
             </svg>
             <div class="chart-legend radar-legend">
@@ -674,6 +748,110 @@ const Charts = {
         this.attachRadarEvents(container);
     },
 
+    generateQuadrantAxes(maxRadius) {
+        let html = '';
+
+        // Circular guide rings
+        for (let i = 1; i <= 4; i++) {
+            const r = (maxRadius * i) / 4;
+            html += `<circle cx="0" cy="0" r="${r}" fill="none" stroke="#F3F4F6" stroke-width="1"/>`;
+        }
+
+        // Main x/y axes
+        html += `
+            <line x1="${-maxRadius}" y1="0" x2="${maxRadius}" y2="0" stroke="#D1D5DB" stroke-width="1.5"/>
+            <line x1="0" y1="${-maxRadius}" x2="0" y2="${maxRadius}" stroke="#D1D5DB" stroke-width="1.5"/>
+
+            <text x="${maxRadius + 22}" y="4"
+                text-anchor="start"
+                class="radar-axis-label"
+                fill="#374151"
+                font-size="12">Confidence</text>
+
+            <text x="0" y="${-maxRadius - 18}"
+                text-anchor="middle"
+                class="radar-axis-label"
+                fill="#374151"
+                font-size="12">Abundance</text>
+
+            <text x="${-maxRadius - 22}" y="4"
+                text-anchor="end"
+                class="radar-axis-label"
+                fill="#374151"
+                font-size="12">Risk</text>
+
+            <text x="0" y="${maxRadius + 28}"
+                text-anchor="middle"
+                class="radar-axis-label"
+                fill="#374151"
+                font-size="12">Virulence</text>
+
+            <circle cx="0" cy="0" r="3" fill="#9CA3AF"/>
+        `;
+
+        return html;
+    },
+
+    generateQuadrantData(pathogens, maxRadius, maxValues = {}) {
+        let html = '';
+
+        pathogens.forEach((pathogen) => {
+            const metrics = pathogen.metrics || {};
+
+            const confidence = this.normalizeQuadrantValue(metrics.Confidence, 'Confidence', maxValues) * maxRadius;
+            const abundance = this.normalizeQuadrantValue(metrics.Abundance, 'Abundance', maxValues) * maxRadius;
+            const risk = this.normalizeQuadrantValue(metrics.Risk, 'Risk', maxValues) * maxRadius;
+            const virulence = this.normalizeQuadrantValue(metrics.Virulence, 'Virulence', maxValues) * maxRadius;
+
+            // Four directional points:
+            // +x Confidence, +y Abundance, -x Risk, -y Virulence.
+            // SVG y-axis is inverted, so abundance uses negative y.
+            const points = [
+                `${confidence},0`,
+                `0,${-abundance}`,
+                `${-risk},0`,
+                `0,${virulence}`
+            ].join(' ');
+
+            const tooltipContent = `
+                <div><strong>Abundance:</strong> ${metrics.Abundance ?? 0}</div>
+                <div><strong>Confidence:</strong> ${metrics.Confidence ?? 0}</div>
+                <div><strong>Virulence:</strong> ${metrics.Virulence ?? 0}</div>
+                <div><strong>Risk:</strong> ${metrics.RiskLabel || (metrics.Risk ?? 0)}</div>
+            `.trim();
+
+            html += `
+                <polygon points="${points}"
+                        fill="${pathogen.color}"
+                        fill-opacity="0.12"
+                        stroke="${pathogen.color}"
+                        stroke-width="2"
+                        class="radar-polygon"
+                        data-name="${this.escapeAttr(pathogen.name)}"
+                        data-tooltip="${this.escapeAttr(tooltipContent)}"/>
+
+                <circle cx="${confidence}" cy="0" r="3" fill="${pathogen.color}" opacity="0.85"/>
+                <circle cx="0" cy="${-abundance}" r="3" fill="${pathogen.color}" opacity="0.85"/>
+                <circle cx="${-risk}" cy="0" r="3" fill="${pathogen.color}" opacity="0.85"/>
+                <circle cx="0" cy="${virulence}" r="3" fill="${pathogen.color}" opacity="0.85"/>
+            `;
+        });
+
+        return html;
+    },
+
+    normalizeQuadrantValue(value, axis, maxValues = {}) {
+        const defaults = {
+            Confidence: 100,
+            Abundance: 5,
+            Virulence: 5,
+            Risk: 3
+        };
+
+        const max = Math.max(1, Number(maxValues[axis] ?? defaults[axis] ?? 100));
+        return Math.min(Number(value || 0) / max, 1);
+    },
+
     /**
      * Generate radar chart axes
      */
@@ -682,9 +860,14 @@ const Charts = {
         const angleStep = (Math.PI * 2) / numAxes;
         let axesHtml = '';
 
+        for (let i = 1; i <= 4; i++) {
+            const radius = (maxRadius * i) / 4;
+            axesHtml += `<circle cx="0" cy="0" r="${radius}" fill="none" stroke="#F3F4F6" stroke-width="1" opacity="0.5"/>`;
+        }
+
         // Draw axes lines and labels
         axes.forEach((axis, index) => {
-            const angle = index * angleStep - Math.PI / 2; // Start from top
+            const angle = index * angleStep - Math.PI / 2;
             const x2 = Math.cos(angle) * maxRadius;
             const y2 = Math.sin(angle) * maxRadius;
 
@@ -695,23 +878,17 @@ const Charts = {
             const labelRadius = maxRadius + 20;
             const labelX = Math.cos(angle) * labelRadius;
             const labelY = Math.sin(angle) * labelRadius;
-            const textAnchor = labelX > 0 ? 'start' : 'end';
-            const dominantBaseline = labelY > 0 ? 'hanging' : 'baseline';
+            const textAnchor = labelX > 8 ? 'start' : (labelX < -8 ? 'end' : 'middle');
+            const dominantBaseline = labelY > 8 ? 'hanging' : (labelY < -8 ? 'baseline' : 'middle');
 
             axesHtml += `
                 <text x="${labelX}" y="${labelY}"
-                      text-anchor="${textAnchor}"
-                      dominant-baseline="${dominantBaseline}"
-                      class="radar-axis-label"
-                      fill="#374151"
-                      font-size="12">${axis}</text>
+                    text-anchor="${textAnchor}"
+                    dominant-baseline="${dominantBaseline}"
+                    class="radar-axis-label"
+                    fill="#374151"
+                    font-size="12">${axis}</text>
             `;
-
-            // Grid circles
-            for (let i = 1; i <= 4; i++) {
-                const radius = (maxRadius * i) / 4;
-                axesHtml += `<circle cx="0" cy="0" r="${radius}" fill="none" stroke="#F3F4F6" stroke-width="1" opacity="0.5"/>`;
-            }
         });
 
         return axesHtml;
@@ -725,7 +902,7 @@ const Charts = {
 
         pathogens.forEach((pathogen, index) => {
             const points = axes.map((axis, axisIndex) => {
-                const value = pathogen.metrics[axis] || 0;
+                const value = Number(pathogen.metrics?.[axis] || 0);
                 const normalizedValue = this.normalizeRadarValue(value, axis);
                 const angle = axisIndex * (Math.PI * 2) / axes.length - Math.PI / 2;
                 const radius = normalizedValue * maxRadius;
@@ -734,15 +911,19 @@ const Charts = {
                 return `${x},${y}`;
             }).join(' ');
 
+            const tooltipContent = Object.entries(pathogen.metrics || {})
+                .map(([key, value]) => `<div><strong>${key}:</strong> ${value}</div>`)
+                .join('');
+
             dataHtml += `
                 <polygon points="${points}"
-                         fill="${pathogen.color}"
-                         fill-opacity="0.1"
-                         stroke="${pathogen.color}"
-                         stroke-width="2"
-                         class="radar-polygon"
-                         data-name="${esc(pathogen.name)}"
-                         data-metrics="${JSON.stringify(pathogen.metrics).replace(/"/g, '&quot;')}"/>
+                        fill="${pathogen.color}"
+                        fill-opacity="0.1"
+                        stroke="${pathogen.color}"
+                        stroke-width="2"
+                        class="radar-polygon"
+                        data-name="${this.escapeAttr(pathogen.name)}"
+                        data-tooltip="${this.escapeAttr(tooltipContent)}"/>
             `;
         });
 
@@ -756,7 +937,7 @@ const Charts = {
         return pathogens.map(pathogen => `
             <span class="legend-item">
                 <span class="legend-dot" style="background: ${pathogen.color}"></span>
-                ${esc(pathogen.name)}
+                ${this.escapeAttr(pathogen.name)}
             </span>
         `).join('');
     },
@@ -767,24 +948,23 @@ const Charts = {
     attachRadarEvents(container) {
         container.querySelectorAll('.radar-polygon').forEach(polygon => {
             polygon.addEventListener('mouseenter', (e) => {
-                const name = polygon.dataset.name;
-                const metrics = JSON.parse(polygon.dataset.metrics.replace(/&quot;/g, '"'));
-
                 polygon.style.strokeWidth = '3';
                 polygon.style.fillOpacity = '0.2';
 
-                let tooltipContent = '';
-                Object.entries(metrics).forEach(([key, value]) => {
-                    tooltipContent += `<div><strong>${key}:</strong> ${value}</div>`;
-                });
-
-                this.showTooltip(e.pageX, e.pageY, name, tooltipContent);
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(polygon.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(polygon.dataset.tooltip || '')
+                );
             });
 
             polygon.addEventListener('mousemove', (e) => {
-                this.showTooltip(e.pageX, e.pageY,
-                    polygon.dataset.name,
-                    this.tooltip.querySelector('.tooltip-content').innerHTML
+                this.showTooltip(
+                    e.pageX,
+                    e.pageY,
+                    this.unescapeAttr(polygon.dataset.name || 'Pathogen'),
+                    this.unescapeAttr(polygon.dataset.tooltip || '')
                 );
             });
 
@@ -805,12 +985,12 @@ const Charts = {
             'Abundance': 100,
             'Confidence': 100,
             'Virulence': 20,
-            'AMR': 10,
+            // 'AMR': 10,
             'Risk': 10
         };
 
         const max = maxValues[axis] || 100;
-        return Math.min(value / max, 1);
+        return Math.min(Number(value || 0) / max, 1);
     },
 
     // ============================================
@@ -904,13 +1084,22 @@ const Charts = {
 
     /**
      * Convert risk level to numerical score
-     */
-    riskToScore(risk) {
+     * riskToScore(risk) {
         const normalized = this.normalizeRiskLevel(risk);
         switch (normalized) {
             case 'High': return 9;
             case 'Medium': return 6;
             case 'Low': return 3;
+            default: return 0;
+        }
+    },
+     */
+    riskToScore(risk) {
+        const normalized = this.normalizeRiskLevel(risk);
+        switch (normalized) {
+            case 'High': return 3;
+            case 'Medium': return 2;
+            case 'Low': return 1;
             default: return 0;
         }
     },
@@ -999,7 +1188,6 @@ const Charts = {
             confidence: p.confidence ?? null,
             risk: this.normalizeRiskLevel(p.risk_level),
             color: this.getColorForIndex(idx, arr.length),
-            amrGenes: p.amr_genes ?? 0,
             virulenceFactors: p.virulence_genes ?? 0
         }));
     },
@@ -1010,27 +1198,41 @@ const Charts = {
             .sort((a, b) => Number(b.abundance || 0) - Number(a.abundance || 0))
             .slice(0, 5);
 
-        if (!pathogens.length) {
-            return null;
-        }
+        if (!pathogens.length) return null;
+
+        const mapped = pathogens.map((p, idx) => ({
+            name: p.name || 'Unknown',
+            color: this.getColorForIndex(idx, pathogens.length),
+            metrics: {
+                Abundance: Number(p.abundance || 0),
+                Confidence: Number(p.confidence || 0),
+                Virulence: Number(p.virulence_genes || 0),
+                Risk: this.riskToScore(p.risk_level),
+                RiskLabel: this.normalizeRiskLevel(p.risk_level)
+            }
+        }));
 
         return {
-            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
-            pathogens: pathogens.map((p, idx) => ({
-                name: p.name || 'Unknown',
-                color: this.getColorForIndex(idx, pathogens.length),
-                metrics: {
-                    Abundance: Number(p.abundance || 0),
-                    Confidence: Number(p.confidence || 0),
-                    Virulence: Number(p.virulence_genes || 0),
-                    AMR: Number(p.amr_genes || 0),
-                    Risk: this.riskToScore(p.risk_level)
-                }
-            }))
+            axes: ['Confidence', 'Abundance', 'Risk', 'Virulence'],
+            maxValues: {
+                Confidence: 100,
+                Abundance: Math.max(1, ...mapped.map(p => p.metrics.Abundance)),
+                Virulence: Math.max(1, ...mapped.map(p => p.metrics.Virulence)),
+                Risk: 3
+            },
+            pathogens: mapped
         };
     },
 
     transformSunburstData(apiResponse) {
+        if (
+            apiResponse?.taxonomy_hierarchy &&
+            Array.isArray(apiResponse.taxonomy_hierarchy.children) &&
+            apiResponse.taxonomy_hierarchy.children.length
+        ) {
+            return apiResponse.taxonomy_hierarchy;
+        }
+
         const taxonomy = apiResponse?.taxonomy;
         if (!taxonomy || typeof taxonomy !== 'object') {
             return null;
@@ -1210,7 +1412,7 @@ const Charts = {
                 confidence: 95,
                 risk: 'High',
                 color: '#EF4444',
-                amrGenes: 5,
+                // amrGenes: 5,
                 virulenceFactors: 12
             },
             {
@@ -1230,7 +1432,7 @@ const Charts = {
                 confidence: 82,
                 risk: 'Medium',
                 color: '#F59E0B',
-                amrGenes: 4,
+                // amrGenes: 4,
                 virulenceFactors: 6
             },
             {
@@ -1240,7 +1442,7 @@ const Charts = {
                 confidence: 78,
                 risk: 'High',
                 color: '#EAB308',
-                amrGenes: 3,
+                // amrGenes: 3,
                 virulenceFactors: 4
             }
         ];
@@ -1251,7 +1453,7 @@ const Charts = {
      */
     getMockRadarData() {
         return {
-            axes: ['Abundance', 'Confidence', 'Virulence', 'AMR', 'Risk'],
+            axes: ['Abundance', 'Confidence', 'Virulence', 'Risk'],
             pathogens: [
                 {
                     name: 'Escherichia coli',
@@ -1260,7 +1462,7 @@ const Charts = {
                         Abundance: 45.2,
                         Confidence: 95,
                         Virulence: 12,
-                        AMR: 5,
+                        // AMR: 5,
                         Risk: 9
                     }
                 },
@@ -1271,7 +1473,7 @@ const Charts = {
                         Abundance: 18.6,
                         Confidence: 87,
                         Virulence: 8,
-                        AMR: 7,
+                        // AMR: 7,
                         Risk: 8
                     }
                 },
@@ -1282,7 +1484,7 @@ const Charts = {
                         Abundance: 8.3,
                         Confidence: 82,
                         Virulence: 6,
-                        AMR: 4,
+                        //AMR: 4,
                         Risk: 6
                     }
                 }

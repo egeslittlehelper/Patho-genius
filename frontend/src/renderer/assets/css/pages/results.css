@@ -639,3 +639,31 @@
     height: 12px;
 }
 
+.pathogen-filters {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+    align-items: center;
+}
+
+.pathogen-filters input,
+.pathogen-filters select {
+    padding: 8px 10px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background: white;
+    font-size: 14px;
+    min-width: 150px;
+}
+
+.pathogen-filters input:focus,
+.pathogen-filters select:focus {
+    outline: none;
+    border-color: #0ea5a4;
+    box-shadow: 0 0 0 2px rgba(14,165,164,0.2);
+}
+
+.pathogen-filters .btn {
+    height: 34px;
+}
