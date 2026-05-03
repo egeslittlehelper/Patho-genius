@@ -374,6 +374,8 @@ const App = {
         if (authContainer) authContainer.classList.remove('hidden');
         if (loginView) loginView.classList.remove('hidden');
         if (registerView) registerView.classList.add('hidden');
+
+        if (window.LoginPage) LoginPage.init();
     },
 
     /**
@@ -411,6 +413,11 @@ const App = {
         document.querySelectorAll('#pages-container .page-view').forEach(el => {
             el.classList.add('hidden');
         });
+
+        // Clear stale data before the page becomes visible
+        if (pageId === 'dashboard' && window.DashboardPage) {
+            DashboardPage.clearStaleData();
+        }
 
         // Show target page
         const targetPage = document.getElementById(`page-${pageId}`);
@@ -576,6 +583,10 @@ const App = {
         this.state.currentUser = null;
         this.state.isGuestMode = false;
         window.currentUser = null;
+        if (window.DashboardPage) {
+            DashboardPage.isInitialized = false;
+            DashboardPage.clearStaleData?.();
+        }
 
         // Hide guest mode warning
         const guestWarning = document.getElementById('guest-mode-warning');

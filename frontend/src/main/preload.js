@@ -37,7 +37,10 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke('auth:resend-verification', email, password),
 
         checkVerification: (email, password) =>
-            ipcRenderer.invoke('auth:check-verification', email, password)
+            ipcRenderer.invoke('auth:check-verification', email, password),
+
+        deleteSelf: () =>
+            ipcRenderer.invoke('auth:delete-self')
     },
 
     /* FILE SYSTEM */
@@ -74,12 +77,6 @@ contextBridge.exposeInMainWorld('api', {
 
         cancel: (analysisId) =>
             ipcRenderer.invoke('app:cancel-analysis', analysisId),
-
-        pause: (analysisId) =>
-            ipcRenderer.invoke('app:pause-analysis', analysisId),
-
-        resume: (analysisId) =>
-            ipcRenderer.invoke('app:resume-analysis', analysisId),
 
         delete: (analysisId) =>
             ipcRenderer.invoke('app:delete-analysis', analysisId),
@@ -148,6 +145,7 @@ contextBridge.exposeInMainWorld('api', {
         getPlatform: () => process.platform,
         getNodeVersion: () => process.versions.node,
         openExternal: (url) => ipcRenderer.invoke('system:open-external', url),
+        focusWindow: () => ipcRenderer.invoke('system:focus-window'),
         printReport: (html) => ipcRenderer.invoke('system:print-report', html)
     },
 

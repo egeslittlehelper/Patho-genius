@@ -1035,37 +1035,6 @@ function cancelAnalysis(analysisId) {
     return { success: true };
 }
 
-function pauseAnalysis(analysisId) {
-    const analysis = activeAnalyses.get(analysisId);
-    if (!analysis) return { success: false, error: 'Analysis not found' };
-    if (analysis.snakemakeProc) {
-        return { success: false, error: 'Pause is not supported while classification is running' };
-    }
-    analysis.status = 'paused';
-    analysis.pausedAt = Date.now();
-    emitProgress(analysisId, {
-        status: 'paused',
-        progress: analysis.progress,
-        message: 'Analysis paused',
-    });
-    return { success: true };
-}
-
-function resumeAnalysis(analysisId) {
-    const analysis = activeAnalyses.get(analysisId);
-    if (!analysis) return { success: false, error: 'Analysis not found' };
-    if (analysis.status !== 'paused') {
-        return { success: false, error: 'Analysis is not paused' };
-    }
-    analysis.status = 'running';
-    delete analysis.pausedAt;
-    emitProgress(analysisId, {
-        status: 'running',
-        progress: analysis.progress,
-        message: 'Analysis resumed',
-    });
-    return { success: true };
-}
 
 function deleteAnalysis(analysisId, deleteFiles = true) {
     const historyIndex = analysisHistory.findIndex((a) => a.id === analysisId);
@@ -1094,8 +1063,6 @@ module.exports = {
     getAnalysisResults,
     getAllAnalyses,
     cancelAnalysis,
-    pauseAnalysis,
-    resumeAnalysis,
     deleteAnalysis,
     setOnCompleteCallback,
     ANALYSIS_CONFIG,

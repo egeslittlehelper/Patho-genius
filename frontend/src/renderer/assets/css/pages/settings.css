@@ -182,6 +182,16 @@
     margin-bottom: 4px;
 }
 
+/* Danger Zone */
+.danger-zone-card {
+    border: 2px solid var(--error, #EF4444);
+    border-left-width: 4px;
+}
+
+.danger-zone-title {
+    color: var(--error, #EF4444);
+}
+
 /* Change Password Form */
 .change-password-form {
     max-width: 500px;

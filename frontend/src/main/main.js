@@ -384,6 +384,10 @@ ipcMain.handle('auth:change-password', async (event, currentPassword, newPasswor
     return await firebaseAuth.changePassword(currentPassword, newPassword);
 });
 
+ipcMain.handle('auth:delete-self', async () => {
+    return await firebaseAuth.deleteSelf();
+});
+
 ipcMain.handle('auth:request-password-reset', async (event, email) => {
     return await firebaseAuth.sendPasswordReset(email);
 });
@@ -587,13 +591,6 @@ ipcMain.handle('app:cancel-analysis', async (event, analysisId) => {
     return analysisService.cancelAnalysis(analysisId);
 });
 
-ipcMain.handle('app:pause-analysis', async (event, analysisId) => {
-    return analysisService.pauseAnalysis(analysisId);
-});
-
-ipcMain.handle('app:resume-analysis', async (event, analysisId) => {
-    return analysisService.resumeAnalysis(analysisId);
-});
 
 ipcMain.handle('app:delete-analysis', async (event, analysisId) => {
     if (!isValidAnalysisId(analysisId)) return { success: false, error: 'Invalid analysis ID' };
@@ -948,6 +945,13 @@ ipcMain.handle('llm:generate-summary', async (event, resultData) => {
 });
 
 ipcMain.handle('system:get-app-version', () => app.getVersion());
+
+ipcMain.handle('system:focus-window', () => {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.focus();
+        mainWindow.webContents.focus();
+    }
+});
 
 ipcMain.handle('system:open-external', async (event, url) => {
     // Only allow mailto: and https: to prevent arbitrary shell execution

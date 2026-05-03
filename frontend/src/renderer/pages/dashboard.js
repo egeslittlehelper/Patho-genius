@@ -5,21 +5,21 @@
 
 const DashboardPage = {
     isInitialized: false,
-    isEventsBound: false, // Prevent duplicate event binding
+    isEventsBound: false,
     systemStats: null,
-    runningAnalysis: null,
 
     /**
      * Initialize dashboard
      */
     async init() {
-        // Only bind events once to prevent duplicate listeners
         if (!this.isEventsBound) {
             this.bindEvents();
-            this.setupProgressListener();
             this.isEventsBound = true;
         }
         
+        // Clear stale DOM immediately before any async load
+        this.clearStaleData();
+
         if (this.isInitialized) {
             await this.refresh();
             return;
@@ -31,6 +31,19 @@ const DashboardPage = {
         console.log('DashboardPage initialized');
 
         // No longer start periodic updates - manual refresh only
+    },
+
+    clearStaleData() {
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
+        set('stat-total', '—');
+        set('stat-completed', '—');
+        set('stat-failed', '—');
+        set('stat-running', '—');
+        set('stat-cloud', '—');
+        const cloudRow = document.getElementById('stat-cloud-row');
+        if (cloudRow) cloudRow.classList.add('hidden');
+        const tbody = document.getElementById('analyses-table-body');
+        if (tbody) tbody.innerHTML = '';
     },
 
     /**
@@ -46,23 +59,11 @@ const DashboardPage = {
     },
 
     /**
-     * Setup progress listener for running analyses
-     */
-    setupProgressListener() {
-        if (window.api?.analysis?.onProgress) {
-            window.api.analysis.onProgress((data) => {
-                this.updateRunningAnalysisBanner(data);
-            });
-        }
-    },
-
-    /**
      * Load dashboard data
      */
     async loadData() {
         await Promise.all([
             this.loadSystemStats(),
-            this.checkRunningAnalyses(),
             this.loadRecentAnalyses()
         ]);
     },
@@ -74,104 +75,6 @@ const DashboardPage = {
         await this.loadData();
     },
 
-    /**
-     * Check for running analyses
-     */
-    async checkRunningAnalyses() {
-        try {
-            if (window.api?.analysis?.getAll) {
-                const analyses = await window.api.analysis.getAll();
-                const running = analyses.find(a => 
-                    ['starting', 'running', 'preprocessing', 'classifying', 'processing',
-                     'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
-                );
-                
-                if (running) {
-                    this.runningAnalysis = running;
-                    this.showRunningAnalysisBanner(running);
-                } else {
-                    this.hideRunningAnalysisBanner();
-                }
-            }
-        } catch (error) {
-            console.error('Failed to check running analyses:', error);
-        }
-    },
-
-    /**
-     * Show running analysis banner
-     */
-    showRunningAnalysisBanner(analysis) {
-        const banner = document.getElementById('dashboard-running-analysis');
-        if (!banner) return;
-
-        banner.classList.remove('hidden');
-        
-        const nameEl = document.getElementById('running-analysis-name');
-        const statusEl = document.getElementById('running-analysis-status');
-        const progressEl = document.getElementById('running-analysis-progress');
-        const percentEl = document.getElementById('running-analysis-percent');
-
-        if (nameEl) nameEl.textContent = analysis.config?.analysis_name || 'Analysis in Progress';
-        if (statusEl) statusEl.textContent = this.getStatusMessage(analysis.status, analysis.message);
-        if (progressEl) progressEl.style.width = `${analysis.progress || 0}%`;
-        if (percentEl) percentEl.textContent = `${analysis.progress || 0}%`;
-    },
-
-    /**
-     * Hide running analysis banner
-     */
-    hideRunningAnalysisBanner() {
-        const banner = document.getElementById('dashboard-running-analysis');
-        if (banner) banner.classList.add('hidden');
-        this.runningAnalysis = null;
-    },
-
-    /**
-     * Update running analysis banner with progress
-     */
-    updateRunningAnalysisBanner(data) {
-        const { analysisId, progress, status, message } = data;
-        
-        // If analysis completed, hide the banner
-        if (status === 'completed' || status === 'failed' || status === 'cancelled') {
-            this.hideRunningAnalysisBanner();
-            // Update running count badge
-            this.updateRunningCountBadge();
-            // Refresh the recent analyses table to show the new status
-            this.loadRecentAnalyses();
-            return;
-        }
-
-        const banner = document.getElementById('dashboard-running-analysis');
-        if (!banner) return;
-
-        banner.classList.remove('hidden');
-        
-        const statusEl = document.getElementById('running-analysis-status');
-        const progressEl = document.getElementById('running-analysis-progress');
-        const percentEl = document.getElementById('running-analysis-percent');
-
-        if (statusEl) statusEl.textContent = message || this.getStatusMessage(status);
-        if (progressEl) progressEl.style.width = `${progress || 0}%`;
-        if (percentEl) percentEl.textContent = `${progress || 0}%`;
-
-        // Update running count badge
-        this.updateRunningCountBadge();
-    },
-
-    /**
-     * Update running count badge in sidebar
-     */
-    updateRunningCountBadge() {
-        // This is also managed by ResultsPage, but we sync here
-        const badge = document.getElementById('running-count');
-        if (badge) {
-            const hasRunning = this.runningAnalysis !== null;
-            badge.textContent = hasRunning ? '1' : '0';
-            badge.classList.toggle('hidden', !hasRunning);
-        }
-    },
 
     /**
      * Get status message for display
@@ -294,6 +197,7 @@ const DashboardPage = {
             // Show cloud count for logged-in users
             const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
             const cloudRow = document.getElementById('stat-cloud-row');
+            if (cloudRow) cloudRow.classList.add('hidden');
             if (!isGuest && window.api?.cloud?.getResults) {
                 try {
                     const cloudResp = await window.api.cloud.getResults();
@@ -302,8 +206,6 @@ const DashboardPage = {
                         if (cloudRow) cloudRow.classList.remove('hidden');
                     }
                 } catch {}
-            } else {
-                if (cloudRow) cloudRow.classList.add('hidden');
             }
 
             if (recent.length === 0) {

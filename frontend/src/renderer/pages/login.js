@@ -20,6 +20,20 @@ const LoginPage = {
             this.bindEvents();
             this.isEventsBound = true;
         }
+        this.reset();
+    },
+
+    reset() {
+        this.isLoading = false;
+        this.clearError();
+        if (this.elements.loginBtn) {
+            this.elements.loginBtn.disabled = false;
+            this.elements.loginBtn.textContent = 'Login';
+        }
+        if (this.elements.guestBtn) this.elements.guestBtn.disabled = false;
+        requestAnimationFrame(() => {
+            this.elements.usernameInput?.focus();
+        });
     },
 
     cacheElements() {
