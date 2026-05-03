@@ -203,7 +203,7 @@ function buildPrompt(result) {
         `1. Main findings and the most clinically significant pathogens.\n` +
         `2. Antimicrobial resistance (AMR) concerns based on detected genes.\n` +
         `3. Suggested clinical action or recommendation.\n` +
-        `4. A safety assessment paragraph stating whether this water sample appears safe for drinking, washing hands, and washing face, based on the detected pathogens and their risk levels. Be specific about each use case.\n` +
+        `4. A safety assessment paragraph stating whether this water sample appears safe for drinking, washing hands, and washing face, based on the detected pathogens and their risk levels. Be specific about each use case. CRITICAL RULE: If any pathogen with a high or severe risk level is detected, regardless of how low its abundance percentage is, you MUST explicitly state that the sample cannot be considered completely safe and include a clear warning about the risk posed by that pathogen.\n` +
         `Keep the tone professional and concise.`
     );
 }
