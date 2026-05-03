@@ -1336,12 +1336,23 @@ const ResultsPage = {
                 const order = { high: 0, medium: 1, low: 2 };
                 return (order[a.risk_level] ?? 3) - (order[b.risk_level] ?? 3);
             });
-            const quality    = result.quality || {};
+            // const quality    = result.quality || {};
             const engine     = result.engine || result.config?.engine || '—';
             const classifier = result.classifier || result.config?.classifier || '—';
-            const confThresh = result.confidence_threshold ?? result.config?.confidence_threshold ?? '—';
+            // const confThresh = result.confidence_threshold ?? result.config?.confidence_threshold ?? '—';
             const inputFiles = (result.input_files || result.config?.input_files || []);
             const aiSummary  = document.getElementById('ai-summary-content')?.innerText?.trim() || '';
+            const classifiedReadsForReport = Number(result.summary?.classified_reads || 0);
+
+            const classifiedAbundanceForReport = (p) => {
+                const reads = Number(p.reads || 0);
+
+                if (classifiedReadsForReport <= 0 || reads <= 0) {
+                    return null;
+                }
+
+                return Number(((reads / classifiedReadsForReport) * 100).toFixed(2));
+            };
 
             const highRisk   = pathogens.filter(p => p.risk_level === 'high').length;
             const medRisk    = pathogens.filter(p => p.risk_level === 'medium').length;
@@ -1358,16 +1369,17 @@ const ResultsPage = {
                 : '';
 
             const summaryRows = pathogens.map((p, i) => {
-                // const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join(', ') : (p.amr_genes != null ? String(p.amr_genes) : '');
-                return `<tr class="${i % 2 === 1 ? 'row-alt' : ''}">
-                    <td style="font-style:italic;">${esc2(p.name || '—')}</td>
-                    <td>${esc2(p.strain || '—')}</td>
-                    <td class="num">${p.abundance != null ? esc2(p.abundance) + '%' : '—'}</td>
-                    <td class="num">${p.reads != null ? Number(p.reads).toLocaleString() : '—'}</td>
-                    <td class="num">${p.confidence != null ? esc2(p.confidence) + '%' : '—'}</td>
-                    <td class="num"><span class="${riskClass(p.risk_level)}">${riskLabel(p.risk_level)}</span></td>
-                    </tr>`;
-            }).join('');
+            const abundanceClassified = classifiedAbundanceForReport(p);
+
+            return `<tr class="${i % 2 === 1 ? 'row-alt' : ''}">
+                <td style="font-style:italic;">${esc2(p.name || '—')}</td>
+                <td class="num">${abundanceClassified != null ? esc2(abundanceClassified) + '%' : '—'}</td>
+                <td class="num">${p.abundance != null ? esc2(p.abundance) + '%' : '—'}</td>
+                <td class="num">${p.reads != null ? Number(p.reads).toLocaleString() : '—'}</td>
+                <td class="num">${p.confidence != null ? esc2(p.confidence) + '%' : '—'}</td>
+                <td class="num"><span class="${riskClass(p.risk_level)}">${riskLabel(p.risk_level)}</span></td>
+            </tr>`;
+        }).join('');
 
             const detailBlocks = pathogens.map((p, i) => {
                 // const amr = Array.isArray(p.amr_genes) ? p.amr_genes.join('; ') : (p.amr_genes != null ? String(p.amr_genes) : '—');
@@ -1375,16 +1387,17 @@ const ResultsPage = {
                 const vir = Array.isArray(p.virulence_genes)
                     ? p.virulence_genes.join('; ')
                     : (p.virulence_genes != null ? String(p.virulence_genes) : '—');
+                
                 return `<div class="organism-block">
                     <div class="organism-header">
                         <span class="organism-index">${i + 1}.</span>
                         <span class="organism-name">${esc2(p.name || 'Unknown Organism')}</span>
                         <span class="risk-tag ${riskClass(p.risk_level)}">${riskLabel(p.risk_level)} RISK</span>
                     </div>
-                    ${p.strain ? `<div class="organism-strain">${esc2(p.strain)}</div>` : ''}
                     <table class="detail-table">
                         ${dl('Taxonomic ID', p.tax_id)}
-                        ${dl('Relative Abundance', p.abundance != null ? p.abundance + '%' : null)}
+                        ${dl('Abundance Among Classified Reads', classifiedAbundanceForReport(p) != null ? classifiedAbundanceForReport(p) + '%' : null)}
+                        ${dl('Abundance Among Total Reads', p.abundance != null ? p.abundance + '%' : null)}
                         ${dl('Assigned Reads', p.reads != null ? Number(p.reads).toLocaleString() : null)}
                         ${dl('Classification Confidence', p.confidence != null ? p.confidence + '%' : null)}
                         ${dl('Virulence Genes', vir !== '—' ? vir : null)}
@@ -1499,7 +1512,6 @@ const ResultsPage = {
     <tr><td>Sample Type</td><td>${esc2(result.sample_type || '—')}</td></tr>
     <tr><td>Date Completed</td><td>${esc2(dateStr)}${timeStr ? ', ' + esc2(timeStr) : ''}</td></tr>
     <tr><td>Classification Engine</td><td>${esc2(classifier)}${engine !== '—' ? ' (' + esc2(engine) + ')' : ''}</td></tr>
-    <tr><td>Confidence Threshold</td><td>${confThresh !== '—' ? esc2(confThresh) + '%' : '—'}</td></tr>
     ${inputFiles.length > 0 ? `<tr><td>Input File(s)</td><td style="font-size:9pt;">${inputFiles.map(f => esc2(f)).join('<br>')}</td></tr>` : ''}
   </table>
 </div>
@@ -1512,39 +1524,26 @@ const ResultsPage = {
     <div class="stat-cell"><div class="stat-num high">${highRisk}</div><div class="stat-lbl">High Risk</div></div>
     <div class="stat-cell"><div class="stat-num medium">${medRisk}</div><div class="stat-lbl">Medium Risk</div></div>
     <div class="stat-cell"><div class="stat-num low">${lowRisk}</div><div class="stat-lbl">Low Risk</div></div>
-    ${quality.high_quality_rate != null ? `<div class="stat-cell"><div class="stat-num">${esc2(quality.high_quality_rate)}%</div><div class="stat-lbl">High-Quality Reads</div></div>` : ''}
   </div>
   <p style="font-size:9.5pt;color:#333;">
     ${pathogens.length === 0
-      ? 'No pathogenic organisms were detected in this sample at the configured confidence threshold.'
+      ? 'No pathogenic organisms were detected in this sample.'
       : `This analysis identified <strong>${pathogens.length}</strong> organism${pathogens.length !== 1 ? 's' : ''}` +
         (highRisk > 0 ? `, including <strong>${highRisk}</strong> high-risk pathogen${highRisk !== 1 ? 's' : ''}` : '') +
         '. Refer to Sections 3 and 4 for detailed findings.'}
   </p>
 </div>
 
-${(quality.average_quality != null || quality.mean_coverage != null || quality.high_quality_rate != null) ? `
-<!-- Section 3: Sequencing Quality -->
-<div class="section">
-  <div class="section-heading">3. Sequencing Quality Metrics</div>
-  <table class="kv">
-    ${quality.average_quality != null ? `<tr><td>Average Quality Score</td><td>${esc2(quality.average_quality)}</td></tr>` : ''}
-    ${quality.high_quality_rate != null ? `<tr><td>High-Quality Read Rate</td><td>${esc2(quality.high_quality_rate)}%</td></tr>` : ''}
-    ${quality.mean_coverage != null ? `<tr><td>Mean Coverage Depth</td><td>${esc2(quality.mean_coverage)}&times;</td></tr>` : ''}
-    ${quality.note ? `<tr><td>Quality Note</td><td style="font-style:italic;">${esc2(quality.note)}</td></tr>` : ''}
-  </table>
-</div>` : ''}
-
 <!-- Section 4: Detected Organisms — Summary Table -->
 <div class="section">
-  <div class="section-heading">${quality.average_quality != null || quality.mean_coverage != null || quality.high_quality_rate != null ? '4' : '3'}. Detected Organisms</div>
-  ${pathogens.length === 0 ? `<p style="font-style:italic;color:#555;">No organisms detected above the confidence threshold.</p>` : `
+  <div class="section-heading">3. Detected Organisms</div>
+  ${pathogens.length === 0 ? `<p style="font-style:italic;color:#555;">No organisms detected in this sample.</p>` : `
   <table class="main-table">
     <thead>
       <tr>
         <th>Organism</th>
-        <th>Strain / Variant</th>
-        <th style="text-align:right">Abundance</th>
+        <th style="text-align:right">Abundance Classified</th>
+        <th style="text-align:right">Abundance Total</th>
         <th style="text-align:right">Reads</th>
         <th style="text-align:right">Confidence</th>
         <th style="text-align:right">Risk Level</th>
@@ -1557,7 +1556,7 @@ ${(quality.average_quality != null || quality.mean_coverage != null || quality.h
 ${pathogens.length > 0 ? `
 <!-- Section 5: Detailed Profiles -->
 <div class="section">
-  <div class="section-heading">${quality.average_quality != null || quality.mean_coverage != null || quality.high_quality_rate != null ? '5' : '4'}. Detailed Organism Profiles</div>
+  <div class="section-heading">4. Detailed Organism Profiles</div>
   ${detailBlocks}
 </div>` : ''}
 
