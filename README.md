@@ -78,12 +78,17 @@ Pathogenius/                            # Repository root
 │   ├── Snakefile                       # 3-rule dual-engine classification workflow
 │   ├── config.yaml                     # All pipeline configuration (paths, engines, genome sources)
 │   ├── build_clark_db.py               # Universal CLARK database builder
+│   ├── merge_abundance.py              # Utility for merging abundance CSV outputs
 │   ├── clark_db/                       # Reference database (FASTA genomes, taxonomy, targets.txt)
 │   │   ├── *.fna                       # Pathogen genome files
 │   │   ├── Custom/                     # Processed genomes for CLARK
 │   │   └── taxonomy/                   # NCBI taxdump (nodes.dmp, names.dmp, ...)
 │   ├── fastQ_reads/                    # Input FASTQ files
 │   └── results/clark/                  # Pipeline output (CSV + JSON per sample)
+│
+├── functions/                          # Firebase Cloud Functions
+│   ├── index.js                        # deleteSelf, deleteUser Cloud Function handlers
+│   └── package.json                    # Cloud Functions dependencies
 │
 └── frontend/                           # Electron desktop application
     ├── package.json                    # App metadata, scripts, dependencies
@@ -95,7 +100,7 @@ Pathogenius/                            # Repository root
         │   ├── preload.js              # Context bridge — exposes safe APIs to renderer
         │   └── services/
         │       ├── analysis-service.js       # Snakemake orchestration (CPU + GPU)
-        │       ├── firebase-auth-service.js  # Firebase Auth REST API (login, register, tokens)
+        │       ├── firebase-auth-service.js  # Firebase Auth REST API (login, register, tokens, self-delete)
         │       ├── firebase-config.js        # Firebase project configuration
         │       ├── cloud-service.js          # Firebase Storage upload/download + Firestore metadata
         │       ├── encryption-service.js     # AES-256-GCM encryption at rest (via keytar)
@@ -117,9 +122,10 @@ Pathogenius/                            # Repository root
             │   ├── database.js         # Database management UI
             │   ├── login.js            # Login page controller
             │   ├── register.js         # Registration page controller
-            │   ├── newanalysis.js       # New analysis wizard (file picker, engine select)
+            │   ├── newanalysis.js      # New analysis wizard (file picker, engine select)
             │   ├── results.js          # Results viewer (pathogen cards, charts, AI summary)
-            │   └── settings.js         # Application settings controller
+            │   ├── settings.js         # Application settings controller
+            │   └── terminal.js         # Live process log viewer
             └── templates/              # Reusable HTML templates
                 ├── analysis.html       # New analysis form
                 ├── dashboard.html      # Dashboard layout
@@ -129,6 +135,7 @@ Pathogenius/                            # Repository root
                 ├── results.html        # Results detail view with chart containers
                 ├── settings.html       # Settings panel
                 ├── sidebar.html        # Navigation sidebar
+                ├── terminal.html       # Terminal log view
                 └── modals.html         # Modal dialogs
 ```
 
@@ -349,7 +356,7 @@ The Electron main process (`frontend/src/main/main.js`) creates the application 
 
 - **Authentication** — Firebase login, register, logout, password reset, guest mode
 - **File System** — native file/folder picker dialogs
-- **Analysis** — start, pause, resume, cancel, delete analyses
+- **Analysis** — start, cancel, delete analyses
 - **System Stats** — CPU, RAM, disk, GPU, network info for the dashboard
 - **Database Management** — database info, import, species CRUD
 - **Encryption** — initialize, lock/unlock, encrypt/decrypt data
@@ -362,13 +369,12 @@ Securely exposes main-process APIs to the renderer via `contextBridge.exposeInMa
 
 ```javascript
 // In renderer JavaScript:
-await api.analysis.start(config);      // Start analysis
-await api.auth.login(user, pass);      // Firebase login
-await api.files.selectFile();          // Open file picker
-await api.system.getStats();           // Get system info
-await api.cloud.upload(id, data);      // Upload to Firebase
-await api.llm.generate(prompt);        // Generate AI summary
-await api.encryption.encrypt(data);    // Encrypt data
+await api.analysis.start(config);           // Start analysis
+await api.auth.login(user, pass);           // Firebase login
+await api.files.selectFile();               // Open file picker
+await api.system.getStats();                // Get system info
+await api.cloud.uploadResult(analysisId);   // Upload to Firebase
+await api.llm.generateSummary(resultData);  // Generate AI clinical summary
 ```
 
 ### Services
@@ -393,7 +399,8 @@ await api.encryption.encrypt(data);    // Encrypt data
 | **New Analysis** | `newanalysis.js` | FASTQ file picker, engine selection (CPU/GPU), analysis configuration |
 | **Results** | `results.js` | Analysis history, detail view with pathogen cards, chart rendering, AI summary generation, cloud sync, result export |
 | **Database** | `database.js` | Database info, species list, import/export |
-| **Settings** | `settings.js` | Theme, confidence thresholds, AI model config, encryption, cloud settings |
+| **Settings** | `settings.js` | Theme, confidence thresholds, AI model config, encryption, cloud settings, account management (password change, self-delete) |
+| **Terminal** | `terminal.js` | Live process log viewer — streams stdout/stderr from the analysis pipeline |
 
 ### Visualization Suite
 
