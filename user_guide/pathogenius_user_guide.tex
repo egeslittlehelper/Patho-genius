@@ -354,7 +354,11 @@ On first launch, the \textbf{Login} screen is displayed. You can either:
 
 \section{Login}
 
-\screenshotplaceholder{Login Screen}{The Pathogenius login screen with username/password fields and guest mode option.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/login_screen.jpeg}
+  \caption{The Pathogenius login screen with username/password fields and guest mode option.}
+\end{figure}
 
 The login screen features a two-panel layout: a branded information panel on the left and the login form on the right.
 
@@ -393,7 +397,11 @@ On successful login you are taken directly to the \textbf{Dashboard}.
 
 \section{Creating a New Account}
 
-\screenshotplaceholder{Registration Screen}{Account registration form with password strength indicator.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/registration_screen.jpeg}
+  \caption{Account registration form with password strength indicator.}
+\end{figure}
 
 \begin{enumerate}[leftmargin=1.5em]
   \item On the Login screen, click \btn{Create Account}.
@@ -445,7 +453,11 @@ Guest mode grants immediate access without an account. Click \btn{Guest Mode (Of
 
 \section{Main Window Structure}
 
-\screenshotplaceholder{Application Layout Overview}{Main window showing the sidebar navigation and content area.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/app_layout_overview.png}
+  \caption{Main window showing the sidebar navigation and content area.}
+\end{figure}
 
 The Pathogenius window is divided into two main areas:
 
@@ -503,7 +515,11 @@ The \btn{Logout} button is at the very bottom of the sidebar.
 
 \section{Overview}
 
-\screenshotplaceholder{Dashboard Screen}{Dashboard showing system resources, analysis summary, and recent analyses table.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/dashboard_screen.jpeg}
+  \caption{Dashboard showing system resources, analysis summary, and recent analyses table.}
+\end{figure}
 
 The Dashboard is the home screen, providing a real-time snapshot of system health and analysis activity.
 
@@ -562,7 +578,11 @@ The \btn{Start New Analysis} card at the bottom of the Dashboard navigates direc
 
 \section{Overview}
 
-\screenshotplaceholder{New Analysis Wizard — Step 1}{File selection step of the three-step analysis wizard.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/wizard_step1.jpeg}
+  \caption{File selection step of the three-step analysis wizard.}
+\end{figure}
 
 The New Analysis wizard is a three-step process:
 
@@ -595,7 +615,11 @@ Click \btn{Next: Configuration} to proceed. This button is disabled until at lea
 
 \section{Step 2: Configuration}
 
-\screenshotplaceholder{New Analysis Wizard — Step 2}{Configuration step showing engine selection cards, analysis settings form, and FASTQ statistics banner.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/wizard_step2.png}
+  \caption{Configuration step showing engine selection cards, analysis settings form, and FASTQ statistics banner.}
+\end{figure}
 
 \subsection{Engine Selection}
 
@@ -665,7 +689,11 @@ Click \btn{Next: Launch} to proceed. The Analysis Name field must be filled befo
 
 \section{Step 3: Review \& Launch}
 
-\screenshotplaceholder{New Analysis Wizard — Step 3}{Review screen showing all selected settings before launching.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/wizard_step3.png}
+  \caption{Review screen showing all selected settings before launching.}
+\end{figure}
 
 A read-only summary card displays every configuration choice:
 \begin{itemize}[leftmargin=1em]
@@ -703,7 +731,11 @@ Click the \faTimes\ \btn{Cancel} button on the running analysis card. A confirma
 
 \section{Results Page Overview}
 
-\screenshotplaceholder{Results Page — History Table}{Analysis history table showing completed, failed, and running analyses.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/results_history.jpeg}
+  \caption{Analysis history table showing completed, failed, and running analyses.}
+\end{figure}
 
 The Results page is divided into two source tabs:
 \begin{itemize}[leftmargin=1.5em]
@@ -742,7 +774,11 @@ Use the \field{Search} box to filter by analysis name. A cloud icon (\faCloud) a
 
 \section{Detailed Results View}
 
-\screenshotplaceholder{Results Detail View — Overview Tab}{Pathogen cards, AI summary section, and chart containers for a completed analysis.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/results_detail_overview.png}
+  \caption{Pathogen cards, AI summary section, and chart containers for a completed analysis.}
+\end{figure}
 
 Clicking \btn{View Report} or the analysis name opens the full detail view.
 
@@ -767,12 +803,11 @@ Clicking \btn{View Report} or the analysis name opens the full detail view.
 Up to four pathogen cards are shown. Each card contains:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Pathogen name and strain
+  \item Pathogen name
   \item Confidence badge with percentage
-  \item \textbf{Metrics:} Abundance (\%), Read count, AMR genes detected
+  \item \textbf{Metrics:} Abundance among classified reads (\%), Read count
   \item Colour-coded confidence bar (green / amber / red)
   \item Risk level badge: \badge{danger}{High Risk}, \badge{warning}{Medium Risk}, or \badge{success}{Low Risk}
-  \item Virulence gene count
   \item Cards for high-risk pathogens have a red background tint
 \end{itemize}
 
@@ -796,17 +831,27 @@ If AI summaries are enabled in Settings:
 An expanded card for each detected pathogen with full metrics:
 
 \begin{itemize}[leftmargin=1.5em]
-  \item Relative Abundance (\%)
+  \item Abundance among classified reads (\%)
+  \item Abundance among total reads (\%)
   \item Read Count
   \item Confidence Score (\%)
-  \item AMR (Antibiotic Resistance) Genes Detected
   \item Virulence Factors alert box with gene count
   \item NCBI Taxonomy ID
 \end{itemize}
 
 \subsection{Charts Tab}
 
-\screenshotplaceholder{Charts Tab}{Four interactive visualisation charts: Treemap, Sunburst, Sankey, and Radar.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/charts_tab}
+  \caption{Charts Tab — Treemap, Sunburst, Sankey, and Radar charts.}
+\end{figure}
+
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/charts_tab_comparative}
+  \caption{Charts Tab — comparative view across top pathogens.}
+\end{figure}
 
 Four interactive SVG charts visualise the classification results:
 
@@ -827,7 +872,11 @@ All charts are generated from the classification JSON output and update automati
 
 \section{Cloud Results}
 
-\screenshotplaceholder{Cloud Results Tab}{Cloud results list with download actions for registered users.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/cloud_results.png}
+  \caption{Cloud results list with download actions for registered users.}
+\end{figure}
 
 Switch to the \textbf{Cloud Results} tab to view analyses synchronised to Firebase Storage.
 
@@ -847,12 +896,12 @@ Shows whether the cloud connection is active: \textit{"Connected to cloud storag
   Sample Type   & Category \\
   Size          & Encrypted file size \\
   Status        & \badge{success}{Local copy} (downloaded) or \badge{info}{Cloud only} \\
-  Actions       & \btn{Download} button \\
+  Actions       & \btn{Download} and \btn{Delete} buttons \\
   \bottomrule
 \end{tabular}
 \end{center}
 
-Click \faDownload\ \btn{Download} to decrypt and store a cloud result locally. Click \faSync\ \btn{Refresh} to update the list from Firebase.
+Click \faDownload\ \btn{Download} to decrypt and store a cloud result locally. Click \faTrash\ \btn{Delete} to permanently remove a result from the cloud (local copies are not affected). Click \faSync\ \btn{Refresh} to update the list from Firebase.
 
 \begin{notebox}
   Cloud features are unavailable in Guest Mode. A locked notice with login and register links is displayed instead.
@@ -864,7 +913,11 @@ Click \faDownload\ \btn{Download} to decrypt and store a cloud result locally. C
 
 \section{Overview}
 
-\screenshotplaceholder{Database Management Page}{Default database card, custom database creation form, and database list.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/database_management.png}
+  \caption{Default database card, custom database creation form, and database list.}
+\end{figure}
 
 The Database Management page allows you to view the built-in CLARK reference database and create custom databases from your own genome files.
 
@@ -875,7 +928,7 @@ A prominent card shows the built-in CLARK database:
   \item \textbf{Name:} Default Reference Database
   \item \textbf{Location:} \texttt{clark\_db/}
   \item \textbf{Status:} \badge{success}{Active}
-  \item \textbf{Statistics:} Total genome count and index status (\textit{"Indexed ✅"} or \textit{"Not built"})
+  \item \textbf{Statistics:} Total genome count and index status (\textit{"Indexed \faCheck"} or \textit{"Not built"})
 \end{itemize}
 
 \section{Creating a Custom Reference Database}
@@ -917,7 +970,11 @@ Built databases appear in the \textbf{Your Reference Databases} list. Each entry
 
 \section{Overview}
 
-\screenshotplaceholder{Settings Page}{Settings page showing all configuration sections.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/settings_page.png}
+  \caption{Settings page showing all configuration sections.}
+\end{figure}
 
 Access Settings from the \faCog\ icon in the sidebar user card. Changes take effect immediately and are confirmed by a brief \badge{success}{Settings Saved} notification at the top of the page.
 
@@ -1014,7 +1071,11 @@ Actions on your own account are disabled (shown greyed out).
 
 \section{Overview}
 
-\screenshotplaceholder{Terminal Screen}{Embedded terminal window for direct pipeline interaction.}
+\begin{figure}[H]
+  \centering
+  \includegraphics[width=0.85\textwidth]{figures/terminal_screen.png}
+  \caption{Embedded terminal window for direct pipeline interaction.}
+\end{figure}
 
 The Terminal page provides an embedded command-line interface for advanced users who need direct access to the underlying Snakemake pipeline and system shell.
 
@@ -1397,7 +1458,7 @@ Each completed analysis produces a JSON file with the following structure:
   Open Terminal         & Click \faTerminal\ in the sidebar \\
   Open Database Manager & Click \faDatabase\ in the sidebar \\
   Open Settings         & Click \faCog\ in the user card \\
-  Logout                & Click \faSignOut\ Logout at sidebar bottom \\
+  Logout                & Click \faIcon{sign-out-alt}\ Logout at sidebar bottom \\
   Refresh System Status & Click \faSync\ in the user card \\
   \bottomrule
 \end{tabular}
