@@ -226,6 +226,34 @@
         </div>
     </div>
 
+    <!-- Danger Zone (hidden for guests) -->
+    <div class="card danger-zone-card" id="danger-zone-section">
+        <h3 class="card-title danger-zone-title">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width: 20px; height: 20px; margin-right: 8px; vertical-align: middle;">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+            </svg>
+            Danger Zone
+        </h3>
+        <div class="settings-section">
+            <div class="setting-row" style="border-bottom: none;">
+                <div class="setting-info">
+                    <h4 style="color: var(--error, #EF4444);">Delete My Account</h4>
+                    <p>Permanently deletes your account, all your data, and revokes access. This cannot be undone.</p>
+                </div>
+                <button class="btn btn-danger" id="delete-account-btn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:16px;height:16px;">
+                        <path d="M3 6h18"></path>
+                        <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                        <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                    </svg>
+                    Delete Account
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- System Info -->
     <div class="card">
         <h3 class="card-title">System Information</h3>
@@ -254,6 +282,34 @@
         <h3 class="card-title">About</h3>
         <p class="text-muted" style="margin: 0 0 8px;">For support, bug reports, or feedback:</p>
         <a href="#" onclick="window.api?.system?.openExternal('mailto:pathogenius.team@gmail.com?subject=Patho-genius%20Support&body=App%20version%3A%20' + encodeURIComponent(document.getElementById('system-app-version')?.textContent || '') + '%0A%0ADescribe%20your%20issue%20here%3A'); return false;" style="color: var(--primary); font-weight: 500;">pathogenius.team@gmail.com</a>
+    </div>
+
+    <!-- Delete Account Confirmation Modal -->
+    <div id="delete-account-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3 style="color: var(--error, #EF4444);">Delete Account</h3>
+                <button class="modal-close" onclick="SettingsPage.closeDeleteAccountModal()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <p class="modal-description">
+                    This will permanently delete your account and all associated data.
+                    <strong>This cannot be undone.</strong>
+                </p>
+                <div class="form-group">
+                    <label for="delete-account-confirm-email">Type your email address to confirm</label>
+                    <input type="email" id="delete-account-confirm-email" class="input-field"
+                        placeholder="your@email.com" autocomplete="off">
+                </div>
+                <div id="delete-account-modal-error" class="form-error hidden"></div>
+                <div class="modal-actions">
+                    <button class="btn btn-outline" onclick="SettingsPage.closeDeleteAccountModal()">Cancel</button>
+                    <button class="btn btn-danger" id="delete-account-confirm-btn" onclick="SettingsPage.confirmDeleteSelf()">
+                        Delete My Account
+                    </button>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
 

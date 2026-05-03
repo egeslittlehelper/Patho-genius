@@ -18,6 +18,8 @@ const KEYTAR_SESSION = 'auth-session';
 const AUTH_BASE = 'https://identitytoolkit.googleapis.com/v1/accounts';
 const TOKEN_BASE = 'https://securetoken.googleapis.com/v1/token';
 const FS_BASE = `https://firestore.googleapis.com/v1/projects/${PROJECT_ID}/databases/(default)/documents`;
+const DELETE_USER_FN_URL = 'https://deleteuser-7bio2qpqoa-uc.a.run.app';
+const DELETE_SELF_FN_URL = 'https://deleteself-7bio2qpqoa-uc.a.run.app';
 
 // In-memory session (cleared on app exit)
 let currentSession = null; // { idToken, refreshToken, uid, email }
@@ -536,7 +538,43 @@ async function adminSendPasswordReset(email) {
 async function adminDeleteUser(uid) {
     try {
         const idToken = await getIdToken();
-        await fsDelete(`users/${uid}`, idToken);
+        const res = await fetch(DELETE_USER_FN_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            },
+            body: JSON.stringify({ uid })
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            return { success: false, error: `Cloud Function not reachable (HTTP ${res.status}). Make sure it is deployed.` };
+        }
+        const data = await res.json();
+        if (!res.ok) return { success: false, error: data.error || 'Delete failed' };
+        return { success: true };
+    } catch (error) {
+        return { success: false, error: error.message };
+    }
+}
+
+async function deleteSelf() {
+    try {
+        const idToken = await getIdToken();
+        const res = await fetch(DELETE_SELF_FN_URL, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': `Bearer ${idToken}`
+            }
+        });
+        const contentType = res.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+            return { success: false, error: `Cloud Function not reachable (HTTP ${res.status}). Make sure it is deployed.` };
+        }
+        const data = await res.json();
+        if (!res.ok) return { success: false, error: data.error || 'Delete failed' };
+        currentSession = null;
         return { success: true };
     } catch (error) {
         return { success: false, error: error.message };
@@ -581,6 +619,7 @@ module.exports = {
     adminSendPasswordReset,
     adminDeleteUser,
     adminGetStats,
+    deleteSelf,
     // Expose Firestore helpers for cloud-service
     fsGet,
     fsSet,

@@ -82,6 +82,11 @@ const SettingsPage = {
                 this.handleChangePassword();
             });
         }
+
+        const deleteAccountBtn = document.getElementById('delete-account-btn');
+        if (deleteAccountBtn) {
+            deleteAccountBtn.addEventListener('click', () => this.handleDeleteSelf());
+        }
     },
 
     /* ─── Settings load / save ─────────────────────────────── */
@@ -214,6 +219,8 @@ const SettingsPage = {
         const isGuest = window.App?.isGuestMode?.() || window.App?.state?.isGuestMode;
         const section = document.getElementById('account-security-section');
         if (section) section.classList.toggle('hidden', isGuest);
+        const dangerZone = document.getElementById('danger-zone-section');
+        if (dangerZone) dangerZone.classList.toggle('hidden', isGuest);
     },
 
     async handleChangePassword() {
@@ -273,6 +280,49 @@ const SettingsPage = {
         const ok  = document.getElementById('change-password-success');
         if (err) err.classList.add('hidden');
         if (ok)  ok.classList.add('hidden');
+    },
+
+    /* ─── Self-deletion ────────────────────────────────────── */
+
+    handleDeleteSelf() {
+        const input = document.getElementById('delete-account-confirm-email');
+        const errEl = document.getElementById('delete-account-modal-error');
+        const btn   = document.getElementById('delete-account-confirm-btn');
+        if (input) input.value = '';
+        if (errEl) errEl.classList.add('hidden');
+        if (btn)   { btn.disabled = false; btn.textContent = 'Delete My Account'; }
+        const modal = document.getElementById('delete-account-modal');
+        if (modal) modal.classList.remove('hidden');
+        if (input) setTimeout(() => input.focus(), 50);
+    },
+
+    closeDeleteAccountModal() {
+        const modal = document.getElementById('delete-account-modal');
+        if (modal) modal.classList.add('hidden');
+    },
+
+    async confirmDeleteSelf() {
+        const email  = window.App?.state?.currentUser?.email || '';
+        const typed  = (document.getElementById('delete-account-confirm-email')?.value || '').trim();
+        const errEl  = document.getElementById('delete-account-modal-error');
+        const btn    = document.getElementById('delete-account-confirm-btn');
+
+        if (typed.toLowerCase() !== email.toLowerCase()) {
+            if (errEl) { errEl.textContent = 'Email does not match. Try again.'; errEl.classList.remove('hidden'); }
+            return;
+        }
+
+        if (btn) { btn.disabled = true; btn.textContent = 'Deleting...'; }
+
+        try {
+            const result = await window.api.auth.deleteSelf();
+            if (!result.success) throw new Error(result.error || 'Deletion failed');
+            this.closeDeleteAccountModal();
+            await window.App.logout();
+        } catch (error) {
+            if (errEl) { errEl.textContent = error.message; errEl.classList.remove('hidden'); }
+            if (btn)   { btn.disabled = false; btn.textContent = 'Delete My Account'; }
+        }
     },
 
     /* ─── Admin user management ─────────────────────────────── */
@@ -355,7 +405,10 @@ const SettingsPage = {
                                 ? `<button class="btn btn-outline btn-sm" onclick="SettingsPage.makeAdmin('${user.uid}')">Make Admin</button>`
                                 : `<button class="btn btn-outline btn-sm" onclick="SettingsPage.removeAdmin('${user.uid}')">Remove Admin</button>`
                             }
-                            <button class="btn btn-outline btn-sm btn-danger-outline" onclick="SettingsPage.deleteUser('${user.uid}', '${esc(user.username || user.email || '')}')">Delete</button>
+                            ${user.role !== 'admin'
+                                ? `<button class="btn btn-outline btn-sm btn-danger-outline" onclick="SettingsPage.deleteUser('${user.uid}', '${esc(user.username || user.email || '')}')">Delete</button>`
+                                : ''
+                            }
                         </div>
                     ` : '<span class="text-muted">—</span>'}
                 </td>

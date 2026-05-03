@@ -384,6 +384,10 @@ ipcMain.handle('auth:change-password', async (event, currentPassword, newPasswor
     return await firebaseAuth.changePassword(currentPassword, newPassword);
 });
 
+ipcMain.handle('auth:delete-self', async () => {
+    return await firebaseAuth.deleteSelf();
+});
+
 ipcMain.handle('auth:request-password-reset', async (event, email) => {
     return await firebaseAuth.sendPasswordReset(email);
 });

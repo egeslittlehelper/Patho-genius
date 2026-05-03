@@ -37,7 +37,10 @@ contextBridge.exposeInMainWorld('api', {
             ipcRenderer.invoke('auth:resend-verification', email, password),
 
         checkVerification: (email, password) =>
-            ipcRenderer.invoke('auth:check-verification', email, password)
+            ipcRenderer.invoke('auth:check-verification', email, password),
+
+        deleteSelf: () =>
+            ipcRenderer.invoke('auth:delete-self')
     },
 
     /* FILE SYSTEM */
