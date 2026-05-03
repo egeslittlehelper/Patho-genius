@@ -210,6 +210,14 @@
 /* Sankey Chart */
 .sankey-chart {
     display: block;
+    width: 100%;
+    height: auto;
+}
+
+#sankey-chart {
+    width: 100%;
+    min-width: 100%;
+    height: 400px;
 }
 
 .sankey-link {

@@ -1010,25 +1010,14 @@ const ResultsPage = {
         const sankeyData = Charts.transformApiData(result, 'sankey');
         const radarData = Charts.transformApiData(result, 'radar');
 
-        // Render treemap
-        setTimeout(() => {
-            Charts.renderTreemap('abundance-treemap-chart', treemapData);
-        }, 100);
-
-        // Render sunburst with taxonomy data
-        setTimeout(() => {
-            Charts.renderSunburst('sunburst-chart', sunburstData);
-        }, 150);
-
-        // Render sankey diagram
-        setTimeout(() => {
-            Charts.renderSankey('sankey-chart', sankeyData);
-        }, 200);
-
-        // Render radar chart for comparative analysis
-        setTimeout(() => {
-            Charts.renderRadar('radar-chart', radarData);
-        }, 250);
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                Charts.renderTreemap('abundance-treemap-chart', treemapData);
+                Charts.renderSunburst('sunburst-chart', sunburstData);
+                Charts.renderSankey('sankey-chart', sankeyData);
+                Charts.renderRadar('radar-chart', radarData);
+            });
+        });
     },
 
     /**

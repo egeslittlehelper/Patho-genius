@@ -285,18 +285,29 @@ const Charts = {
             container.innerHTML = '<div class="chart-empty-state">No read classification data available</div>';
             return;
         }
-        const chartData = data;
 
-        const width = container.clientWidth || 600;
+        const parentCard = container.closest('.chart-container') || container.parentElement;
+        const measuredWidth =
+            container.getBoundingClientRect().width ||
+            parentCard?.getBoundingClientRect().width ||
+            container.clientWidth ||
+            900;
+
+        const width = Math.max(900, Math.floor(measuredWidth));
         const height = 400;
         const nodeWidth = 20;
         const nodePadding = 15;
 
-        // Calculate node positions
-        const { nodes, links } = this.calculateSankeyLayout(chartData, width, height, nodeWidth, nodePadding);
+        const { nodes, links } = this.calculateSankeyLayout(data, width, height, nodeWidth, nodePadding);
 
         container.innerHTML = `
-            <svg width="${width}" height="${height}" class="sankey-chart">
+            <svg
+                width="100%"
+                height="${height}"
+                viewBox="0 0 ${width} ${height}"
+                preserveAspectRatio="xMidYMid meet"
+                class="sankey-chart"
+            >
                 <defs>
                     ${this.generateSankeyGradients(links)}
                 </defs>
