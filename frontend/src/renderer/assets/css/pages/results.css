@@ -109,6 +109,7 @@
 
 .running-analysis-item .progress-bar {
     height: 6px;
+    background-color: rgba(0, 0, 0, 0.12);
 }
 
 .running-analysis-item .progress-pct {

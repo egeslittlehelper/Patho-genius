@@ -31,6 +31,28 @@ const RegisterPage = {
             this.bindEvents();
             this.isEventsBound = true;
         }
+        this.reset();
+    },
+
+    reset() {
+        this.isLoading = false;
+        this.pendingEmail    = null;
+        this.pendingPassword = null;
+        this.clearError();
+        if (this.elements.form) {
+            this.elements.form.reset();
+            this.elements.form.classList.remove('hidden');
+        }
+        if (this.elements.registerBtn) {
+            this.elements.registerBtn.disabled = false;
+            this.elements.registerBtn.textContent = 'Create Account';
+        }
+        const verif = document.getElementById('email-verification-section');
+        if (verif) verif.classList.add('hidden');
+        const verifyUI = document.getElementById('verify-link-ui');
+        if (verifyUI) verifyUI.remove();
+        const strengthEl = document.getElementById('password-strength');
+        if (strengthEl) strengthEl.innerHTML = '';
     },
 
     cacheElements() {
@@ -236,10 +258,14 @@ const RegisterPage = {
         if (this.elements.form) this.elements.form.reset();
         this.pendingEmail    = null;
         this.pendingPassword = null;
-        const verif = document.getElementById('verify-link-ui');
-        if (verif) verif.remove();
-        alert('Registration complete! Please log in with your credentials.');
-        this.showLogin();
+
+        const feedback = document.getElementById('verify-feedback');
+        if (feedback) {
+            feedback.textContent = 'Registration complete! Redirecting to login...';
+            feedback.style.color = 'var(--success, #10B981)';
+            feedback.classList.remove('hidden');
+        }
+        setTimeout(() => this.showLogin(), 1200);
     },
 
     updatePasswordStrength(password) {
@@ -282,10 +308,15 @@ const RegisterPage = {
     },
 
     showLogin() {
-        const loginView    = document.getElementById('page-login');
-        const registerView = document.getElementById('page-register');
-        if (loginView)    loginView.classList.remove('hidden');
-        if (registerView) registerView.classList.add('hidden');
+        if (window.App) {
+            App.navigateTo('login');
+        } else {
+            const loginView    = document.getElementById('page-login');
+            const registerView = document.getElementById('page-register');
+            if (loginView)    loginView.classList.remove('hidden');
+            if (registerView) registerView.classList.add('hidden');
+            if (window.LoginPage) LoginPage.init();
+        }
     },
 
     showError(message) {

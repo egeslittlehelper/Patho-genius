@@ -31,12 +31,13 @@ const ResultsPage = {
     init() {
         console.log('ResultsPage initializing...');
         
-        // Only bind events once to prevent duplicate listeners
+        // Only bind DOM events once to prevent duplicate listeners
         if (!this.isEventsBound) {
             this.setupEventListeners();
-            this.setupProgressListener();
             this.isEventsBound = true;
         }
+        // Always re-register the IPC progress listener on each page visit
+        this.setupProgressListener();
         
         // Reset to local view and load data
         this.state.currentSource = 'local';
@@ -104,6 +105,9 @@ const ResultsPage = {
      * Setup progress listener for running analyses
      */
     setupProgressListener() {
+        if (window.api?.analysis?.removeProgressListener) {
+            window.api.analysis.removeProgressListener();
+        }
         if (window.api?.analysis?.onProgress) {
             window.api.analysis.onProgress((data) => {
                 this.updateRunningAnalysis(data);
@@ -176,10 +180,6 @@ const ResultsPage = {
                 </div>
                 <span class="progress-pct">${analysis.progress || 0}%</span>
                 <div class="analysis-controls">
-                    ${analysis.status === 'paused'
-                        ? `<button class="btn-resume" onclick="ResultsPage.resumeAnalysis('${analysis.id}')">Resume</button>`
-                        : `<button class="btn-pause" onclick="ResultsPage.pauseAnalysis('${analysis.id}')">Pause</button>`
-                    }
                     <button class="btn-cancel" onclick="ResultsPage.cancelAnalysis('${analysis.id}')">Cancel</button>
                 </div>
             </div>
@@ -832,62 +832,6 @@ const ResultsPage = {
             }
         } catch (error) {
             console.error('Failed to cancel analysis:', error);
-        }
-    },
-
-    /**
-     * Pause a running analysis
-     */
-    async pauseAnalysis(analysisId) {
-        try {
-            if (window.api?.analysis?.pause) {
-                const result = await window.api.analysis.pause(analysisId);
-                if (result.success) {
-                    const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
-                    if (analysis) {
-                        analysis.status = 'paused';
-                        this.renderRunningAnalyses();
-                    }
-                }
-            } else {
-                // Mock for development
-                const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
-                if (analysis) {
-                    analysis.status = 'paused';
-                    this.renderRunningAnalyses();
-                    console.log('⏸Analysis paused:', analysisId);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to pause analysis:', error);
-        }
-    },
-
-    /**
-     * Resume a paused analysis
-     */
-    async resumeAnalysis(analysisId) {
-        try {
-            if (window.api?.analysis?.resume) {
-                const result = await window.api.analysis.resume(analysisId);
-                if (result.success) {
-                    const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
-                    if (analysis) {
-                        analysis.status = 'running';
-                        this.renderRunningAnalyses();
-                    }
-                }
-            } else {
-                // Mock for development
-                const analysis = this.state.runningAnalyses.find(a => a.id === analysisId);
-                if (analysis) {
-                    analysis.status = 'running';
-                    this.renderRunningAnalyses();
-                    console.log('▶Analysis resumed:', analysisId);
-                }
-            }
-        } catch (error) {
-            console.error('Failed to resume analysis:', error);
         }
     },
 

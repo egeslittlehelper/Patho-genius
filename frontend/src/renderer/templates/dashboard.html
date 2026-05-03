@@ -7,27 +7,6 @@
         </div>
     </header>
 
-    <!-- Active Analysis Banner (shown when analysis is running) -->
-    <div id="dashboard-running-analysis" class="running-analysis-banner hidden">
-        <div class="banner-icon">
-            <svg class="icon-spin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                <circle cx="12" cy="12" r="10"></circle>
-                <path d="M12 6v6l4 2"></path>
-            </svg>
-        </div>
-        <div class="banner-content">
-            <h3 id="running-analysis-name">Analysis in Progress</h3>
-            <p id="running-analysis-status">Processing reads...</p>
-        </div>
-        <div class="banner-progress">
-            <div class="progress-bar">
-                <div class="progress-fill" id="running-analysis-progress" style="width: 0%"></div>
-            </div>
-            <span id="running-analysis-percent">0%</span>
-        </div>
-        <button class="btn btn-outline btn-sm" onclick="App.navigateTo('results')">View Details</button>
-    </div>
-        
     <div class="card">
         <div class="card-header-row">
             <h3 class="card-title">Recent Analyses</h3>
@@ -115,7 +94,7 @@
             <div class="stat-row"><span class="stat-label">Completed</span><span class="stat-value" id="stat-completed">—</span></div>
             <div class="stat-row"><span class="stat-label">Failed</span><span class="stat-value text-danger" id="stat-failed">—</span></div>
             <div class="stat-row"><span class="stat-label">Running</span><span class="stat-value text-primary" id="stat-running">—</span></div>
-            <div class="stat-row hidden" id="stat-cloud-row"><span class="stat-label">Cloud Synced</span><span class="stat-value text-primary" id="stat-cloud">—</span></div>
+            <div class="stat-row hidden" id="stat-cloud-row"><span class="stat-label">In Cloud</span><span class="stat-value text-primary" id="stat-cloud">—</span></div>
         </div>
     </div>
 </div>
