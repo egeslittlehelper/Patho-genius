@@ -304,21 +304,21 @@
     background: var(--bg-card);
     border: 1px solid var(--border-color);
     border-radius: var(--radius-lg);
-    padding: 20px;
+    padding: 16px 20px;
 }
 
 .pathogen-header {
     display: flex;
     justify-content: space-between;
     align-items: flex-start;
-    margin-bottom: 16px;
+    margin-bottom: 4px;
 }
 
 .pathogen-header h4 {
     font-size: 1rem;
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: 4px;
+    margin-bottom: 0;
 }
 
 .pathogen-strain {
@@ -330,6 +330,42 @@
     display: flex;
     justify-content: space-between;
     margin-bottom: 8px;
+}
+
+.pathogen-metrics-row {
+    display: flex;
+    gap: 28px;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.pathogen-metric-item {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.metric-value-lg {
+    font-size: 1.05rem;
+    font-weight: 600;
+    line-height: 1.2;
+}
+
+.pathogen-confidence-bar {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-top: 6px;
+    margin-bottom: 10px;
+}
+
+.confidence-bar-track {
+    flex: 1;
+    height: 8px;
+}
+
+.pathogen-footer {
+    margin-top: 10px;
 }
 
 .metric-label {

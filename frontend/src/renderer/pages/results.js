@@ -146,14 +146,65 @@ const ResultsPage = {
         try {
             if (window.api?.analysis?.getAll) {
                 const analyses = await window.api.analysis.getAll();
-                
-                // Separate running and completed
-                this.state.runningAnalyses = analyses.filter(a => 
-                    ['starting', 'running', 'preprocessing', 'classifying', 'processing',
-                     'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
+
+                this.state.runningAnalyses = analyses.filter(a =>
+                    [
+                        'starting',
+                        'running',
+                        'preprocessing',
+                        'classifying',
+                        'processing',
+                        'finalizing',
+                        'splitting',
+                        'connecting',
+                        'uploading',
+                        'downloading',
+                        'merging'
+                    ].includes(a.status)
                 );
-                this.state.completedAnalyses = analyses.filter(a => 
+
+                const completed = analyses.filter(a =>
                     ['completed', 'failed', 'cancelled'].includes(a.status)
+                );
+
+                // Enrich completed analyses with result JSON when metadata does not include summary/pathogens.
+                this.state.completedAnalyses = await Promise.all(
+                    completed.map(async (analysis) => {
+                        if (
+                            analysis.status !== 'completed' ||
+                            analysis.summary ||
+                            analysis.pathogens ||
+                            analysis.results
+                        ) {
+                            return analysis;
+                        }
+
+                        try {
+                            if (!window.api?.analysis?.getResults) {
+                                return analysis;
+                            }
+
+                            const response = await window.api.analysis.getResults(analysis.id);
+                            const result = response?.result || response?.results || response?.data || response;
+
+                            if (!result) {
+                                return analysis;
+                            }
+
+                            return {
+                                ...analysis,
+                                results: result,
+                                summary: result.summary || analysis.summary,
+                                pathogens: result.pathogens || analysis.pathogens,
+                                analysis_name: result.analysis_name || analysis.analysis_name,
+                                sample_type: result.sample_type || analysis.sample_type,
+                                completed_at: result.completed_at || analysis.completed_at
+                            };
+                        } catch (err) {
+                            console.warn(`Could not enrich analysis ${analysis.id}:`, err);
+                            return analysis;
+                        }
+                    })
                 );
             } else {
                 this.state.runningAnalyses = [];
@@ -608,7 +659,7 @@ const ResultsPage = {
         if (subtitleEl) subtitleEl.textContent = `Completed on ${this.formatDate(result.completed_at)}${classifierLabel}`;
 
         this.updateOverviewCards(result);
-        this.updateQualityTab(result);
+        // this.updateQualityTab(result);
 
         // Render pathogen cards
         this.renderPathogenCards();
@@ -815,6 +866,17 @@ const ResultsPage = {
     /**
      * Render pathogen details in the Pathogen Details tab
      */
+    getClassifiedAbundance(pathogen, result) {
+        const classifiedReads = Number(result?.summary?.classified_reads || 0);
+        const reads = Number(pathogen?.reads || 0);
+
+        if (classifiedReads <= 0 || reads <= 0) {
+            return null;
+        }
+
+        return Number(((reads / classifiedReads) * 100).toFixed(2));
+    },
+
     renderPathogenDetails(result) {
         const container = document.getElementById('pathogen-details-list');
         if (!container) return;
@@ -869,20 +931,34 @@ const ResultsPage = {
                     <div class="pathogen-detail-header">
                         <div>
                             <h3>${esc(p.name)}</h3>
-                            <p class="pathogen-strain">Strain: ${esc(p.strain || 'Unknown')}</p>
                         </div>
                         <span class="risk-badge risk-${risk}">${esc(this.capitalize(risk))} Risk</span>
                     </div>
 
                     <div class="pathogen-detail-stats">
                         <div class="detail-stat">
-                            <span class="detail-label">Relative Abundance</span>
-                            <span class="detail-value">${p.abundance ?? 0}%</span>
+                            <span class="detail-label">Abundance (Classified Reads)</span>
+                            <span class="detail-value">
+                                ${
+                                    this.getClassifiedAbundance(p, result) != null
+                                        ? this.getClassifiedAbundance(p, result) + '%'
+                                        : '—'
+                                }
+                            </span>
                         </div>
+
+                        <div class="detail-stat">
+                            <span class="detail-label">Abundance (Total Reads)</span>
+                            <span class="detail-value">
+                                ${p.abundance != null ? p.abundance + '%' : '—'}
+                            </span>
+                        </div>
+
                         <div class="detail-stat">
                             <span class="detail-label">Read Count</span>
                             <span class="detail-value">${this.formatReads(p.reads || 0)}</span>
                         </div>
+
                         <div class="detail-stat">
                             <span class="detail-label">Confidence Score</span>
                             <span class="detail-value text-primary">${p.confidence ?? 'N/A'}%</span>
@@ -1114,13 +1190,13 @@ const ResultsPage = {
         container.innerHTML = pathogens.map(p => {
             const conf = p.confidence ?? null;
             const risk = (p.risk_level || 'low').toLowerCase();
+            const classifiedAbundance = this.getClassifiedAbundance(p, this.state.currentResult);
 
             return `
                 <div class="pathogen-card ${risk === 'high' ? 'pathogen-card-critical' : ''}">
                     <div class="pathogen-header">
                         <div>
                             <h4>${esc(p.name)}</h4>
-                            <span class="pathogen-strain">${esc(p.strain || 'Unknown strain')}</span>
                         </div>
                         <div class="confidence-badge confidence-${this.getConfidenceLevel(conf)}">
                             <span class="confidence-value">${conf != null ? conf + '%' : '—'}</span>
@@ -1130,11 +1206,16 @@ const ResultsPage = {
 
                     <div class="pathogen-metrics-row">
                         <div class="pathogen-metric-item">
-                            <span class="metric-value-lg">${p.abundance != null ? p.abundance + '%' : '—'}</span>
-                            <span class="metric-label">Abundance</span>
+                            <span class="metric-value-lg">
+                                ${classifiedAbundance != null ? classifiedAbundance + '%' : '—'}
+                            </span>
+                            <span class="metric-label">Abundance (Classified)</span>
                         </div>
+
                         <div class="pathogen-metric-item">
-                            <span class="metric-value-lg">${p.reads != null ? this.formatReads(p.reads) : '—'}</span>
+                            <span class="metric-value-lg">
+                                ${p.reads != null ? this.formatReads(p.reads) : '—'}
+                            </span>
                             <span class="metric-label">Reads</span>
                         </div>
                     </div>
@@ -1148,7 +1229,7 @@ const ResultsPage = {
 
                     <div class="pathogen-footer">
                         <span class="risk-badge risk-${risk}">${this.capitalize(risk)} Risk</span>
-                        ${p.virulence_genes != null ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''}
+                        <!-- ${p.virulence_genes != null ? `<span class="virulence-count">${p.virulence_genes} virulence genes</span>` : ''} -->
                     </div>
                 </div>
             `;
@@ -1209,13 +1290,21 @@ const ResultsPage = {
      * Get pathogen count for display
      */
     getPathogenCount(analysis) {
-        const count = analysis.results?.pathogens?.length ||
-                     analysis.pathogens?.length ||
-                     analysis.summary?.pathogens_detected ||
-                     analysis.summary?.species_detected || 0;
+        const result = analysis.results || analysis.result || analysis.data || analysis;
 
-        if (count === 0) return '—';
-        return `${count} detected`;
+        const count =
+            result?.summary?.pathogens_detected ??
+            result?.pathogens_detected?.length ??
+            result?.pathogens?.length ??
+            analysis?.summary?.pathogens_detected ??
+            analysis?.pathogens?.length ??
+            0;
+
+        const numericCount = Number(count);
+
+        if (!numericCount) return '—';
+
+        return `${numericCount} detected`;
     },
 
     /**

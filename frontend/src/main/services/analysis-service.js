@@ -881,9 +881,9 @@ function generateMockResults(cfg) {
         pathogens: [
             {
                 name: 'Escherichia coli',
-                strain: 'O157:H7',
+                // strain: 'O157:H7',
                 tax_id: 83334,
-                abundance: 45.2,
+                abundance: 28.76,
                 reads: 3420000,
                 confidence: 95,
                 amr_genes: 5,
@@ -892,9 +892,9 @@ function generateMockResults(cfg) {
             },
             {
                 name: 'Staphylococcus aureus',
-                strain: 'MRSA USA300',
+                // strain: 'MRSA USA300',
                 tax_id: 46170,
-                abundance: 18.6,
+                abundance: 11.86,
                 reads: 1410000,
                 confidence: 87,
                 amr_genes: 7,
@@ -903,9 +903,9 @@ function generateMockResults(cfg) {
             },
             {
                 name: 'Pseudomonas aeruginosa',
-                strain: 'PAO1',
+                // strain: 'PAO1',
                 tax_id: 208964,
-                abundance: 8.3,
+                abundance: 5.30,
                 reads: 630000,
                 confidence: 82,
                 amr_genes: 4,
@@ -914,9 +914,9 @@ function generateMockResults(cfg) {
             },
             {
                 name: 'Klebsiella pneumoniae',
-                strain: 'KPC+',
+                // strain: 'KPC+',
                 tax_id: 573,
-                abundance: 5.1,
+                abundance: 3.28,
                 reads: 390000,
                 confidence: 78,
                 amr_genes: 3,
@@ -926,7 +926,7 @@ function generateMockResults(cfg) {
         ],
         pathogens_detected: [],
         taxonomy: {
-            bacteria: 71,
+            bacteria: 63.6,
             viruses: 4.8,
             proteobacteria: 48,
             firmicutes: 18,

@@ -626,7 +626,10 @@ const Charts = {
             const showConfidence = cell.width > 130 && cell.height > 85 && cell.confidence != null;
             
             const tooltipContent = `
-                <div class="tooltip-row"><strong>Relative Abundance:</strong> ${this.formatPercent(cell.value)}</div>
+                <div class="tooltip-row">
+                    <strong>Abundance (Classified):</strong>
+                    ${this.formatPercent(cell.value)}
+                </div>
                 ${cell.reads != null ? `<div class="tooltip-row"><strong>Read Count:</strong> ${this.formatNumber(cell.reads)}</div>` : ''}
                 ${cell.confidence != null ? `<div class="tooltip-row"><strong>Confidence Score:</strong> <span class="confidence-highlight">${this.formatPercent(cell.confidence)}</span></div>` : ''}
                 ${cell.risk && cell.risk !== 'Unknown' ? `
@@ -814,7 +817,7 @@ const Charts = {
             ].join(' ');
 
             const tooltipContent = `
-                <div><strong>Abundance:</strong> ${metrics.Abundance ?? 0}</div>
+                <div><strong>Abundance (Classified):</strong> ${metrics.Abundance ?? 0}</div>
                 <div><strong>Confidence:</strong> ${metrics.Confidence ?? 0}</div>
                 <div><strong>Virulence:</strong> ${metrics.Virulence ?? 0}</div>
                 <div><strong>Risk:</strong> ${metrics.RiskLabel || (metrics.Risk ?? 0)}</div>
@@ -1177,40 +1180,74 @@ const Charts = {
 
     transformTreemapData(apiResponse) {
         const pathogens = apiResponse?.pathogens || [];
+        const summary = apiResponse?.summary || {};
+        const classifiedReads = Number(summary.classified_reads || 0);
+
         if (!Array.isArray(pathogens) || pathogens.length === 0) {
             return null;
         }
 
-        return pathogens.map((p, idx, arr) => ({
-            name: p.name || 'Unknown',
-            value: Number(p.abundance || 0),
-            reads: Number(p.reads || 0),
-            confidence: p.confidence ?? null,
-            risk: this.normalizeRiskLevel(p.risk_level),
-            color: this.getColorForIndex(idx, arr.length),
-            virulenceFactors: p.virulence_genes ?? 0
-        }));
+        return pathogens.map((p, idx, arr) => {
+            const reads = Number(p.reads || 0);
+
+            return {
+                name: p.name || 'Unknown',
+
+                // Use percentage among classified reads for visualization
+                value: classifiedReads > 0
+                    ? Number(((reads / classifiedReads) * 100).toFixed(2))
+                    : Number(p.abundance || 0),
+
+                reads,
+                originalAbundance: Number(p.abundance || 0), // total-read abundance from backend
+                confidence: p.confidence ?? null,
+                risk: this.normalizeRiskLevel(p.risk_level),
+                color: this.getColorForIndex(idx, arr.length),
+                virulenceFactors: p.virulence_genes ?? 0
+            };
+        });
     },
 
     transformRadarData(apiResponse) {
+        const summary = apiResponse?.summary || {};
+        const classifiedReads = Number(summary.classified_reads || 0);
+
         const pathogens = (apiResponse?.pathogens || [])
             .slice()
-            .sort((a, b) => Number(b.abundance || 0) - Number(a.abundance || 0))
+            .sort((a, b) => {
+                const aClassifiedAbundance = classifiedReads > 0
+                    ? Number(a.reads || 0) / classifiedReads
+                    : Number(a.abundance || 0);
+
+                const bClassifiedAbundance = classifiedReads > 0
+                    ? Number(b.reads || 0) / classifiedReads
+                    : Number(b.abundance || 0);
+
+                return bClassifiedAbundance - aClassifiedAbundance;
+            })
             .slice(0, 5);
 
         if (!pathogens.length) return null;
 
-        const mapped = pathogens.map((p, idx) => ({
-            name: p.name || 'Unknown',
-            color: this.getColorForIndex(idx, pathogens.length),
-            metrics: {
-                Abundance: Number(p.abundance || 0),
-                Confidence: Number(p.confidence || 0),
-                Virulence: Number(p.virulence_genes || 0),
-                Risk: this.riskToScore(p.risk_level),
-                RiskLabel: this.normalizeRiskLevel(p.risk_level)
-            }
-        }));
+        const mapped = pathogens.map((p, idx) => {
+            const reads = Number(p.reads || 0);
+
+            const classifiedAbundance = classifiedReads > 0
+                ? Number(((reads / classifiedReads) * 100).toFixed(2))
+                : Number(p.abundance || 0);
+
+            return {
+                name: p.name || 'Unknown',
+                color: this.getColorForIndex(idx, pathogens.length),
+                metrics: {
+                    Abundance: classifiedAbundance,
+                    Confidence: Number(p.confidence || 0),
+                    Virulence: Number(p.virulence_genes || 0),
+                    Risk: this.riskToScore(p.risk_level),
+                    RiskLabel: this.normalizeRiskLevel(p.risk_level)
+                }
+            };
+        });
 
         return {
             axes: ['Confidence', 'Abundance', 'Risk', 'Virulence'],

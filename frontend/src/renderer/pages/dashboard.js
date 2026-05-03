@@ -171,7 +171,43 @@ const DashboardPage = {
             }
 
             const analyses = await window.api.analysis.getAll();
-            const recent = [...analyses]
+
+            const enrichedAnalyses = await Promise.all(
+                analyses.map(async (analysis) => {
+                    if (
+                        analysis.status !== 'completed' ||
+                        analysis.results ||
+                        analysis.pathogens ||
+                        analysis.summary
+                    ) {
+                        return analysis;
+                    }
+
+                    try {
+                        if (!window.api?.analysis?.getResults) return analysis;
+
+                        const response = await window.api.analysis.getResults(analysis.id);
+                        const result = response?.result || response?.results || response?.data || response;
+
+                        if (!result) return analysis;
+
+                        return {
+                            ...analysis,
+                            results: result,
+                            pathogens: result.pathogens || analysis.pathogens,
+                            summary: result.summary || analysis.summary,
+                            analysis_name: result.analysis_name || analysis.analysis_name,
+                            sample_type: result.sample_type || analysis.sample_type,
+                            completed_at: result.completed_at || analysis.completed_at
+                        };
+                    } catch (err) {
+                        console.warn(`Could not load dashboard result for ${analysis.id}:`, err);
+                        return analysis;
+                    }
+                })
+            );
+
+            const recent = [...enrichedAnalyses]
                 .sort((a, b) => {
                     const ta = new Date(a.completed_at || a.endTime || a.startTime || 0).getTime();
                     const tb = new Date(b.completed_at || b.endTime || b.startTime || 0).getTime();
@@ -180,12 +216,12 @@ const DashboardPage = {
                 .slice(0, 10);
 
             // Update summary stats
-            const total = analyses.length;
-            const completed = analyses.filter(a => a.status === 'completed').length;
-            const failed = analyses.filter(a => a.status === 'failed').length;
-            const running = analyses.filter(a =>
+            const total = enrichedAnalyses.length;
+            const completed = enrichedAnalyses.filter(a => a.status === 'completed').length;
+            const failed = enrichedAnalyses.filter(a => a.status === 'failed').length;
+            const running = enrichedAnalyses.filter(a =>
                 ['starting', 'running', 'preprocessing', 'classifying', 'processing',
-                 'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
+                'finalizing', 'splitting', 'connecting', 'uploading', 'downloading', 'merging'].includes(a.status)
             ).length;
 
             const set = (id, val) => { const el = document.getElementById(id); if (el) el.textContent = val; };
@@ -233,7 +269,10 @@ const DashboardPage = {
                 const name = a.analysis_name || a.config?.analysis_name || a.id;
                 const date = fmt(a.completed_at || a.endTime || a.startTime);
                 const sampleType = a.sample_type || a.config?.sample_type || '—';
-                const topPathogen = (a.results?.pathogens?.[0]?.name) || '—';
+                const pathogens = a.results?.pathogens || a.pathogens || [];
+                const topPathogen = pathogens.length
+                    ? [...pathogens].sort((p1, p2) => Number(p2.reads || 0) - Number(p1.reads || 0))[0].name
+                    : '—';
                 return `
                 <tr>
                     <td><div class="cell-with-icon">
