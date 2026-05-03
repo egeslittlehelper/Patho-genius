@@ -17,5 +17,5 @@ jetson_nano:
   ssh_batch_mode: true
 genome_sources:
   - path: ./clark_db
-  - path: C:\Users\yalid\Desktop\Pathogenius2\genomes
+  - path: C:\Users\yalid\Desktop\reference
     reads_mapping: C:\Users\yalid\Desktop\Pathogenius2\reads_mapping.tsv\reads_mapping.tsv

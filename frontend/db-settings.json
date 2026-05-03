@@ -136,8 +136,99 @@
       "createdAt": "2026-04-23T18:03:20.254Z"
     },
     {
-      "id": "db_mobvayd660f7",
-      "name": "Marine Jetson",
+      "id": "db_moiw4hw6agfj",
+      "name": "Wastewater",
+      "genomesPath": "C:\\Users\\yalid\\Desktop\\reference",
+      "mappingFile": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\reads_mapping.tsv\\reads_mapping.tsv",
+      "files": [
+        {
+          "name": "GCF_000002435.2_UU_WB_2.1_genomic.fna",
+          "size": 12232997
+        },
+        {
+          "name": "GCF_000002765.6_GCA_000002765_genomic.fna",
+          "size": 23584773
+        },
+        {
+          "name": "GCF_000005845.2_ASM584v2_genomic.fna",
+          "size": 4699745
+        },
+        {
+          "name": "GCF_000006765.1_ASM676v1_genomic.fna",
+          "size": 6342768
+        },
+        {
+          "name": "GCF_000007625.1_ASM762v1_genomic.fna",
+          "size": 2909374
+        },
+        {
+          "name": "GCF_000010205.1_ASM1020v1_genomic.fna",
+          "size": 2034166
+        },
+        {
+          "name": "GCF_000013425.1_ASM1342v1_genomic.fna",
+          "size": 2856716
+        },
+        {
+          "name": "GCF_000149335.2_ASM14933v2_genomic.fna",
+          "size": 29379437
+        },
+        {
+          "name": "GCF_000195955.2_ASM19595v2_genomic.fna",
+          "size": 4466740
+        },
+        {
+          "name": "GCF_000860505.1_ViralProj15308_genomic.fna",
+          "size": 7620
+        },
+        {
+          "name": "GCF_000882815.3_ViralProj36615_genomic.fna",
+          "size": 10970
+        },
+        {
+          "name": "GCF_000931575.1_ASM93157v1_genomic.fna",
+          "size": 1869415
+        },
+        {
+          "name": "GCF_002076835.1_ASM207683v1_genomic.fna",
+          "size": 2181426
+        },
+        {
+          "name": "GCF_002080125.1_ASM208012v1_genomic.fna",
+          "size": 2019490
+        },
+        {
+          "name": "GCF_002815475.1_ASM281547v1_genomic.fna",
+          "size": 15474
+        },
+        {
+          "name": "GCF_008369605.1_ASM836960v1_genomic.fna",
+          "size": 4190374
+        },
+        {
+          "name": "GCF_008632635.1_ASM863263v1_genomic.fna",
+          "size": 4030153
+        },
+        {
+          "name": "GCF_017821535.1_ASM1782153v1_genomic.fna",
+          "size": 1644925
+        },
+        {
+          "name": "GCF_905331265.2_AI2999v1_cpp_genomic.fna",
+          "size": 5086476
+        }
+      ],
+      "genomeCount": 19,
+      "totalSize": 109563039,
+      "isBuilt": true,
+      "isActive": false,
+      "syncToJetson": false,
+      "syncedToJetson": false,
+      "createdAt": "2026-04-28T17:18:54.870Z"
+    },
+    {
+      "id": "db_mopjxnezhvhp",
+      "name": "Jetson Marine Database",
       "genomesPath": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\genomes",
       "mappingFile": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\reads_mapping.tsv\\reads_mapping.tsv",
       "files": [
@@ -265,10 +356,101 @@
       "genomeCount": 30,
       "totalSize": 126205294,
       "isBuilt": true,
+      "isActive": false,
+      "syncToJetson": true,
+      "syncedToJetson": true,
+      "createdAt": "2026-05-03T09:12:03.275Z"
+    },
+    {
+      "id": "db_mopksz8yngor",
+      "name": "Waste Water Jetson",
+      "genomesPath": "C:\\Users\\yalid\\Desktop\\reference",
+      "mappingFile": "C:\\Users\\yalid\\Desktop\\Pathogenius2\\reads_mapping.tsv\\reads_mapping.tsv",
+      "files": [
+        {
+          "name": "GCF_000002435.2_UU_WB_2.1_genomic.fna",
+          "size": 12232997
+        },
+        {
+          "name": "GCF_000002765.6_GCA_000002765_genomic.fna",
+          "size": 23584773
+        },
+        {
+          "name": "GCF_000005845.2_ASM584v2_genomic.fna",
+          "size": 4699745
+        },
+        {
+          "name": "GCF_000006765.1_ASM676v1_genomic.fna",
+          "size": 6342768
+        },
+        {
+          "name": "GCF_000007625.1_ASM762v1_genomic.fna",
+          "size": 2909374
+        },
+        {
+          "name": "GCF_000010205.1_ASM1020v1_genomic.fna",
+          "size": 2034166
+        },
+        {
+          "name": "GCF_000013425.1_ASM1342v1_genomic.fna",
+          "size": 2856716
+        },
+        {
+          "name": "GCF_000149335.2_ASM14933v2_genomic.fna",
+          "size": 29379437
+        },
+        {
+          "name": "GCF_000195955.2_ASM19595v2_genomic.fna",
+          "size": 4466740
+        },
+        {
+          "name": "GCF_000860505.1_ViralProj15308_genomic.fna",
+          "size": 7620
+        },
+        {
+          "name": "GCF_000882815.3_ViralProj36615_genomic.fna",
+          "size": 10970
+        },
+        {
+          "name": "GCF_000931575.1_ASM93157v1_genomic.fna",
+          "size": 1869415
+        },
+        {
+          "name": "GCF_002076835.1_ASM207683v1_genomic.fna",
+          "size": 2181426
+        },
+        {
+          "name": "GCF_002080125.1_ASM208012v1_genomic.fna",
+          "size": 2019490
+        },
+        {
+          "name": "GCF_002815475.1_ASM281547v1_genomic.fna",
+          "size": 15474
+        },
+        {
+          "name": "GCF_008369605.1_ASM836960v1_genomic.fna",
+          "size": 4190374
+        },
+        {
+          "name": "GCF_008632635.1_ASM863263v1_genomic.fna",
+          "size": 4030153
+        },
+        {
+          "name": "GCF_017821535.1_ASM1782153v1_genomic.fna",
+          "size": 1644925
+        },
+        {
+          "name": "GCF_905331265.2_AI2999v1_cpp_genomic.fna",
+          "size": 5086476
+        }
+      ],
+      "genomeCount": 19,
+      "totalSize": 109563039,
+      "isBuilt": true,
       "isActive": true,
       "syncToJetson": true,
       "syncedToJetson": true,
-      "createdAt": "2026-04-23T19:21:33.306Z"
+      "createdAt": "2026-05-03T09:36:24.946Z"
     }
   ]
 }

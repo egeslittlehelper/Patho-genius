@@ -196,8 +196,8 @@ rule clark_lite_classify:
             shell(
                 'echo [EDGE] Launching CU-CLARK-L on Jetson Nano (background)... && '
                 'ssh -o StrictHostKeyChecking=no -o BatchMode={SSH_BATCH_OPT} -o ConnectTimeout=10 '
-                '{params.ssh_target} '
-                '"nohup {params.cuclark}/exe/cuCLARK-l '
+                '-o ServerAliveInterval=10 -o ServerAliveCountMax=3 {params.ssh_target} '
+                '"setsid {params.cuclark}/exe/cuCLARK-l '
                 '-T {params.remote_db}/targets.txt '
                 '-D {params.remote_db}/ '
                 '-O {params.remote_ws}/{params.sample}.fastq '
@@ -205,7 +205,7 @@ rule clark_lite_classify:
                 '-n {params.threads} '
                 '-k {params.kmer} '
                 '-b 128 '
-                '> {params.remote_ws}/cuclark.log 2>&1 </dev/null &"'
+                '> {params.remote_ws}/cuclark.log 2>&1 < /dev/null &"'
             )
 
             # Poll until classification completes or process exits
