@@ -356,7 +356,7 @@
       "genomeCount": 30,
       "totalSize": 126205294,
       "isBuilt": true,
-      "isActive": false,
+      "isActive": true,
       "syncToJetson": true,
       "syncedToJetson": true,
       "createdAt": "2026-05-03T09:12:03.275Z"

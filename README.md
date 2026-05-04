@@ -46,8 +46,10 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
 - **Firebase Authentication** — user registration, login, password reset, and guest mode via Firebase Auth REST API
 - **Electron Desktop UI** — file picker, real-time progress tracking, result visualization, analysis history, settings management
 - **Snakemake Pipeline** — reproducible 3-step workflow: classify → abundance → JSON
+- **Batch Processing** — automatic FASTQ splitting for large files with sequential part-by-part classification
 - **Data Encryption** — AES-256-GCM encryption for results at rest, managed via OS keychain (`keytar`)
 - **System Dashboard** — real-time CPU, RAM, disk, and GPU monitoring via `systeminformation`
+- **User Manual** — comprehensive LaTeX user guide with screenshots (`user_guide/`)
 
 ---
 
@@ -73,12 +75,15 @@ A desktop application for real-time pathogen detection from metagenomic FASTQ se
 Pathogenius/                            # Repository root
 │
 ├── README.md                           # ← You are here
+├── .firebaserc                         # Firebase project alias
+├── firebase.json                       # Firebase hosting / functions config
 │
 ├── Patho-genius/                       # Backend — Snakemake pipeline + database builder
-│   ├── Snakefile                       # 3-rule dual-engine classification workflow
+│   ├── Snakefile                       # 4-rule dual-engine classification workflow
 │   ├── config.yaml                     # All pipeline configuration (paths, engines, genome sources)
 │   ├── build_clark_db.py               # Universal CLARK database builder
 │   ├── merge_abundance.py              # Utility for merging abundance CSV outputs
+│   ├── setup_sudoers.sh                # Jetson Nano sudoers setup for passwordless drop_caches
 │   ├── clark_db/                       # Reference database (FASTA genomes, taxonomy, targets.txt)
 │   │   ├── *.fna                       # Pathogen genome files
 │   │   ├── Custom/                     # Processed genomes for CLARK
@@ -90,8 +95,14 @@ Pathogenius/                            # Repository root
 │   ├── index.js                        # deleteSelf, deleteUser Cloud Function handlers
 │   └── package.json                    # Cloud Functions dependencies
 │
+├── user_guide/                         # LaTeX user manual
+│   ├── pathogenius_user_guide.tex      # Source document
+│   ├── pathogenius_user_guide.pdf      # Compiled PDF
+│   └── figures/                        # Screenshots and diagrams
+│
 └── frontend/                           # Electron desktop application
     ├── package.json                    # App metadata, scripts, dependencies
+    ├── db-settings.json                # Persistent database configuration state
     ├── models/                         # GGUF model files for local AI (e.g., MedGemma)
     ├── results/                        # Analysis output copied here for the UI
     └── src/
@@ -111,6 +122,13 @@ Pathogenius/                            # Repository root
             ├── index.html              # Main HTML shell
             ├── assets/
             │   ├── css/                # Modular CSS (variables, base, components, charts, layout)
+            │   │   ├── variables.css   # CSS custom properties (colors, spacing, fonts)
+            │   │   ├── base.css        # Reset and body defaults
+            │   │   ├── components.css  # Reusable UI components (buttons, cards, inputs)
+            │   │   ├── charts.css      # Chart container and SVG styling
+            │   │   ├── layout.css      # Page layout, sidebar, grid
+            │   │   ├── modals.css      # Modal dialog styles
+            │   │   └── pages/          # Page-specific stylesheets
             │   └── fonts/              # Local font files (Inter)
             ├── js/                     # Client-side JavaScript
             │   ├── app.js              # Global navigation, tab switching, theme management
@@ -158,9 +176,9 @@ This will:
 2. Resolve taxonomy IDs (via reads-mapping or NCBI lookup)
 3. Copy genomes into `clark_db/Custom/`
 4. Download NCBI taxdump (~55 MB)
-5. Run `set_targets.sh` inside Docker to produce `targets.txt`
+5. Generate `targets.txt` directly from the resolved file-to-taxid mappings
 
-> **Note:** The database build requires Docker to be running and an internet connection for NCBI lookups.
+> **Note:** The database build requires an internet connection for NCBI lookups. Docker is **not** required for database building (only for CPU-mode classification).
 
 ### 2. Install Frontend Dependencies
 
@@ -191,7 +209,7 @@ This opens the Electron app. From the UI you can:
 
 ## Classification Pipeline (Snakefile)
 
-The Snakemake pipeline in `Patho-genius/Snakefile` runs a 3-rule workflow that produces a JSON results file from raw FASTQ input.
+The Snakemake pipeline in `Patho-genius/Snakefile` runs a 4-rule workflow (3 processing rules + 1 target rule) that produces a JSON results file from raw FASTQ input.
 
 ### Pipeline Steps
 
@@ -261,7 +279,7 @@ The GPU workflow performs the following steps via SSH:
 2. **FASTQ upload** — `scp` to Jetson Nano (skipped if file already exists remotely)
 3. **GPU memory cleanup** — drops page caches to free unified memory
 4. **Stale result removal** — deletes previous `.clark.csv` and logs to prevent false completion detection
-5. **CU-CLARK-L launch** — runs in background via `nohup` with `-b 128` batch size to avoid CUDA watchdog timeouts
+5. **CU-CLARK-L launch** — runs in background via `setsid` (fully detaches from SSH session) with `-b 128` batch size to avoid CUDA watchdog timeouts
 6. **Polling loop** — checks every 30s: process still running → RUNNING; process exited + file exists → DONE; process exited + no file → FAILED. Uses `pgrep -f '[c]uCLARK-l'` (bracket trick to avoid self-matching)
 7. **CSV validation** — verifies the downloaded CSV has more than just a header row (catches watchdog timeout crashes)
 8. **Result download** — `scp` the classification CSV back to the local machine
@@ -320,7 +338,7 @@ After resolving taxids, the builder:
 - Copies all FASTA files to `clark_db/Custom/`
 - Writes `.custom` and `.custom.fileToAccssnTaxID` metadata (bypasses the 4.5 GB `nucl_accss` download)
 - Downloads NCBI taxdump (~55 MB) if not already present
-- Runs `set_targets.sh` inside Docker to produce `targets.txt`
+- Generates `targets.txt` directly from the file-to-taxid mappings (no Docker required)
 
 ---
 
@@ -420,9 +438,13 @@ All charts use `Charts.transformApiData(result, chartType)` to convert raw API d
 For UI development without Docker or a database:
 
 ```bash
-# Windows
+# Windows (CMD)
 set PATHOGENIUS_MOCK_ANALYSIS=1
 cd frontend && npm start
+
+# Windows (PowerShell)
+$env:PATHOGENIUS_MOCK_ANALYSIS = "1"
+cd frontend; npm start
 
 # Linux / macOS
 PATHOGENIUS_MOCK_ANALYSIS=1 npm start
