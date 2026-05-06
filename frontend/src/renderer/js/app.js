@@ -694,6 +694,11 @@ const App = {
         if (isGuest) {
             console.log('Guest mode active - session will not be saved');
         }
+
+        // Sync settings from Firebase so theme/preferences are current on login
+        if (!isGuest && window.SettingsPage?._loadFirebaseSettings) {
+            window.SettingsPage._loadFirebaseSettings();
+        }
     },
 
     /**
