@@ -7,7 +7,9 @@
     "start": "electron .",
     "pack": "electron-builder --dir",
     "dist": "electron-builder",
-    "postinstall": "electron-rebuild -f -w keytar"
+    "postinstall": "electron-rebuild -f -w keytar",
+    "download:cuda": "node-llama-cpp download --gpu cuda",
+    "download:gpu:auto": "node-llama-cpp download --gpu auto"
   },
   "author": "",
   "license": "ISC",

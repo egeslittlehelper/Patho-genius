@@ -88,15 +88,37 @@ async function loadModel() {
 
         // node-llama-cpp v3 is ESM — use dynamic import()
         const { getLlama, LlamaChatSession } = await import('node-llama-cpp');
-        llamaInstance = await getLlama();
-        modelInstance = await llamaInstance.loadModel({ modelPath });
+
+        // ── GPU / CUDA setup ───────────────────────────────────────────────────
+        // Attempt CUDA first; fall back to 'auto' (best available) on failure.
+        try {
+            llamaInstance = await getLlama({ gpu: 'cuda' });
+        } catch (cudaErr) {
+            console.warn('LLM: CUDA init failed, falling back to auto —', cudaErr.message);
+            llamaInstance = await getLlama({ gpu: 'auto' });
+        }
+
+        // ── Diagnostics: log which compute backend is active ──────────────────
+        const activeGpu = llamaInstance.gpu;
+        console.log(
+            'LLM: Compute backend →',
+            activeGpu === false ? 'CPU (no GPU detected)' : String(activeGpu).toUpperCase()
+        );
+
+        // ── Load model — offload every transformer layer to the GPU ───────────
+        // gpuLayers: 9999 acts as "all layers"; llama.cpp clamps it to the
+        // actual layer count, so this is safe for any model size.
+        modelInstance = await llamaInstance.loadModel({
+            modelPath,
+            gpuLayers: 9999,
+        });
         contextInstance = await modelInstance.createContext({
             contextSize: LLM_CONFIG.contextSize,
         });
 
         isLoaded  = true;
         isLoading = false;
-        console.log('LLM: Model ready.');
+        console.log(`LLM: Model ready (GPU: ${activeGpu === false ? 'CPU' : String(activeGpu).toUpperCase()}).`);
         return getStatus();
     } catch (err) {
         isLoading = false;
