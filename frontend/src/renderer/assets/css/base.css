@@ -3,6 +3,15 @@
  * Purpose: Reset, base styles, and utility classes
  */
 
+/* FONTS */
+@font-face {
+    font-family: 'Space Grotesk';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: url('../fonts/SpaceGrotesk-Bold.woff2') format('woff2');
+}
+
 /* RESET */
 *, *::before, *::after {
     box-sizing: border-box;
