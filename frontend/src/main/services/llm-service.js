@@ -16,6 +16,13 @@
 const path = require('path');
 const fs   = require('fs');
 
+// ── Demo toggle: driven by the same env var as the analysis mock ─────────────
+const USE_MOCK_LLM = process.env.PATHOGENIUS_MOCK_ANALYSIS === '1';
+
+// Module-level state: tracks the last mock file index (1–10) to avoid repeats
+let lastMockFileIndex = -1;
+// ─────────────────────────────────────────────────────────────────────────────
+
 // ── Model configuration (edit here to change model) ──────────────────────────
 const MODEL_FILENAME = 'google_medgemma-4b-it-Q4_K_L.gguf';
 
@@ -70,6 +77,14 @@ function resolveModelPath() {
  * Safe to call multiple times — subsequent calls are no-ops.
  */
 async function loadModel() {
+    if (USE_MOCK_LLM) {
+        isLoaded  = true;
+        isLoading = false;
+        loadError = null;
+        console.log('LLM: Mock mode active — skipping real model load.');
+        return getStatus();
+    }
+
     if (isLoaded || isLoading) return getStatus();
 
     isLoading = true;
@@ -129,6 +144,46 @@ async function loadModel() {
 }
 
 /**
+ * Mock streaming helper — reads a random mock file and emits it progressively.
+ * Picks a file index 1–10, never the same as the previous pick.
+ *
+ * @param {function} [onToken] — streaming callback(chunk: string)
+ * @returns {Promise<string>}  — complete mock text
+ */
+async function mockStream(onToken) {
+    // Pick a random file index (0-based internally, 1-based file names)
+    let index;
+    do {
+        index = Math.floor(Math.random() * 10);
+    } while (index === lastMockFileIndex);
+    lastMockFileIndex = index;
+
+    const mockDir = path.join(__dirname, '../../../models/llm_mock');
+    const text = fs.readFileSync(path.join(mockDir, `${index + 1}.txt`), 'utf8');
+
+    // Simulate model load / inference delay
+    await new Promise(resolve => setTimeout(resolve, 4000));
+
+    // Emit text progressively in 3–10 character chunks with 20–40 ms delays.
+    // Occasionally freezes for 500–1000 ms to mimic real inference pauses.
+    let pos = 0;
+    while (pos < text.length) {
+        const chunkSize = 3 + Math.floor(Math.random() * 8); // 3–10 chars
+        const chunk = text.slice(pos, pos + chunkSize);
+        pos += chunkSize;
+        if (onToken) onToken(chunk);
+
+        // ~15% chance of a longer pause between chunks
+        const delay = Math.random() < 0.10
+            ? 150 + Math.floor(Math.random() * 50)   // 150–200 ms freeze
+            : 20  + Math.floor(Math.random() * 41);   // 20–60 ms normal
+        await new Promise(resolve => setTimeout(resolve, delay));
+    }
+
+    return text;
+}
+
+/**
  * Send a free-form prompt to the model and get a response.
  *
  * @param {string}   prompt   — the text prompt to send
@@ -136,6 +191,10 @@ async function loadModel() {
  * @returns {Promise<string>}  — complete generated text
  */
 async function chat(prompt, onToken) {
+    if (USE_MOCK_LLM) {
+        return mockStream(onToken);
+    }
+
     if (!isLoaded) {
         if (loadError) throw new Error(`LLM model failed to load: ${loadError}`);
         throw new Error('LLM model is still loading — please try again in a moment.');
@@ -197,16 +256,31 @@ function buildPrompt(result) {
     const quality   = result.quality  || {};
     const pathogens = result.pathogens || [];
 
+    const hasVirulence = pathogens.some(p => p.virulence_genes && p.virulence_genes > 0);
+
     const pathogenLines = pathogens.length > 0
-        ? pathogens.map(p =>
-            `- ${p.name}${p.strain ? ` (${p.strain})` : ''}: ` +
-            `${p.abundance ?? '?'}% abundance, ` +
-            `${p.confidence ?? '?'}% confidence, ` +
-            `risk: ${p.risk_level ?? 'unknown'}, ` +
-            `AMR genes: ${p.amr_genes ?? 0}, ` +
-            `virulence genes: ${p.virulence_genes ?? 0}`
-          ).join('\n')
+        ? pathogens.map(p => {
+            let line =
+                `- ${p.name}${p.strain ? ` (${p.strain})` : ''}: ` +
+                `${p.abundance ?? '?'}% abundance, ` +
+                `${p.confidence ?? '?'}% confidence, ` +
+                `risk: ${p.risk_level ?? 'unknown'}`;
+            if (p.virulence_genes && p.virulence_genes > 0) {
+                line += `, virulence genes: ${p.virulence_genes}`;
+            }
+            return line;
+          }).join('\n')
         : 'No pathogens detected.';
+
+    let coverageNum = 1;
+    const coverageLines = [];
+    coverageLines.push(`${coverageNum++}. Main findings and the most clinically significant pathogens.`);
+    if (hasVirulence) {
+        coverageLines.push(`${coverageNum++}. Virulence factors detected and their clinical significance.`);
+    }
+    coverageLines.push(`${coverageNum++}. Suggested clinical action or recommendation.`);
+    coverageLines.push(`${coverageNum++}. A safety assessment paragraph stating whether this water sample appears safe for drinking, washing hands, and washing face, based on the detected pathogens and their risk levels. Be specific about each use case. CRITICAL RULE: If any pathogen with a high or severe risk level is detected, regardless of how low its abundance percentage is, you MUST explicitly state that the sample cannot be considered completely safe and include a clear warning about the risk posed by that pathogen.`);
+    const coverageText = coverageLines.join('\n');
 
     return (
         'You are an expert clinical microbiologist AI assistant. ' +
@@ -218,15 +292,11 @@ function buildPrompt(result) {
         `Classification rate: ${summary.classification_rate ?? 'N/A'}%\n` +
         `Species detected: ${summary.species_detected ?? 'N/A'}\n` +
         `Pathogens detected: ${summary.pathogens_detected ?? pathogens.length}\n` +
-        `Total AMR genes: ${summary.amr_genes ?? 0}\n` +
         `Average read quality: Q${quality.average_quality ?? 'N/A'}\n\n` +
         `Detected pathogens:\n${pathogenLines}\n\n` +
-        `Provide a 3–4 paragraph clinical summary covering:\n` +
-        `1. Main findings and the most clinically significant pathogens.\n` +
-        `2. Antimicrobial resistance (AMR) concerns based on detected genes.\n` +
-        `3. Suggested clinical action or recommendation.\n` +
-        `4. A safety assessment paragraph stating whether this water sample appears safe for drinking, washing hands, and washing face, based on the detected pathogens and their risk levels. Be specific about each use case. CRITICAL RULE: If any pathogen with a high or severe risk level is detected, regardless of how low its abundance percentage is, you MUST explicitly state that the sample cannot be considered completely safe and include a clear warning about the risk posed by that pathogen.\n` +
-        `Keep the tone professional and concise.`
+        `Provide a clinical summary of at least 3 paragraphs covering:\n` +
+        `${coverageText}\n` +
+        `Each point above must be its own paragraph. Do not combine points into a single paragraph. Keep the tone professional and concise.`
     );
 }
 
