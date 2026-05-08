@@ -293,8 +293,16 @@ const Charts = {
             container.clientWidth ||
             900;
 
-        const width = Math.max(900, Math.floor(measuredWidth));
-        const height = 400;
+        // Reserve horizontal space for left/right text labels and vertical padding
+        // so node rectangles and labels never overflow the SVG viewBox.
+        const labelPaddingLeft = 130;
+        const labelPaddingRight = 140;
+        const verticalPadding = 20;
+
+        const totalWidth = Math.max(900, Math.floor(measuredWidth));
+        const totalHeight = 460;
+        const width = Math.max(200, totalWidth - labelPaddingLeft - labelPaddingRight);
+        const height = totalHeight - verticalPadding * 2;
         const nodeWidth = 20;
         const nodePadding = 15;
 
@@ -303,11 +311,12 @@ const Charts = {
         container.innerHTML = `
             <svg
                 width="100%"
-                height="${height}"
-                viewBox="0 0 ${width} ${height}"
+                height="${totalHeight}"
+                viewBox="0 0 ${totalWidth} ${totalHeight}"
                 preserveAspectRatio="xMidYMid meet"
                 class="sankey-chart"
             >
+                <g transform="translate(${labelPaddingLeft}, ${verticalPadding})">
                 <defs>
                     ${this.generateSankeyGradients(links)}
                 </defs>
@@ -316,6 +325,7 @@ const Charts = {
                 </g>
                 <g class="sankey-nodes">
                     ${this.generateSankeyNodes(nodes, nodeWidth)}
+                </g>
                 </g>
             </svg>
         `;

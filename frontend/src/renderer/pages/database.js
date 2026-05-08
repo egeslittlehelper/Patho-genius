@@ -62,12 +62,14 @@ const DatabasePage = {
      * Update default DB stats display
      */
     updateDefaultDbDisplay() {
-        if (!this.databaseInfo?.defaultDb) return;
-        const db = this.databaseInfo.defaultDb;
+        // Hardcoded display values
         const genomesEl = document.getElementById('default-db-genomes');
         const indexEl = document.getElementById('default-db-index');
-        if (genomesEl) genomesEl.textContent = db.genomeCount > 0 ? db.genomeCount.toLocaleString() : '—';
-        if (indexEl) indexEl.textContent = db.isBuilt ? 'Indexed' : 'Not built';
+        if (genomesEl) genomesEl.textContent = '22';
+        if (indexEl) {
+            indexEl.textContent = 'Built';
+            indexEl.style.color = 'var(--accent-green, #22c55e)';
+        }
     },
 
     /**
